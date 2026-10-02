@@ -1,7 +1,7 @@
 # TVManagerTCL
 
 GUI-приложение для настройки и управления телевизорами **TCL на Android TV** через ADB.
-Написано на PowerShell + WPF. Не требует установки — запускается одним `.exe`-файлом.
+Написано на PowerShell + WPF. Не требует установки — запускается одним `.bat`-файлом.
 
 ![Platform](https://img.shields.io/badge/platform-Windows-blue)
 ![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue)
