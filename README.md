@@ -147,37 +147,39 @@ GUI-приложение для настройки и управления те�
 ## 📁 Структура проекта
 TVManagerTCL/
 ├── Modules/
-│ ├── AdbHelper.ps1 # Все ADB-команды, runspace-обёртки
-│ ├── AppConfig.ps1 # Конфиг приложения + профили
-│ ├── ChangeLogger.ps1 # Логирование изменений для отката
-│ ├── config.ps1 # Списки пакетов, пути, launcher-список
-│ ├── GuiHelper.ps1 # Тема, логгер, базовые UI-элементы
-│ └── NetworkScanner.ps1 # Сканирование локальной сети
+│   ├── AdbHelper.ps1        # Все ADB-команды, runspace-обёртки
+│   ├── AppConfig.ps1        # Конфиг приложения + профили
+│   ├── ChangeLogger.ps1     # Логирование изменений для отката
+│   ├── config.ps1           # Списки пакетов, пути, launcher-список
+│   ├── GuiHelper.ps1        # Тема, логгер, базовые UI-элементы
+│   └── NetworkScanner.ps1   # Сканирование локальной сети
 ├── Views/
-│ ├── Setup/ # Экраны первичной настройки
-│ ├── MainWindow.xaml # Разметка главного окна
-│ ├── MainWindow.xaml.ps1 # Switch-View и Update-StatusBar
-│ ├── ViewMain.ps1 # Главное меню
-│ ├── ViewCleanup.ps1 # Управление пакетами
-│ ├── ViewApk.ps1 # Установка APK
-│ ├── ViewFiles.ps1 # Файловый менеджер
-│ ├── ViewRemote.ps1 # Пульт
-│ ├── ViewScreenshot.ps1 # Скриншоты и запись видео
-│ ├── ViewInfo.ps1 # Сведения об устройстве
-│ ├── ViewPower.ps1 # Питание
-│ ├── ViewLogcat.ps1 # Живые логи
-│ ├── ViewService.ps1 # Справочник ADB-команд
-│ ├── ViewProfiles.ps1 # Профили устройств
-│ ├── ViewRollback.ps1 # История и откат
-│ ├── ViewAnimation.ps1 # Масштаб анимации
-│ ├── ViewSettings.ps1 # Настройки приложения
-│ ├── ViewHelpers.ps1 # Хелперы для UI
-│ └── ViewState.ps1 # Общее состояние приложения
-├── config.json # Пользовательский конфиг (создаётся автоматически)
-├── tv_changes_backup.json # История изменений (создаётся автоматически)
-├── Main.ps1 # Точка входа
-├── TVManager.bat # Запуск из проводника
-└── README.md
+│   ├── Setup/               # Экраны первичной настройки
+│   ├── MainWindow.xaml      # Разметка главного окна
+│   ├── MainWindow.xaml.ps1  # Switch-View и Update-StatusBar
+│   ├── ViewMain.ps1         # Главное меню
+│   ├── ViewCleanup.ps1      # Управление пакетами
+│   ├── ViewApk.ps1          # Установка APK
+│   ├── ViewFiles.ps1        # Файловый менеджер
+│   ├── ViewRemote.ps1       # Пульт
+│   ├── ViewScreenshot.ps1   # Скриншоты и запись видео
+│   ├── ViewInfo.ps1         # Сведения об устройстве
+│   ├── ViewPower.ps1        # Питание
+│   ├── ViewLogcat.ps1       # Живые логи
+│   ├── ViewService.ps1      # Справочник ADB-команд
+│   ├── ViewProfiles.ps1     # Профили устройств
+│   ├── ViewRollback.ps1     # История и откат
+│   ├── ViewAnimation.ps1    # Масштаб анимации
+│   ├── ViewSettings.ps1     # Настройки приложения
+│   ├── ViewHelpers.ps1      # Хелперы для UI
+│   └── ViewState.ps1        # Общее состояние приложения
+├── config.json              # Пользовательский конфиг (создаётся автоматически)
+├── tv_changes_backup.json   # История изменений (создаётся автоматически)
+├── Main.ps1                 # Точка входа
+├── TVManager.bat            # Запуск из исходников (dev)
+├── build.ps1                # Сборка .exe (см. «Сборка из исходников»)
+├── README.md
+└── LICENSE
 
 ---
 
