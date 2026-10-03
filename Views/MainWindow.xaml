@@ -187,7 +187,37 @@
         <Border Grid.Row="1" x:Name="BottomBar" Background="#F0F0F5" 
                 BorderBrush="#E1E1E6" BorderThickness="0,1,0,0" Padding="15,10"
                 Visibility="Collapsed">
-            <StackPanel x:Name="BottomBarContent" Orientation="Horizontal" HorizontalAlignment="Right"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <ProgressBar x:Name="BottomBarProgress"
+                            Grid.Column="0"
+                            Width="200"
+                            Height="6"
+                            Margin="0,0,12,0"
+                            VerticalAlignment="Center"
+                            Visibility="Collapsed"
+                            Foreground="#4A90E2"
+                            Background="#E1E1E6"
+                            BorderThickness="0"/>
+
+                <StackPanel x:Name="BottomBarContent"
+                            Grid.Column="1"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Left"/>
+
+                <TextBlock x:Name="BottomBarProgressText"
+                        Grid.Column="2"
+                        Margin="12,0,0,0"
+                        VerticalAlignment="Center"
+                        FontSize="11"
+                        Foreground="#96969B"
+                        Visibility="Collapsed"/>
+            </Grid>
         </Border>
 
         <Border Grid.Row="2" x:Name="StatusBar" Background="White" 

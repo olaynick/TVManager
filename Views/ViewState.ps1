@@ -61,3 +61,30 @@ $script:DeviceInfo = $null
 
 # ===== LOGCAT =====
 $script:LogcatProcess = $null
+
+# ===== ТАЙМЕР СТАТУСА =====
+$script:StatusTimer = $null
+
+# ===== Wi-Fi =====
+$script:WifiNetworksContainer = $null
+
+# ===== DISPLAY =====
+$script:DisplayViewInfo = $null
+
+# ===== REMOTE HOTKEYS =====
+$script:RemoteKeyHandler    = $null
+$script:RemoteHotkeysEnabled = $true
+
+# ===== АВТО-СКАНИРОВАНИЕ =====
+$script:AutoConnectFailed = $false
+$script:NeedAutoScan = $false
+
+# ===== ПРОЦЕССЫ =====
+$script:ProcessesSortBy = "cpu"
+
+# ===== ПРОВЕРКА ЦЕЛОСТНОСТИ =====
+$script:IntegrityReference = $null
+
+# ===== ADBKEYBOARD =====
+# Ппеременные определены в Modules\AdbKeyboard.ps1
+

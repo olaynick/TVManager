@@ -47,13 +47,13 @@
     $profilesPanel.Children.Add($profilesInfo) | Out-Null
 
     # Список профилей
-    $script:ProfilesListBox = New-Object System.Windows.Controls.ListBox
-    $script:ProfilesListBox.FontSize = 13
-    $script:ProfilesListBox.BorderThickness = "1"
-    $script:ProfilesListBox.BorderBrush = "#E1E1E6"
-    $script:ProfilesListBox.MinHeight = 200
-    $script:ProfilesListBox.Padding = "5"
-    $script:ProfilesListBox.Margin = "0,10,0,10"
+    $script:SettingsProfilesListBox = New-Object System.Windows.Controls.ListBox
+    $script:SettingsProfilesListBox.FontSize = 13
+    $script:SettingsProfilesListBox.BorderThickness = "1"
+    $script:SettingsProfilesListBox.BorderBrush = "#E1E1E6"
+    $script:SettingsProfilesListBox.MinHeight = 200
+    $script:SettingsProfilesListBox.Padding = "5"
+    $script:SettingsProfilesListBox.Margin = "0,10,0,10"
 
     # Загружаем профили
     $profiles = Get-ConfigValue -Key "SavedProfiles"
@@ -64,11 +64,11 @@
         $item.Content = "$($p.Name)  —  $($p.Ip)"
         $item.Tag = $p
         $item.Padding = "5"
-        [void]$script:ProfilesListBox.Items.Add($item)
+        [void]$script:SettingsProfilesListBox.Items.Add($item)
     }
-    if ($script:ProfilesListBox.Items.Count -gt 0) { $script:ProfilesListBox.SelectedIndex = 0 }
+    if ($script:SettingsProfilesListBox.Items.Count -gt 0) { $script:SettingsProfilesListBox.SelectedIndex = 0 }
 
-    $profilesPanel.Children.Add($script:ProfilesListBox) | Out-Null
+    $profilesPanel.Children.Add($script:SettingsProfilesListBox) | Out-Null
 
     # Кнопки управления профилями
     $profilesBtnPanel = New-Object System.Windows.Controls.StackPanel
@@ -80,8 +80,8 @@
     $profilesBtnPanel.Children.Add($btnAddProfile) | Out-Null
 
     $btnConnectProfile = New-ViewButton -Text "Подключиться" -ColorType "Primary" -OnClick {
-        if ($script:ProfilesListBox.SelectedItem) {
-            $profile = $script:ProfilesListBox.SelectedItem.Tag
+        if ($script:SettingsProfilesListBox.SelectedItem) {
+            $profile = $script:SettingsProfilesListBox.SelectedItem.Tag
             Write-Log -Message "Подключение к профилю '$($profile.Name)' ($($profile.Ip))..." -Level "Info"
             $result = Connect-AdbDevice -Ip $profile.Ip
             if ($result.Success) {
@@ -99,8 +99,8 @@
     $profilesBtnPanel.Children.Add($btnConnectProfile) | Out-Null
 
     $btnDeleteProfile = New-ViewButton -Text "Удалить" -ColorType "Danger" -OnClick {
-        if ($script:ProfilesListBox.SelectedItem) {
-            $profile = $script:ProfilesListBox.SelectedItem.Tag
+        if ($script:SettingsProfilesListBox.SelectedItem) {
+            $profile = $script:SettingsProfilesListBox.SelectedItem.Tag
             $confirm = [System.Windows.MessageBox]::Show(
                 "Удалить профиль '$($profile.Name)'?",
                 "Подтверждение",
@@ -142,15 +142,79 @@
     $configPathLabel.Margin = "0,5,0,15"
     $configPanel.Children.Add($configPathLabel) | Out-Null
 
+    # ===== БЛОК ЛОГОВ =====
+    $logsInfo = New-ViewLabel -Text "Логи приложения сохраняются в папку Logs рядом с программой." -Light
+    $logsInfo.TextWrapping = "Wrap"
+    $logsInfo.Margin = "0,0,0,5"
+    $configPanel.Children.Add($logsInfo) | Out-Null
+
+    $logsPathLabel = New-Object System.Windows.Controls.TextBlock
+    $logDirPath = Join-Path $script:AppRoot "Logs"
+    $logsPathLabel.Text = $logDirPath
+    $logsPathLabel.FontFamily = "Consolas"
+    $logsPathLabel.FontSize = 11
+    $logsPathLabel.Foreground = "#2D2D30"
+    $logsPathLabel.TextWrapping = "Wrap"
+    $logsPathLabel.Margin = "0,0,0,15"
+    $configPanel.Children.Add($logsPathLabel) | Out-Null
+
     $configBtnPanel = New-Object System.Windows.Controls.StackPanel
     $configBtnPanel.Orientation = "Horizontal"
 
+    # --- Открыть папку конфига ---
     $btnOpenConfig = New-ViewButton -Text "Открыть папку" -ColorType "Primary" -OnClick {
-        $folder = Split-Path $script:ConfigPath -Parent
-        Start-Process explorer.exe $folder
+        try {
+            if (-not $script:ConfigPath) {
+                Write-Log -Message "Путь к конфигу не определён" -Level "Warning"
+                return
+            }
+            $folder = Split-Path $script:ConfigPath -Parent
+            if (-not $folder -or -not (Test-Path $folder)) {
+                Write-Log -Message "Папка конфига не найдена: $folder" -Level "Warning"
+                return
+            }
+            Start-Process explorer.exe -ArgumentList "`"$folder`""
+        } catch {
+            Write-Log -Message "Не удалось открыть папку конфига: $_" -Level "Error"
+        }
     }
     $configBtnPanel.Children.Add($btnOpenConfig) | Out-Null
 
+    # --- Открыть логи ---
+    $btnOpenLogs = New-ViewButton -Text "Открыть логи" -ColorType "Primary" -OnClick {
+        try {
+            $appRoot = $script:AppRoot
+            if (-not $appRoot) { $appRoot = $PWD.Path }
+            $logDir = Join-Path $appRoot "Logs"
+            if (-not (Test-Path $logDir)) {
+                New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+            }
+            Start-Process explorer.exe -ArgumentList "`"$logDir`""
+            Write-Log -Message "Открыта папка с логами: $logDir" -Level "Info"
+        } catch {
+            Write-Log -Message "Не удалось открыть логи: $_" -Level "Error"
+        }
+    }
+    $configBtnPanel.Children.Add($btnOpenLogs) | Out-Null
+
+    # --- Скопировать лог за сегодня ---
+    $btnCopyLogs = New-ViewButton -Text "Скопировать лог" -ColorType "Neutral" -OnClick {
+        $today = Get-Date -Format 'yyyy-MM-dd'
+        $logFile = Join-Path (Join-Path $script:AppRoot "Logs") "$today.log"
+        if (Test-Path $logFile) {
+            try {
+                Get-Content $logFile -Raw | Set-Clipboard
+                Write-Log -Message "Лог скопирован в буфер обмена" -Level "Success"
+            } catch {
+                Write-Log -Message "Не удалось скопировать лог: $_" -Level "Error"
+            }
+        } else {
+            Write-Log -Message "Файл лога за сегодня не найден: $logFile" -Level "Warning"
+        }
+    }
+    $configBtnPanel.Children.Add($btnCopyLogs) | Out-Null
+
+    # --- Сбросить настройки ---
     $btnResetConfig = New-ViewButton -Text "Сбросить настройки" -ColorType "Danger" -OnClick {
         $confirm = [System.Windows.MessageBox]::Show(
             "Сбросить все настройки приложения?`n`nПрофили устройств тоже будут удалены.",

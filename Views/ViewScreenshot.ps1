@@ -1,4 +1,8 @@
-﻿# ===== ФУНКЦИЯ ЗАГРУЗКИ ГАЛЕРЕИ =====
+﻿# ============================================================================
+#  Экран: Скриншот и запись видео
+# ============================================================================
+
+# ===== ФУНКЦИЯ ЗАГРУЗКИ ГАЛЕРЕИ =====
 function Load-ScreenshotGallery {
     param(
         [System.Windows.Controls.WrapPanel]$Container,
@@ -124,7 +128,6 @@ function New-ScreenshotTile {
 
     $border.Child = $tileStack
 
-    # Сохраняем путь в локальную переменную, чтобы замыкание её "поймало"
     $filePath = $File.FullName
 
     $border.Add_MouseLeftButtonUp({
@@ -148,6 +151,7 @@ function Update-ScreenshotGallery {
 
 # ===== ОСНОВНОЙ ЭКРАН =====
 function Show-ScreenshotView {
+    Hide-Progress
     $mainStack = New-Object System.Windows.Controls.StackPanel
     $mainStack.Margin = "30,25,30,25"
 
@@ -200,6 +204,37 @@ function Show-ScreenshotView {
     $recInfo.Margin = "0,0,0,10"
     $mainStack.Children.Add($recInfo) | Out-Null
 
+    # Статус записи (виден во время записи)
+    $script:RecordStatusCard = New-Object System.Windows.Controls.Border
+    $script:RecordStatusCard.Background = "#FFF3CD"
+    $script:RecordStatusCard.BorderBrush = "#FFB74D"
+    $script:RecordStatusCard.BorderThickness = "1"
+    $script:RecordStatusCard.CornerRadius = "6"
+    $script:RecordStatusCard.Padding = "10"
+    $script:RecordStatusCard.Margin = "0,0,0,10"
+    $script:RecordStatusCard.Visibility = "Collapsed"
+
+    $recStatusStack = New-Object System.Windows.Controls.StackPanel
+
+    $script:RecordStatusText = New-Object System.Windows.Controls.TextBlock
+    $script:RecordStatusText.FontSize = 12
+    $script:RecordStatusText.Foreground = "#856404"
+    $script:RecordStatusText.Text = "Запись не активна"
+    $recStatusStack.Children.Add($script:RecordStatusText) | Out-Null
+
+    $script:RecordProgressBar = New-Object System.Windows.Controls.ProgressBar
+    $script:RecordProgressBar.Height = 8
+    $script:RecordProgressBar.Margin = "0,8,0,0"
+    $script:RecordProgressBar.Foreground = "#FFB74D"
+    $script:RecordProgressBar.Background = "#E1E1E6"
+    $script:RecordProgressBar.Value = 0
+    $script:RecordProgressBar.Maximum = 100
+    $recStatusStack.Children.Add($script:RecordProgressBar) | Out-Null
+
+    $script:RecordStatusCard.Child = $recStatusStack
+    $mainStack.Children.Add($script:RecordStatusCard) | Out-Null
+
+    # Кнопки длительности
     $durationPanel = New-Object System.Windows.Controls.WrapPanel
     $durationPanel.Margin = "0,0,0,10"
 
@@ -245,7 +280,16 @@ function Show-ScreenshotView {
     $btnOpenFolder.Background = "#607D8B"
     $btnOpenFolder.Padding = "15,8"
     $btnOpenFolder.Add_Click({
-        Start-Process explorer.exe $folder
+        try {
+            $target = Get-ScreenshotFolder
+            if (-not $target -or -not (Test-Path $target)) {
+                Write-Log -Message "Папка скриншотов недоступна: $target" -Level "Warning"
+                return
+            }
+            Start-Process explorer.exe -ArgumentList "`"$target`""
+        } catch {
+            Write-Log -Message "Не удалось открыть папку: $_" -Level "Error"
+        }
     })
     $actionsPanel.Children.Add($btnOpenFolder) | Out-Null
 
@@ -276,6 +320,31 @@ function Start-VideoRecording {
     $logBoxRef = $script:LogBox
     $adbPathRef = $script:adbPath
 
+    # ---- Показываем статус-карточку и прогрессбар ----
+    if ($script:RecordStatusCard) {
+        $script:RecordStatusCard.Visibility = "Visible"
+        $script:RecordStatusText.Text = "Запись идёт... 0 / $DurationSeconds сек"
+        $script:RecordProgressBar.Value = 0
+        $script:RecordProgressBar.Maximum = $DurationSeconds
+    }
+
+    # ---- Таймер для обновления прогресса ----
+    $progressTimer = New-Object System.Windows.Threading.DispatcherTimer
+    $progressTimer.Interval = [TimeSpan]::FromSeconds(1)
+    $progressTimer.Add_Tick({
+        try {
+            if ($script:RecordProgressBar) {
+                $script:RecordProgressBar.Value = [math]::Min($script:RecordProgressBar.Value + 1, $script:RecordProgressBar.Maximum)
+                $cur = [int]$script:RecordProgressBar.Value
+                if ($script:RecordStatusText) {
+                    $script:RecordStatusText.Text = "Запись идёт... $cur / $DurationSeconds сек"
+                }
+            }
+        } catch { }
+    })
+    $progressTimer.Start()
+
+    # ---- Фоновый Runspace ----
     $script:RecordRunspace = [runspacefactory]::CreateRunspace()
     $script:RecordRunspace.ApartmentState = "STA"
     $script:RecordRunspace.ThreadOptions = "ReuseThread"
@@ -352,7 +421,6 @@ function Start-VideoRecording {
         $rmOut = & $adbPath shell rm $remotePath 2>&1
         Write-BgLog "Ответ rm: $rmOut" "Info"
 
-        # Проверяем, что файл удалён
         $checkAfter = & $adbPath shell ls $remotePath 2>&1
         if ($checkAfter -match "No such file") {
             Write-BgLog "Временный файл удалён с устройства" "Success"
@@ -372,11 +440,25 @@ function Start-VideoRecording {
 
     $handle = $ps.BeginInvoke()
 
-    $timer = New-Object System.Windows.Threading.DispatcherTimer
-    $timer.Interval = [TimeSpan]::FromMilliseconds(500)
-    $timer.Add_Tick({
+    # ---- Таймер завершения ----
+    #  ВАЖНО: используем $script: для progressTimer, чтобы он был виден
+    #  внутри обработчика DispatcherTimer (иначе локальная переменная не доступна).
+    $script:RecordProgressTimer = $progressTimer
+
+    $finishTimer = New-Object System.Windows.Threading.DispatcherTimer
+    $finishTimer.Interval = [TimeSpan]::FromMilliseconds(500)
+    $finishTimer.Add_Tick({
         if ($handle.IsCompleted) {
-            $timer.Stop()
+            $finishTimer.Stop()
+
+            # Останавливаем таймер прогресса через $script:
+            try {
+                if ($script:RecordProgressTimer) {
+                    $script:RecordProgressTimer.Stop()
+                    $script:RecordProgressTimer = $null
+                }
+            } catch { }
+
             try {
                 $result = $ps.EndInvoke($handle)
                 if ($result) {
@@ -389,7 +471,20 @@ function Start-VideoRecording {
                 Write-Log -Message "Ошибка записи: $_" -Level "Error"
             }
             $ps.Dispose()
+
+            # ---- Скрываем жёлтую карточку и прогрессбар ----
+            try {
+                if ($script:RecordStatusCard) {
+                    $script:RecordStatusCard.Visibility = "Collapsed"
+                }
+                if ($script:RecordProgressBar) {
+                    $script:RecordProgressBar.Value = 0
+                }
+                Hide-Progress
+            } catch {
+                Write-Log -Message "Ошибка при скрытии прогресса: $_" -Level "Warning"
+            }
         }
     })
-    $timer.Start()
+    $finishTimer.Start()
 }

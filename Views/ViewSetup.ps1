@@ -11,6 +11,24 @@
         $rootGrid = New-ViewRoot -Stack $mainStack -OnBack { Switch-View -ViewName "Main" }
         $contentGrid.Children.Add($rootGrid) | Out-Null
         Write-Log -Message "Экран настройки (не подключено)" -Level "Info"
+
+        # ===== АВТОЗАПУСК СКАНИРОВАНИЯ =====
+        if ($script:NeedAutoScan) {
+            $script:NeedAutoScan = $false
+            Write-Log -Message "Автозапуск сканирования сети..." -Level "Info"
+            $timer = New-Object System.Windows.Threading.DispatcherTimer
+            $timer.Interval = [TimeSpan]::FromMilliseconds(400)
+            $timer.Add_Tick({
+                $timer.Stop()
+                try {
+                    if (-not $script:connected) { Start-NetworkScan }
+                } catch {
+                    Write-Log -Message "Ошибка автозапуска скана: $_" -Level "Warning"
+                }
+            })
+            $timer.Start()
+        }
+
         return
     }
 
@@ -19,7 +37,9 @@
     $tabControl.Style = $window.Resources["MiuiTabControlTemplate"]
     $tabControl.Margin = "0,10,0,0"
 
-    # ===== ВКЛАДКА 1: ПРИЛОЖЕНИЯ И ФАЙЛЫ =====
+    # =========================================================================
+    #  ВКЛАДКА 1: ПРИЛОЖЕНИЯ И ФАЙЛЫ
+    # =========================================================================
     $tabApps = New-Object System.Windows.Controls.TabItem
     $tabApps.Header = "Приложения и файлы"
     $tabApps.Style = $window.Resources["MiuiTabItem"]
@@ -41,15 +61,16 @@
         Switch-View -ViewName "Files"
     })) | Out-Null
 
-        $appsPanel.Children.Add((New-ViewButton -Text "Отключённые приложения" -ColorType "Warning" -Margin "0,8,0,0" -OnClick {
+    $appsPanel.Children.Add((New-ViewButton -Text "Отключённые приложения" -ColorType "Warning" -Margin "0,8,0,0" -OnClick {
         Switch-View -ViewName "DisabledApps"
     })) | Out-Null
-
 
     $tabApps.Content = $appsPanel
     $tabControl.Items.Add($tabApps) | Out-Null
 
-    # ===== ВКЛАДКА 2: ИНСТРУМЕНТЫ =====
+    # =========================================================================
+    #  ВКЛАДКА 2: ИНСТРУМЕНТЫ
+    # =========================================================================
     $tabTools = New-Object System.Windows.Controls.TabItem
     $tabTools.Header = "Инструменты"
     $tabTools.Style = $window.Resources["MiuiTabItem"]
@@ -70,7 +91,9 @@
     $tabTools.Content = $toolsPanel
     $tabControl.Items.Add($tabTools) | Out-Null
 
-    # ===== ВКЛАДКА 3: СИСТЕМА =====
+    # =========================================================================
+    #  ВКЛАДКА 3: СИСТЕМА (кнопки сгруппированы по 2 в ряд)
+    # =========================================================================
     $tabSystem = New-Object System.Windows.Controls.TabItem
     $tabSystem.Header = "Система"
     $tabSystem.Style = $window.Resources["MiuiTabItem"]
@@ -78,21 +101,172 @@
     $systemPanel = New-Object System.Windows.Controls.StackPanel
     $systemPanel.Margin = "15"
 
-    $systemPanel.Children.Add((New-ViewLabel -Text "Системные настройки телевизора." -Light)) | Out-Null
+    # ---------- Группа: ДИАГНОСТИКА ----------
+    $diagHeader = New-Object System.Windows.Controls.TextBlock
+    $diagHeader.Text = "Диагностика"
+    $diagHeader.FontSize = 13
+    $diagHeader.FontWeight = "Bold"
+    $diagHeader.Foreground = "#4A90E2"
+    $diagHeader.Margin = "0,0,0,8"
+    $systemPanel.Children.Add($diagHeader) | Out-Null
 
-    $systemPanel.Children.Add((New-ViewButton -Text "Профили устройств" -ColorType "Primary" -Margin "0,8,0,0" -OnClick {
-        Switch-View -ViewName "Profiles"
-    })) | Out-Null
+    $gridDiag1 = New-Object System.Windows.Controls.Grid
+    $gridDiag1.Margin = "0,0,0,8"
+    $dc1 = New-Object System.Windows.Controls.ColumnDefinition; $dc1.Width = "*"
+    $dc2 = New-Object System.Windows.Controls.ColumnDefinition; $dc2.Width = "*"
+    $gridDiag1.ColumnDefinitions.Add($dc1)
+    $gridDiag1.ColumnDefinitions.Add($dc2)
 
-    $systemPanel.Children.Add((New-ViewButton -Text "Logcat (живые логи)" -ColorType "Primary" -Margin "0,8,0,0" -OnClick {
-        Switch-View -ViewName "Logcat"
-    })) | Out-Null
+    $btnInfo = New-ViewButton -Text "Сведения об устройстве" -ColorType "Primary" -Margin "0,0,8,0" -OnClick {
+        Switch-View -ViewName "Info"
+    }
+    $btnInfo.HorizontalAlignment = "Stretch"
+    [System.Windows.Controls.Grid]::SetColumn($btnInfo, 0)
+    $gridDiag1.Children.Add($btnInfo) | Out-Null
 
-   $systemPanel.Children.Add((New-ViewButton -Text "Сервис (ADB-команды)" -ColorType "Primary" -Margin "0,8,0,0" -OnClick {
+    $btnProcesses = New-ViewButton -Text "Процессы ТВ" -ColorType "Primary" -OnClick {
+        Switch-View -ViewName "Processes"
+    }
+    $btnProcesses.HorizontalAlignment = "Stretch"
+    [System.Windows.Controls.Grid]::SetColumn($btnProcesses, 1)
+    $gridDiag1.Children.Add($btnProcesses) | Out-Null
+
+    $systemPanel.Children.Add($gridDiag1) | Out-Null
+
+    $gridDiag2 = New-Object System.Windows.Controls.Grid
+    $gridDiag2.Margin = "0,0,0,15"
+    $dc3 = New-Object System.Windows.Controls.ColumnDefinition; $dc3.Width = "*"
+    $dc4 = New-Object System.Windows.Controls.ColumnDefinition; $dc4.Width = "*"
+    $gridDiag2.ColumnDefinitions.Add($dc3)
+    $gridDiag2.ColumnDefinitions.Add($dc4)
+
+    $btnExport = New-ViewButton -Text "Экспорт дампа" -ColorType "Primary" -Margin "0,0,8,0" -OnClick {
+        Show-ExportDeviceDumpDialog
+    }
+    $btnExport.HorizontalAlignment = "Stretch"
+    [System.Windows.Controls.Grid]::SetColumn($btnExport, 0)
+    $gridDiag2.Children.Add($btnExport) | Out-Null
+
+    $btnIntegrity = New-ViewButton -Text "Проверка целостности" -ColorType "Primary" -OnClick {
+        Switch-View -ViewName "Integrity"
+    }
+    $btnIntegrity.HorizontalAlignment = "Stretch"
+    [System.Windows.Controls.Grid]::SetColumn($btnIntegrity, 1)
+    $gridDiag2.Children.Add($btnIntegrity) | Out-Null
+
+    $systemPanel.Children.Add($gridDiag2) | Out-Null
+
+    # ---------- Группа: НАСТРОЙКИ ----------
+    $settingsHeader = New-Object System.Windows.Controls.TextBlock
+    $settingsHeader.Text = "Настройки"
+    $settingsHeader.FontSize = 13
+    $settingsHeader.FontWeight = "Bold"
+    $settingsHeader.Foreground = "#66BB6A"
+    $settingsHeader.Margin = "0,0,0,8"
+    $systemPanel.Children.Add($settingsHeader) | Out-Null
+
+    $gridSet1 = New-Object System.Windows.Controls.Grid
+    $gridSet1.Margin = "0,0,0,8"
+    $sc1 = New-Object System.Windows.Controls.ColumnDefinition; $sc1.Width = "*"
+    $sc2 = New-Object System.Windows.Controls.ColumnDefinition; $sc2.Width = "*"
+    $gridSet1.ColumnDefinitions.Add($sc1)
+    $gridSet1.ColumnDefinitions.Add($sc2)
+
+    $btnDisplay = New-ViewButton -Text "Разрешение и DPI" -ColorType "Primary" -Margin "0,0,8,0" -OnClick {
+        Switch-View -ViewName "Display"
+    }
+    $btnDisplay.HorizontalAlignment = "Stretch"
+    [System.Windows.Controls.Grid]::SetColumn($btnDisplay, 0)
+    $gridSet1.Children.Add($btnDisplay) | Out-Null
+
+    $btnPresets = New-ViewButton -Text "Пресеты настроек" -ColorType "Primary" -OnClick {
+        Switch-View -ViewName "Presets"
+    }
+    $btnPresets.HorizontalAlignment = "Stretch"
+    [System.Windows.Controls.Grid]::SetColumn($btnPresets, 1)
+    $gridSet1.Children.Add($btnPresets) | Out-Null
+
+    $systemPanel.Children.Add($gridSet1) | Out-Null
+
+    $gridSet2 = New-Object System.Windows.Controls.Grid
+    $gridSet2.Margin = "0,0,0,15"
+    $sc3 = New-Object System.Windows.Controls.ColumnDefinition; $sc3.Width = "*"
+    $sc4 = New-Object System.Windows.Controls.ColumnDefinition; $sc4.Width = "*"
+    $gridSet2.ColumnDefinitions.Add($sc3)
+    $gridSet2.ColumnDefinitions.Add($sc4)
+
+    $btnAnimation = New-ViewButton -Text "Масштаб анимации" -ColorType "Primary" -Margin "0,0,8,0" -OnClick {
+        Switch-View -ViewName "Animation"
+    }
+    $btnAnimation.HorizontalAlignment = "Stretch"
+    [System.Windows.Controls.Grid]::SetColumn($btnAnimation, 0)
+    $gridSet2.Children.Add($btnAnimation) | Out-Null
+
+    $btnWifi = New-ViewButton -Text "Wi-Fi" -ColorType "Primary" -OnClick {
+        Switch-View -ViewName "Wifi"
+    }
+    $btnWifi.HorizontalAlignment = "Stretch"
+    [System.Windows.Controls.Grid]::SetColumn($btnWifi, 1)
+    $gridSet2.Children.Add($btnWifi) | Out-Null
+
+    $systemPanel.Children.Add($gridSet2) | Out-Null
+
+    # ---------- Группа: СЕРВИС ----------
+    $serviceHeader = New-Object System.Windows.Controls.TextBlock
+    $serviceHeader.Text = "Сервис"
+    $serviceHeader.FontSize = 13
+    $serviceHeader.FontWeight = "Bold"
+    $serviceHeader.Foreground = "#9C27B0"
+    $serviceHeader.Margin = "0,0,0,8"
+    $systemPanel.Children.Add($serviceHeader) | Out-Null
+
+    $gridSrv = New-Object System.Windows.Controls.Grid
+    $gridSrv.Margin = "0,0,0,15"
+    $vc1 = New-Object System.Windows.Controls.ColumnDefinition; $vc1.Width = "*"
+    $vc2 = New-Object System.Windows.Controls.ColumnDefinition; $vc2.Width = "*"
+    $gridSrv.ColumnDefinitions.Add($vc1)
+    $gridSrv.ColumnDefinitions.Add($vc2)
+
+    $btnService = New-ViewButton -Text "ADB-команды" -ColorType "Primary" -Margin "0,0,8,0" -OnClick {
         Switch-View -ViewName "Service"
-    })) | Out-Null
+    }
+    $btnService.HorizontalAlignment = "Stretch"
+    [System.Windows.Controls.Grid]::SetColumn($btnService, 0)
+    $gridSrv.Children.Add($btnService) | Out-Null
 
-        $systemPanel.Children.Add((New-ViewButton -Text "Резервная копия APK" -ColorType "Primary" -Margin "0,8,0,0" -OnClick {
+    $btnLogcat = New-ViewButton -Text "Logcat (логи)" -ColorType "Primary" -OnClick {
+        Switch-View -ViewName "Logcat"
+    }
+    $btnLogcat.HorizontalAlignment = "Stretch"
+    [System.Windows.Controls.Grid]::SetColumn($btnLogcat, 1)
+    $gridSrv.Children.Add($btnLogcat) | Out-Null
+
+    $systemPanel.Children.Add($gridSrv) | Out-Null
+
+    # ---------- Группа: ДЕЙСТВИЯ ----------
+    $actionsHeader = New-Object System.Windows.Controls.TextBlock
+    $actionsHeader.Text = "Действия"
+    $actionsHeader.FontSize = 13
+    $actionsHeader.FontWeight = "Bold"
+    $actionsHeader.Foreground = "#607D8B"
+    $actionsHeader.Margin = "0,0,0,8"
+    $systemPanel.Children.Add($actionsHeader) | Out-Null
+
+    $gridAct = New-Object System.Windows.Controls.Grid
+    $gridAct.Margin = "0,0,0,15"
+    $ac1 = New-Object System.Windows.Controls.ColumnDefinition; $ac1.Width = "*"
+    $ac2 = New-Object System.Windows.Controls.ColumnDefinition; $ac2.Width = "*"
+    $gridAct.ColumnDefinitions.Add($ac1)
+    $gridAct.ColumnDefinitions.Add($ac2)
+
+    $btnProfiles = New-ViewButton -Text "Профили устройств" -ColorType "Primary" -Margin "0,0,8,0" -OnClick {
+        Switch-View -ViewName "Profiles"
+    }
+    $btnProfiles.HorizontalAlignment = "Stretch"
+    [System.Windows.Controls.Grid]::SetColumn($btnProfiles, 0)
+    $gridAct.Children.Add($btnProfiles) | Out-Null
+
+    $btnBackupApk = New-ViewButton -Text "Резервная копия APK" -ColorType "Primary" -OnClick {
         Add-Type -AssemblyName System.Windows.Forms
         $dlg = New-Object System.Windows.Forms.FolderBrowserDialog
         $dlg.Description = "Выберите папку для сохранения APK"
@@ -111,11 +285,31 @@
                     [System.Windows.MessageBoxImage]::Information) | Out-Null
             }
         }
-    })) | Out-Null
+    }
+    $btnBackupApk.HorizontalAlignment = "Stretch"
+    [System.Windows.Controls.Grid]::SetColumn($btnBackupApk, 1)
+    $gridAct.Children.Add($btnBackupApk) | Out-Null
 
-    # --- OTA ---
-    $otaText = if ($script:OtaDisabled) { "Включить автоматические обновления" } else { "Отключить автоматические обновления" }
-    $systemPanel.Children.Add((New-ViewButton -Text $otaText -ColorType "Primary" -Margin "0,8,0,0" -OnClick {
+    $systemPanel.Children.Add($gridAct) | Out-Null
+
+    # ---------- Группа: БЕЗОПАСНОСТЬ И OTA ----------
+    $secHeader = New-Object System.Windows.Controls.TextBlock
+    $secHeader.Text = "Безопасность и OTA"
+    $secHeader.FontSize = 13
+    $secHeader.FontWeight = "Bold"
+    $secHeader.Foreground = "#E57373"
+    $secHeader.Margin = "0,0,0,8"
+    $systemPanel.Children.Add($secHeader) | Out-Null
+
+    $gridSec = New-Object System.Windows.Controls.Grid
+    $gridSec.Margin = "0,0,0,8"
+    $ec1 = New-Object System.Windows.Controls.ColumnDefinition; $ec1.Width = "*"
+    $ec2 = New-Object System.Windows.Controls.ColumnDefinition; $ec2.Width = "*"
+    $gridSec.ColumnDefinitions.Add($ec1)
+    $gridSec.ColumnDefinitions.Add($ec2)
+
+    $otaText = if ($script:OtaDisabled) { "Включить авто-обновления" } else { "Отключить авто-обновления" }
+    $btnOta = New-ViewButton -Text $otaText -ColorType "Primary" -Margin "0,0,8,0" -OnClick {
         if (-not $script:OtaDisabled) {
             $confirm = [System.Windows.MessageBox]::Show(
                 "Вы действительно хотите отключить автоматические обновления системы?",
@@ -157,15 +351,12 @@
                 Switch-View -ViewName "Setup"
             }
         }
-    })) | Out-Null
+    }
+    $btnOta.HorizontalAlignment = "Stretch"
+    [System.Windows.Controls.Grid]::SetColumn($btnOta, 0)
+    $gridSec.Children.Add($btnOta) | Out-Null
 
-    # --- Анимация ---
-    $systemPanel.Children.Add((New-ViewButton -Text "Масштаб анимации" -ColorType "Primary" -Margin "0,8,0,0" -OnClick {
-        Switch-View -ViewName "Animation"
-    })) | Out-Null
-
-    # --- Разблокировка APK ---
-    $systemPanel.Children.Add((New-ViewButton -Text "Разблокировать установку APK" -ColorType "Primary" -Margin "0,8,0,0" -OnClick {
+    $btnUnlock = New-ViewButton -Text "Разблокировать установку APK" -ColorType "Primary" -OnClick {
         Write-Log -Message "=== Проверка блокировки APK ===" -Level "Info"
         $status = & $script:adbPath shell content query --uri content://com.tcl.providers.config/InstallConfig --projection config_content 2>&1
         if ($status -match '"enable"\s*:\s*"false"') {
@@ -178,17 +369,27 @@
         } else {
             Write-Log -Message "Не заблокировано." -Level "Success"
         }
-    })) | Out-Null
+    }
+    $btnUnlock.HorizontalAlignment = "Stretch"
+    [System.Windows.Controls.Grid]::SetColumn($btnUnlock, 1)
+    $gridSec.Children.Add($btnUnlock) | Out-Null
 
-    # --- Сведения об устройстве (перенесено) ---
-    $systemPanel.Children.Add((New-ViewButton -Text "Сведения об устройстве" -ColorType "Primary" -Margin "0,8,0,0" -OnClick {
-        Switch-View -ViewName "Info"
-    })) | Out-Null
+    $systemPanel.Children.Add($gridSec) | Out-Null
 
-    # --- Питание (перенесено) ---
-    $systemPanel.Children.Add((New-ViewButton -Text "Питание и перезагрузка" -ColorType "Danger" -Margin "0,8,0,0" -OnClick {
+    # ---------- Группа: ПИТАНИЕ ----------
+    $pwrHeader = New-Object System.Windows.Controls.TextBlock
+    $pwrHeader.Text = "Питание"
+    $pwrHeader.FontSize = 13
+    $pwrHeader.FontWeight = "Bold"
+    $pwrHeader.Foreground = "#FFB74D"
+    $pwrHeader.Margin = "0,0,0,8"
+    $systemPanel.Children.Add($pwrHeader) | Out-Null
+
+    $btnPower = New-ViewButton -Text "Питание и перезагрузка" -ColorType "Danger" -OnClick {
         Switch-View -ViewName "Power"
-    })) | Out-Null
+    }
+    $btnPower.HorizontalAlignment = "Stretch"
+    $systemPanel.Children.Add($btnPower) | Out-Null
 
     $tabSystem.Content = $systemPanel
     $tabControl.Items.Add($tabSystem) | Out-Null

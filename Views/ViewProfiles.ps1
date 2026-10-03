@@ -17,13 +17,13 @@
     if ($profileCount -eq 0) {
         $mainStack.Children.Add((New-ViewLabel -Text "Пока нет сохранённых профилей." -Light)) | Out-Null
     } else {
-        $script:ProfilesListBox = New-Object System.Windows.Controls.ListBox
-        $script:ProfilesListBox.FontSize = 13
-        $script:ProfilesListBox.BorderThickness = "1"
-        $script:ProfilesListBox.BorderBrush = "#E1E1E6"
-        $script:ProfilesListBox.MinHeight = 200
-        $script:ProfilesListBox.Padding = "5"
-        $script:ProfilesListBox.Margin = "0,0,0,15"
+        $script:ProfilesViewListBox = New-Object System.Windows.Controls.ListBox
+        $script:ProfilesViewListBox.FontSize = 13
+        $script:ProfilesViewListBox.BorderThickness = "1"
+        $script:ProfilesViewListBox.BorderBrush = "#E1E1E6"
+        $script:ProfilesViewListBox.MinHeight = 200
+        $script:ProfilesViewListBox.Padding = "5"
+        $script:ProfilesViewListBox.Margin = "0,0,0,15"
 
         foreach ($p in $profiles) {
             $disabledCount = 0
@@ -43,11 +43,11 @@
             $item.Content = "$($p.Name)  —  $($p.Ip)   [откл: $disabledCount, удал: $removedCount, вкл: $enableCount, стор: $thirdCount]"
             $item.Tag = $p
             $item.Padding = "5"
-            [void]$script:ProfilesListBox.Items.Add($item)
+            [void]$script:ProfilesViewListBox.Items.Add($item)
         }
-        if ($script:ProfilesListBox.Items.Count -gt 0) { $script:ProfilesListBox.SelectedIndex = 0 }
+        if ($script:ProfilesViewListBox.Items.Count -gt 0) { $script:ProfilesViewListBox.SelectedIndex = 0 }
 
-        $mainStack.Children.Add($script:ProfilesListBox) | Out-Null
+        $mainStack.Children.Add($script:ProfilesViewListBox) | Out-Null
     }
 
     # ===== ФОРМА =====
@@ -227,8 +227,8 @@
                 Write-Log -Message "Сначала подключитесь к ТВ" -Level "Error"
                 return
             }
-            if ($script:ProfilesListBox.SelectedItem) {
-                $profile = $script:ProfilesListBox.SelectedItem.Tag
+            if ($script:ProfilesViewListBox.SelectedItem) {
+                $profile = $script:ProfilesViewListBox.SelectedItem.Tag
                 $confirm = [System.Windows.MessageBox]::Show(
                     "Применить профиль '$($profile.Name)' к подключённому ТВ?`n`nСостояние пакетов будет синхронизировано.",
                     "Подтверждение",
@@ -251,8 +251,8 @@
         $btnView.Padding = "12,6"
         $btnView.Margin = "0,0,8,0"
         $btnView.Add_Click({
-            if ($script:ProfilesListBox.SelectedItem) {
-                Show-ProfileDetails -Profile $script:ProfilesListBox.SelectedItem.Tag
+            if ($script:ProfilesViewListBox.SelectedItem) {
+                Show-ProfileDetails -Profile $script:ProfilesViewListBox.SelectedItem.Tag
             }
         })
         $buttons += $btnView
@@ -286,8 +286,8 @@
         )
         $btnDelete.Padding = "12,6"
         $btnDelete.Add_Click({
-            if ($script:ProfilesListBox.SelectedItem) {
-                $profile = $script:ProfilesListBox.SelectedItem.Tag
+            if ($script:ProfilesViewListBox.SelectedItem) {
+                $profile = $script:ProfilesViewListBox.SelectedItem.Tag
                 $confirm = [System.Windows.MessageBox]::Show(
                     "Удалить профиль '$($profile.Name)'?",
                     "Подтверждение",

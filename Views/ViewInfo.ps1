@@ -12,11 +12,12 @@
         return
     }
 
-    # ===== КНОПКА ОБНОВЛЕНИЯ =====
+    # ===== КНОПКИ ВЕРХНЕЙ ПАНЕЛИ =====
     $topPanel = New-Object System.Windows.Controls.StackPanel
     $topPanel.Orientation = "Horizontal"
     $topPanel.Margin = "0,0,0,15"
 
+    # --- Обновить ---
     $btnRefresh = New-Object System.Windows.Controls.Button
     $btnRefresh.Content = "Обновить сведения"
     $btnRefresh.Style = $window.Resources["RoundedButton"]
@@ -31,6 +32,7 @@
     })
     $topPanel.Children.Add($btnRefresh) | Out-Null
 
+    # --- Копировать всё ---
     $btnCopy = New-Object System.Windows.Controls.Button
     $btnCopy.Content = "Копировать всё"
     $btnCopy.Style = $window.Resources["RoundedButton"]
@@ -38,6 +40,7 @@
         [System.Windows.Media.ColorConverter]::ConvertFromString("#607D8B")
     )
     $btnCopy.Padding = "15,8"
+    $btnCopy.Margin = "0,0,10,0"
     $btnCopy.Add_Click({
         if ($script:DeviceInfo) {
             $text = ""
@@ -49,6 +52,19 @@
         }
     })
     $topPanel.Children.Add($btnCopy) | Out-Null
+
+    # --- Экспорт в файл ---
+    $btnExport = New-Object System.Windows.Controls.Button
+    $btnExport.Content = "Экспорт в файл"
+    $btnExport.Style = $window.Resources["RoundedButton"]
+    $btnExport.Background = New-Object System.Windows.Media.SolidColorBrush(
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#9C27B0")
+    )
+    $btnExport.Padding = "15,8"
+    $btnExport.Add_Click({
+        Show-ExportDeviceDumpDialog
+    })
+    $topPanel.Children.Add($btnExport) | Out-Null
 
     $mainStack.Children.Add($topPanel) | Out-Null
 
@@ -87,10 +103,10 @@
             Title = "Процессор и GPU"
             Color = "#9C27B0"
             Rows = @(
-                @{ Label = "Процессор";  Value = $info.CpuModel },
-                @{ Label = "Ядер CPU";   Value = $info.CpuCores },
+                @{ Label = "Процессор";   Value = $info.CpuModel },
+                @{ Label = "Ядер CPU";    Value = $info.CpuCores },
                 @{ Label = "Архитектура"; Value = $info.CpuAbi },
-                @{ Label = "GPU";        Value = $info.GpuInfo }
+                @{ Label = "GPU";         Value = $info.GpuInfo }
             )
         },
         @{
@@ -116,7 +132,6 @@
     )
 
     foreach ($block in $blocks) {
-        # Карточка
         $card = New-Object System.Windows.Controls.Border
         $card.Background = "White"
         $card.BorderBrush = "#E1E1E6"
@@ -127,7 +142,6 @@
 
         $cardStack = New-Object System.Windows.Controls.StackPanel
 
-        # Заголовок карточки
         $cardHeader = New-Object System.Windows.Controls.TextBlock
         $cardHeader.Text = $block.Title
         $cardHeader.FontSize = 15
@@ -136,7 +150,6 @@
         $cardHeader.Margin = "0,0,0,10"
         $cardStack.Children.Add($cardHeader) | Out-Null
 
-        # Строки
         foreach ($row in $block.Rows) {
             $grid = New-Object System.Windows.Controls.Grid
             $grid.Margin = "0,3,0,3"

@@ -4,43 +4,119 @@ function Invoke-Adb {
         [string]$Command,
         [switch]$Silent
     )
-    $result = & $script:adbPath $Command.Split(' ') 2>&1
+    # Передаём команду через cmd /c, чтобы корректно работали кавычки и пробелы
+    $fullCmd = "`"$script:adbPath`" $Command"
+    $result = cmd /c $fullCmd 2>&1
     if (-not $Silent) {
-        Write-Host $result
+        foreach ($line in $result) { Write-Log -Message "$line" -Level "Info" }
     }
     return $result
 }
 
 # ===== ПОДКЛЮЧЕНИЕ К УСТРОЙСТВУ =====
 function Connect-AdbDevice {
-    param([string]$Ip)
+    param(
+        [string]$Ip,
+        [int]$TimeoutSeconds = 20
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Ip)) {
+        return @{ Success = $false; Message = "IP не указан" }
+    }
+
+    # Убираем возможный :5555 в конце, чтобы не было "ip:5555:5555"
+    $Ip = $Ip.Trim() -replace ':5555$', ''
 
     Write-Log -Message "=== Подключение к $Ip ===" -Level "Info"
 
     Write-Log -Message "Отключаю старые ADB-соединения..." -Level "Info"
     & $script:adbPath disconnect 2>&1 | Out-Null
+    Start-Sleep -Milliseconds 300
 
     Write-Log -Message "Выполняю: adb connect $Ip`:5555" -Level "Info"
-    $result = & $script:adbPath connect "$Ip`:5555" 2>&1
-    Write-Log -Message "Ответ ADB: $result" -Level "Info"
+    $connectOut = & $script:adbPath connect "$Ip`:5555" 2>&1
+    $connectText = ($connectOut | Out-String).Trim()
+    Write-Log -Message "Ответ ADB: $connectText" -Level "Info"
 
-    Start-Sleep -Seconds 2
+    # --- retry-loop: ждём, пока устройство перейдёт в состояние device ---
+    $startTime = Get-Date
+    $lastState = ""
+    $attempt   = 0
 
-    Write-Log -Message "Проверяю статус устройства..." -Level "Info"
-    $devices = & $script:adbPath devices 2>&1
-    $ourDevice = $devices | Where-Object { $_ -match [regex]::Escape($Ip) }
+    while (((Get-Date) - $startTime).TotalSeconds -lt $TimeoutSeconds) {
+        $attempt++
+        Start-Sleep -Milliseconds 700
 
-    if ($ourDevice -match "`tdevice$") {
-        $script:connected = $true
-        $script:deviceIp = $Ip
-        Write-Log -Message "Устройство авторизовано." -Level "Success"
-        return @{ Success = $true; Message = "Подключено" }
-    } elseif ($ourDevice -match "`tunauthorized") {
-        Write-Log -Message "Требуется разрешение на экране ТВ." -Level "Warning"
-        return @{ Success = $false; Message = "Разрешите отладку на экране телевизора" }
-    } else {
-        Write-Log -Message "Устройство не найдено в списке ADB." -Level "Error"
-        return @{ Success = $false; Message = "Не удалось подключиться" }
+        $devices = & $script:adbPath devices 2>&1
+        $ourLine = $devices | Where-Object { $_ -match [regex]::Escape($Ip) } | Select-Object -First 1
+
+        if (-not $ourLine) {
+            $lastState = "not-found"
+            continue
+        }
+
+        if ($ourLine -match "`tdevice$") {
+            # Устройство в списке. Проверим реальный отклик.
+            $stateOut = & $script:adbPath -s "$Ip`:5555" get-state 2>&1
+            $stateText = ($stateOut | Out-String).Trim()
+
+            if ($stateText -eq "device") {
+                $script:connected = $true
+                $script:deviceIp  = $Ip
+                Write-Log -Message "Устройство авторизовано и отвечает (попытка $attempt)." -Level "Success"
+                return @{ Success = $true; Message = "Подключено" }
+            }
+
+            $lastState = "device-but-no-response"
+            continue
+        }
+
+        if ($ourLine -match "`tunauthorized") {
+            if ($lastState -ne "unauthorized") {
+                Write-Log -Message "Требуется подтверждение на экране ТВ. Жду..." -Level "Warning"
+                $lastState = "unauthorized"
+            }
+            continue
+        }
+
+        if ($ourLine -match "`toffline") {
+            if ($lastState -ne "offline") {
+                Write-Log -Message "Устройство offline. Переподключаюсь..." -Level "Warning"
+                $lastState = "offline"
+            }
+            & $script:adbPath disconnect "$Ip`:5555" 2>&1 | Out-Null
+            Start-Sleep -Milliseconds 300
+            & $script:adbPath connect "$Ip`:5555" 2>&1 | Out-Null
+            continue
+        }
+
+        $lastState = $ourLine
+    }
+
+    # --- Таймаут: разбираемся, почему ---
+    $script:connected = $false
+
+    switch ($lastState) {
+        "unauthorized" {
+            Write-Log -Message "Таймаут: разрешение на ТВ не выдано." -Level "Error"
+            return @{ Success = $false; Message = "Разрешите отладку по ADB на экране телевизора и попробуйте снова" }
+        }
+        "offline" {
+            Write-Log -Message "Таймаут: устройство остаётся offline." -Level "Error"
+            return @{ Success = $false; Message = "Устройство offline. Попробуйте выключить и включить отладку по ADB на ТВ" }
+        }
+        "device-but-no-response" {
+            Write-Log -Message "Таймаут: устройство в списке, но не отвечает." -Level "Error"
+            return @{ Success = $false; Message = "Устройство не отвечает на команды. Перезапустите ADB-сервер" }
+        }
+        "not-found" {
+            Write-Log -Message "Таймаут: устройство не появилось в списке." -Level "Error"
+            return @{ Success = $false; Message = "Не удалось подключиться. Проверьте IP и что отладка по сети включена" }
+        }
+        default {
+            Write-Log -Message "Таймаут: неизвестное состояние ($lastState)." -Level "Error"
+            return @{ Success = $false; Message = "Не удалось подключиться: $lastState" }
+        }
     }
 }
 
@@ -134,12 +210,42 @@ function Set-HomeLauncher {
 
 # ===== ФАЙЛОВЫЕ ОПЕРАЦИИ =====
 
+# ===== ФАЙЛОВЫЕ ОПЕРАЦИИ =====
+
 function Get-RemoteFiles {
     param([string]$Path = "/sdcard/")
+
     Write-Log -Message "Читаю содержимое: $Path" -Level "Info"
-    $out = & $script:adbPath shell "ls -la `"$Path`"" 2>&1
+
+    # Нормализуем путь: всегда заканчивается на "/"
+    if (-not $Path.EndsWith("/")) { $Path = "$Path/" }
+
     $files = @()
-    foreach ($line in $out) {
+
+    # ===== Попытка 1: find -printf (точный формат, есть на новых Toybox/BusyBox) =====
+    $cmd1 = "find `"$Path`" -maxdepth 1 -mindepth 1 -printf '%y|%s|%f\n' 2>/dev/null"
+    $out1 = & $script:adbPath shell $cmd1 2>&1
+
+    $parsed1 = @()
+    foreach ($line in $out1) {
+        if ($line -match '^([dflbcps])\|(\d+)\|(.+)$') {
+            $parsed1 += [PSCustomObject]@{
+                Name     = $matches[3]
+                IsDir    = ($matches[1] -eq 'd')
+                Size     = [int64]$matches[2]
+                FullPath = "$Path$($matches[3])"
+            }
+        }
+    }
+
+    if ($parsed1.Count -gt 0) {
+        Write-Log -Message "Найдено элементов: $($parsed1.Count) (find -printf)" -Level "Info"
+        return ,$parsed1
+    }
+
+    # ===== Попытка 2: ls -la (fallback для старых прошивок) =====
+    $out2 = & $script:adbPath shell "ls -la `"$Path`"" 2>&1
+    foreach ($line in $out2) {
         # Формат: -rw-rw---- 1 root sdcard_rw 1234 2024-01-01 12:00 filename
         if ($line -match '^([d\-l])([rwx\-]{9})\s+\d+\s+\S+\s+\S+\s+(\d+)\s+(\S+\s+\S+)\s+(.+)$') {
             $type = $matches[1]
@@ -147,13 +253,20 @@ function Get-RemoteFiles {
             $name = $matches[5].Trim()
             if ($name -eq "." -or $name -eq "..") { continue }
             $files += [PSCustomObject]@{
-                Name = $name
-                IsDir = ($type -eq "d")
-                Size = $size
-                FullPath = if ($Path.EndsWith("/")) { "$Path$name" } else { "$Path/$name" }
+                Name     = $name
+                IsDir    = ($type -eq "d")
+                Size     = $size
+                FullPath = "$Path$name"
             }
         }
     }
+
+    if ($files.Count -gt 0) {
+        Write-Log -Message "Найдено элементов: $($files.Count) (ls -la)" -Level "Info"
+    } else {
+        Write-Log -Message "Папка пуста или недоступна: $Path" -Level "Warning"
+    }
+
     return ,$files
 }
 
@@ -243,34 +356,111 @@ function Send-Text {
 
     Write-Log -Message "Ввод текста: $Text" -Level "Info"
 
-    # Проверяем на кириллицу
-    if ($Text -match '[А-Яа-яЁё]') {
-        Write-Log -Message "Внимание: команда 'input text' не поддерживает кириллицу. Используйте латиницу." -Level "Warning"
-    }
+    # ===== АНАЛИЗ ТЕКСТА =====
+    $hasCyrillic = ($Text -match '[А-Яа-яЁё]')
+    $hasNonAscii = ($Text -match '[^\x00-\x7F]')
 
-    # Разбиваем на слова и отправляем каждое + пробел между ними
-    $words = $Text -split '\s+'
-    $i = 0
-    foreach ($word in $words) {
-        if ($word) {
-            # Очищаем от спецсимволов
-            $clean = $word -replace '[^\w\-\.@]', ''
-            if ($clean) {
-                $out = & $script:adbPath shell input text $clean 2>&1
-                if ($LASTEXITCODE -ne 0) {
-                    Write-Log -Message "Ошибка ввода слова '$clean': $out" -Level "Error"
-                }
-            }
-        }
-        $i++
-        # Пробел после слова (кроме последнего)
-        if ($i -lt $words.Count) {
-            & $script:adbPath shell input keyevent KEYCODE_SPACE 2>&1 | Out-Null
+    # ===== ЛАТИНИЦА — используем input text (самый надёжный способ) =====
+    if (-not $hasNonAscii) {
+        Write-Log -Message "Текст только из латиницы/цифр. Использую input text." -Level "Info"
+
+        # Экранируем пробелы (%s) — input text не принимает их напрямую
+        $escaped = $Text -replace ' ', '%s'
+        # Убираем символы, которые поломают input text
+        $escaped = $escaped -replace '[^\w%s\-\.@]', ''
+
+        try {
+            & $script:adbPath shell input text $escaped 2>&1 | Out-Null
+            Write-Log -Message "Текст отправлен (input text)" -Level "Success"
+            return $true
+        } catch {
+            Write-Log -Message "Ошибка input text: $_" -Level "Error"
+            return $false
         }
     }
 
-    Write-Log -Message "Текст отправлен" -Level "Success"
-    return $true
+    # ===== КИРИЛЛИЦА / ЭМОДЗИ / СПЕЦСИМВОЛЫ — пробуем через ADBKeyboard =====
+    Write-Log -Message "Текст содержит кириллицу или спецсимволы. Пробую через ADBKeyboard." -Level "Info"
+
+    $hasAdbKb = Test-AdbKeyboardInstalled
+
+    if (-not $hasAdbKb) {
+        Write-Log -Message "ADBKeyboard не установлен. Отправляю только ASCII-часть через input text." -Level "Warning"
+
+        # Отправляем только латиницу+цифры
+        $asciiOnly = ($Text -replace '[^\w\s\.\-@]', '')
+        if ($asciiOnly) {
+            $escaped = $asciiOnly -replace ' ', '%s'
+            & $script:adbPath shell input text $escaped 2>&1 | Out-Null
+            Write-Log -Message "Отправлена только ASCII-часть: $asciiOnly" -Level "Warning"
+        }
+        Write-Log -Message "Для ввода кириллицы установите ADBKeyboard (кнопка «Открыть APK ADB Keyboard» на экране Пулт)." -Level "Warning"
+        return $false
+    }
+
+    # ===== ADBKeyboard установлен — переключаем IME и отправляем =====
+    $adbkIme = "com.android.adbkeyboard/.AdbIME"
+    $prevIme = ""
+
+    try {
+        $prevIme = (& $script:adbPath shell settings get secure default_input_method 2>&1 | Out-String).Trim()
+    } catch { }
+
+    $isAdbKbActive = ($prevIme -match [regex]::Escape($adbkIme))
+    $needSwitch = -not $isAdbKbActive
+
+    if ($needSwitch) {
+        Write-Log -Message "Переключаю IME на ADBKeyboard..." -Level "Info"
+        try {
+            & $script:adbPath shell ime set $adbkIme 2>&1 | Out-Null
+            Start-Sleep -Milliseconds 600
+        } catch {
+            Write-Log -Message "Не удалось переключить IME: $_" -Level "Warning"
+        }
+    }
+
+    # --- Отправка через broadcast base64 (полная поддержка Unicode) ---
+    $sent = $false
+    try {
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($Text)
+        $b64 = [Convert]::ToBase64String($bytes)
+
+        $out = & $script:adbPath shell am broadcast -a ADB_INPUT_B64 --es msg $b64 2>&1
+        $outText = ($out | Out-String).Trim()
+
+        if ($outText -match 'Broadcast completed: result=0') {
+            $sent = $true
+            Write-Log -Message "Broadcast отправлен" -Level "Info"
+        } else {
+            Write-Log -Message "Ответ broadcast: $outText" -Level "Warning"
+        }
+    } catch {
+        Write-Log -Message "Ошибка broadcast: $_" -Level "Error"
+    }
+
+    # --- Даём время ADBKeyboard вставить текст ---
+    if ($sent) {
+        Start-Sleep -Milliseconds 800
+    }
+
+    # --- Возвращаем прежнюю IME ---
+    if ($needSwitch -and $prevIme -and $prevIme -notmatch [regex]::Escape($adbkIme)) {
+        Write-Log -Message "Возвращаю прежнюю IME: $prevIme" -Level "Info"
+        try {
+            & $script:adbPath shell ime set $prevIme 2>&1 | Out-Null
+        } catch { }
+    }
+
+    # ===== ПРЕДУПРЕЖДЕНИЕ ПОЛЬЗОВАТЕЛЮ =====
+    if ($sent) {
+        Write-Log -Message "Текст отправлен через ADBKeyboard." -Level "Success"
+        Write-Log -Message "ВАЖНО: если текст не появился на ТВ — на этой прошивке ADBKeyboard не работает." -Level "Warning"
+        Write-Log -Message "На некоторых TCL ввод через ADBKeyboard блокируется системой. Используйте латиницу или пульт." -Level "Warning"
+        return $true
+    } else {
+        Write-Log -Message "ADBKeyboard не подтвердил приём." -Level "Error"
+        return $false
+    }
 }
 
 function Send-MenuKey {
@@ -372,22 +562,6 @@ function Take-Screenshot-ToFolder {
 }
 
 # ===== ЗАПИСЬ ВИДЕО =====
-function Start-ScreenRecord {
-    param(
-        [int]$DurationSeconds = 30,
-        [string]$RemotePath = "/sdcard/tvmanager_record.mp4"
-    )
-
-    Write-Log -Message "=== Запись видео ($DurationSeconds сек) ===" -Level "Info"
-    Write-Log -Message "Запись идёт на телевизоре. Не отключайте ТВ." -Level "Warning"
-
-    # Запускаем screenrecord с ограничением по времени
-    # --time-limit указывает максимальную длительность в секундах
-    $out = & $script:adbPath shell screenrecord --time-limit $DurationSeconds $RemotePath 2>&1
-
-    Write-Log -Message "Запись завершена" -Level "Success"
-    return $RemotePath
-}
 
 function Stop-ScreenRecord {
     Write-Log -Message "Останавливаю запись..." -Level "Info"
@@ -418,7 +592,6 @@ function Pull-RecordedVideo {
     return $localPath
 }
 
-# ===== СВЕДЕНИЯ ОБ УСТРОЙСТВЕ =====
 # ===== СВЕДЕНИЯ ОБ УСТРОЙСТВЕ =====
 function Get-DeviceInfo {
     Write-Log -Message "=== Получение сведений об устройстве ===" -Level "Info"
@@ -606,16 +779,31 @@ function Get-DeviceInfo {
 
 function Invoke-Reboot {
     Write-Log -Message "=== Перезагрузка телевизора ===" -Level "Warning"
-    $out = & $script:adbPath shell reboot 2>&1
-    Write-Log -Message "Команда отправлена: $out" -Level "Info"
 
-    # Ждём отключения
-    Start-Sleep -Seconds 3
-    $devices = & $script:adbPath devices 2>&1
-    if ($devices -match [regex]::Escape($script:deviceIp)) {
-        Write-Log -Message "ТВ ещё в сети, ждём..." -Level "Info"
-    } else {
-        Write-Log -Message "ТВ отключился, идёт перезагрузка" -Level "Success"
+    if (-not $script:connected -or -not $script:deviceIp) {
+        Write-Log -Message "ТВ не подключён — перезагрузка невозможна" -Level "Error"
+        return $false
+    }
+
+    $out = & $script:adbPath shell reboot 2>&1
+    Write-Log -Message "Команда отправлена: $($out | Out-String -Stream | Select-Object -First 1)" -Level "Info"
+
+    # Ждём отключения (до 15 сек)
+    $maxWait = 15
+    $disconnected = $false
+    for ($i = 0; $i -lt $maxWait; $i++) {
+        Start-Sleep -Seconds 1
+        $devices = & $script:adbPath devices 2>&1
+        $stillThere = $devices | Where-Object { $_ -match [regex]::Escape($script:deviceIp) -and $_ -match "`tdevice$" }
+        if (-not $stillThere) {
+            $disconnected = $true
+            Write-Log -Message "ТВ отключился, идёт перезагрузка" -Level "Success"
+            break
+        }
+    }
+
+    if (-not $disconnected) {
+        Write-Log -Message "ТВ не отключился за $maxWait сек — возможно, `reboot` не сработал" -Level "Warning"
     }
 
     $script:connected = $false
@@ -623,6 +811,10 @@ function Invoke-Reboot {
 }
 
 function Invoke-Shutdown {
+    if (-not $script:connected -or -not $script:deviceIp) {
+    Write-Log -Message "ТВ не подключён — операция невозможна" -Level "Error"
+    return $false
+}
     Write-Log -Message "=== Выключение телевизора ===" -Level "Warning"
     # На Android TV нет команды выключения как таковой, но есть:
     # reboot -p — выключение (power off)
@@ -688,6 +880,10 @@ function Invoke-WakeUp {
 }
 
 function Invoke-RebootRecovery {
+    if (-not $script:connected -or -not $script:deviceIp) {
+    Write-Log -Message "ТВ не подключён — операция невозможна" -Level "Error"
+    return $false
+}
     Write-Log -Message "=== Перезагрузка в Recovery ===" -Level "Warning"
     $out = & $script:adbPath shell reboot recovery 2>&1
     Write-Log -Message "Команда отправлена: $out" -Level "Info"
@@ -697,6 +893,10 @@ function Invoke-RebootRecovery {
 }
 
 function Invoke-RebootBootloader {
+    if (-not $script:connected -or -not $script:deviceIp) {
+    Write-Log -Message "ТВ не подключён — операция невозможна" -Level "Error"
+    return $false
+}
     Write-Log -Message "=== Перезагрузка в Bootloader ===" -Level "Warning"
     $out = & $script:adbPath shell reboot bootloader 2>&1
     Write-Log -Message "Команда отправлена: $out" -Level "Info"
@@ -816,21 +1016,27 @@ function Start-Logcat {
     }
 }
 
+
 function Stop-Logcat {
     param($Proc)
     if (-not $Proc) { return }
 
-    # 1. Убиваем adb.exe по PID
+    # 1. Убиваем все adb.exe, запущенные с аргументом logcat
     try {
-        if ($Proc.PidFile -and (Test-Path $Proc.PidFile)) {
-            $adbPid = [int](Get-Content $Proc.PidFile -Raw -ErrorAction SilentlyContinue).Trim()
-            if ($adbPid -gt 0) {
-                Stop-Process -Id $adbPid -Force -ErrorAction SilentlyContinue
-                Write-Log -Message "Убит процесс adb (PID $adbPid)" -Level "Info"
+        $adbProcesses = Get-CimInstance Win32_Process -Filter "Name = 'adb.exe'" -ErrorAction SilentlyContinue
+        foreach ($p in $adbProcesses) {
+            if ($p.CommandLine -match "logcat") {
+                try {
+                    Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
+                } catch { }
             }
-            Remove-Item $Proc.PidFile -Force -ErrorAction SilentlyContinue
         }
-    } catch { }
+    } catch {
+        # Get-CimInstance может быть недоступен — фолбэк на taskkill
+        try {
+            & taskkill /F /IM adb.exe /FI "WINDOWTITLE eq *logcat*" 2>&1 | Out-Null
+        } catch { }
+    }
 
     # 2. Останавливаем Runspace
     $psRef = $Proc.PowerShell
@@ -839,57 +1045,19 @@ function Stop-Logcat {
     [System.Threading.Tasks.Task]::Run([action]{
         try {
             if ($psRef) {
-                try { $psRef.Stop() } catch { }
+                try { $psRef.Stop() }    catch { }
                 try { $psRef.Dispose() } catch { }
             }
             if ($rsRef) {
-                try { $rsRef.Close() } catch { }
+                try { $rsRef.Close() }   catch { }
                 try { $rsRef.Dispose() } catch { }
             }
         } catch { }
     }) | Out-Null
 
-    # 3. На всякий случай убиваем все adb logcat процессы
-    try {
-        Get-Process -Name "adb" -ErrorAction SilentlyContinue | Where-Object {
-            $_.MainWindowTitle -eq "" -and $_.Path -like "*adb.exe"
-        } | ForEach-Object {
-            # Не трогаем adb server, только logcat
-        }
-    } catch { }
+    Write-Log -Message "Logcat остановлен" -Level "Info"
 }
 
-function Stop-Logcat {
-    param($Proc)
-    if (-not $Proc) { return }
-
-    # Убиваем все adb.exe, которые запущены с аргументом logcat
-    try {
-        $adbProcesses = Get-WmiObject Win32_Process -Filter "Name = 'adb.exe'" -ErrorAction SilentlyContinue
-        foreach ($p in $adbProcesses) {
-            if ($p.CommandLine -match "logcat") {
-                Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
-            }
-        }
-    } catch { }
-
-    # Останавливаем Runspace
-    $psRef = $Proc.PowerShell
-    $rsRef = $Proc.Runspace
-
-    [System.Threading.Tasks.Task]::Run([action]{
-        try {
-            if ($psRef) {
-                try { $psRef.Stop() } catch { }
-                try { $psRef.Dispose() } catch { }
-            }
-            if ($rsRef) {
-                try { $rsRef.Close() } catch { }
-                try { $rsRef.Dispose() } catch { }
-            }
-        } catch { }
-    }) | Out-Null
-}
 # ===== ЭКСПОРТ / ИМПОРТ ПРОФИЛЕЙ =====
 
 function Export-Profiles {
@@ -1198,7 +1366,7 @@ function Invoke-AdbCommand {
         [string]$Description = ""
     )
 
-    # Проверяем наличие плейсхолдеров <...>
+    # --- Плейсхолдеры ---
     $placeholders = [regex]::Matches($Command, '<([^>]+)>')
     if ($placeholders.Count -gt 0) {
         Write-Log -Message "Команда требует параметров:" -Level "Info"
@@ -1206,39 +1374,107 @@ function Invoke-AdbCommand {
             Write-Log -Message "  <$($ph.Groups[1].Value)>" -Level "Info"
         }
 
-        # Запрашиваем значение каждого плейсхолдера
         $result = Show-ParameterInputDialog -Command $Command -Placeholders $placeholders
         if (-not $result) {
             Write-Log -Message "Выполнение отменено" -Level "Warning"
             return $null
         }
-
-        # Заменяем плейсхолдеры на значения
         foreach ($key in $result.Keys) {
             $Command = $Command -replace [regex]::Escape("<$key>"), $result[$key]
         }
-
         Write-Log -Message "Итоговая команда: adb $Command" -Level "Info"
     }
 
     if ($Description) {
         Write-Log -Message "Команда: $Description" -Level "Info"
-    } else {
-        Write-Log -Message "Команда: adb $Command" -Level "Info"
     }
 
-    $out = & $script:adbPath $Command.Split(' ') 2>&1
-    if ($LASTEXITCODE -eq 0) {
+    $tokens = Split-CommandLine -CommandLine $Command
+    Write-Log -Message "  → adb $($tokens -join ' ')" -Level "Info"
+
+    # --- Запускаем через ProcessStartInfo, чтобы корректно поймать stdout+stderr+exitcode ---
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName               = $script:adbPath
+    $psi.Arguments              = ($tokens | ForEach-Object { '"' + ($_ -replace '"','\"') + '"' }) -join ' '
+    $psi.UseShellExecute        = $false
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError  = $true
+    $psi.CreateNoWindow         = $true
+
+    try {
+        $proc = [System.Diagnostics.Process]::Start($psi)
+        $stdout = $proc.StandardOutput.ReadToEnd()
+        $stderr = $proc.StandardError.ReadToEnd()
+        $proc.WaitForExit()
+        $exitCode = $proc.ExitCode
+        $proc.Dispose()
+    } catch {
+        Write-Log -Message "  FAIL: не удалось запустить adb: $_" -Level "Error"
+        return $null
+    }
+
+    # --- Вывод ---
+    $lines = @()
+    if ($stdout) { $lines += $stdout -split "`r?`n" | Where-Object { $_ -ne "" } }
+    if ($stderr) { $lines += $stderr -split "`r?`n" | Where-Object { $_ -ne "" } }
+
+    if ($exitCode -eq 0) {
         Write-Log -Message "  OK" -Level "Success"
-        if ($out) {
-            foreach ($line in $out) {
+        if ($lines.Count -gt 0) {
+            foreach ($line in $lines) {
                 Write-Log -Message "  $line" -Level "Info"
             }
+        } else {
+            Write-Log -Message "  (пустой вывод)" -Level "Info"
         }
     } else {
-        Write-Log -Message "  FAIL: $out" -Level "Error"
+        Write-Log -Message "  FAIL (код $exitCode)" -Level "Error"
+        foreach ($line in $lines) {
+            Write-Log -Message "  $line" -Level "Error"
+        }
     }
-    return $out
+
+    return $lines
+}
+
+function Split-CommandLine {
+    param([string]$CommandLine)
+
+    $tokens = @()
+    $current = ""
+    $inQuotes = $false
+    $quoteChar = ""
+
+    for ($i = 0; $i -lt $CommandLine.Length; $i++) {
+        $c = $CommandLine[$i]
+
+        if ($inQuotes) {
+            if ($c -eq $quoteChar) {
+                $inQuotes = $false
+                # закрыли кавычку — токен закончился только если дальше пробел/конец
+                if ($i -eq $CommandLine.Length - 1 -or $CommandLine[$i+1] -eq ' ') {
+                    $tokens += $current
+                    $current = ""
+                }
+            } else {
+                $current += $c
+            }
+        } else {
+            if ($c -eq '"' -or $c -eq "'") {
+                $inQuotes = $true
+                $quoteChar = $c
+            } elseif ($c -eq ' ') {
+                if ($current -ne "") {
+                    $tokens += $current
+                    $current = ""
+                }
+            } else {
+                $current += $c
+            }
+        }
+    }
+    if ($current -ne "") { $tokens += $current }
+    return ,$tokens
 }
 
 # ===== ДИАЛОГ ВВОДА ПАРАМЕТРОВ =====

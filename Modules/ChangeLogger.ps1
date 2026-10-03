@@ -63,28 +63,26 @@ function Remove-Change {
 }
 
 function Test-TvConnected {
-    # 1. Проверяем, есть ли устройство со статусом "device" в adb devices
-    try {
-        $devices = & $script:adbPath devices 2>&1
-        $hasDevice = $false
-        foreach ($line in $devices) {
-            if ($line -match '^\S+\s+device$') {
-                $hasDevice = $true
-                break
-            }
-        }
-        if (-not $hasDevice) {
+    # Если знаем IP — проверяем конкретно его
+    if ($script:deviceIp) {
+        try {
+            $stateOut = & $script:adbPath -s "$($script:deviceIp):5555" get-state 2>&1
+            $stateText = ($stateOut | Out-String).Trim()
+            return ($stateText -eq "device")
+        } catch {
             return $false
         }
-    } catch {
-        return $false
     }
 
-    # 2. Проверяем реальный отклик через adb get-state
+    # Иначе ищем любое device
     try {
-        $stateOut = & $script:adbPath get-state 2>&1
-        $stateText = ($stateOut | Out-String).Trim()
-        return ($stateText -eq "device")
+        $devices = & $script:adbPath devices 2>&1
+        foreach ($line in $devices) {
+            if ($line -match '^\S+\s+device$') {
+                return $true
+            }
+        }
+        return $false
     } catch {
         return $false
     }
