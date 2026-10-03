@@ -14,8 +14,8 @@
 
     # Предупреждение
     $warn = New-Object System.Windows.Controls.Border
-    $warn.Background = "#FFF3CD"
-    $warn.BorderBrush = "#FFB74D"
+    $warn.Background = "#3D3520"
+    $warn.BorderBrush = "#C8C8C8"
     $warn.BorderThickness = "1"
     $warn.CornerRadius = "8"
     $warn.Padding = "12"
@@ -43,7 +43,7 @@
     $btnSleep = New-Object System.Windows.Controls.Button
     $btnSleep.Content = "Спящий режим"
     $btnSleep.Style = $window.Resources["RoundedButton"]
-    $btnSleep.Background = "#607D8B"
+    $btnSleep.Background = "#4A4A4A"
     $btnSleep.Height = 50
     $btnSleep.Margin = "0,0,10,0"
     $btnSleep.Add_Click({
@@ -55,7 +55,7 @@
     $btnWake = New-Object System.Windows.Controls.Button
     $btnWake.Content = "Пробуждение"
     $btnWake.Style = $window.Resources["RoundedButton"]
-    $btnWake.Background = "#66BB6A"
+    $btnWake.Background = "#4A4A4A"
     $btnWake.Height = 50
     $btnWake.Margin = "10,0,0,0"
     $btnWake.Add_Click({
@@ -72,7 +72,7 @@
     $btnReboot = New-Object System.Windows.Controls.Button
     $btnReboot.Content = "Перезагрузить телевизор"
     $btnReboot.Style = $window.Resources["RoundedButton"]
-    $btnReboot.Background = "#FFB74D"
+    $btnReboot.Background = "#4A4A4A"
     $btnReboot.Height = 50
     $btnReboot.FontSize = 15
     $btnReboot.HorizontalAlignment = "Left"
@@ -98,7 +98,7 @@
     $btnShutdown = New-Object System.Windows.Controls.Button
     $btnShutdown.Content = "Выключить телевизор"
     $btnShutdown.Style = $window.Resources["RoundedButton"]
-    $btnShutdown.Background = "#E57373"
+    $btnShutdown.Background = "#4A4A4A"
     $btnShutdown.Height = 50
     $btnShutdown.FontSize = 15
     $btnShutdown.HorizontalAlignment = "Left"

@@ -57,7 +57,7 @@
             $btn.Content = $cmd.Name
             $btn.Style = $window.Resources["RoundedButton"]
             $btn.Background = New-Object System.Windows.Media.SolidColorBrush(
-                [System.Windows.Media.ColorConverter]::ConvertFromString("#4A90E2")
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
             )
             $btn.Padding = "10,8"
             $btn.Margin = "0,0,8,8"
@@ -104,7 +104,7 @@
     $btnRun.Content = "Выполнить"
     $btnRun.Style = $window.Resources["RoundedButton"]
     $btnRun.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#66BB6A")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#588653")
     )
     $btnRun.Padding = "15,6"
     $btnRun.Margin = "10,0,0,0"
@@ -123,7 +123,7 @@
     $btnViewList.Content = "Просмотреть список"
     $btnViewList.Style = $window.Resources["RoundedButton"]
     $btnViewList.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#64B5F6")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
     )
     $btnViewList.Padding = "15,6"
     $btnViewList.Margin = "10,0,0,0"
@@ -153,7 +153,7 @@ function Show-AdbCommandsList {
     $dialog.Height = 700
     $dialog.WindowStartupLocation = "CenterOwner"
     $dialog.Owner = $window
-    $dialog.Background = "#F7F7FA"
+    $dialog.Background = "#202020"
 
     $grid = New-Object System.Windows.Controls.Grid
     $grid.Margin = "20"
@@ -189,7 +189,7 @@ function Show-AdbCommandsList {
         $catHeader.FontSize = 15
         $catHeader.FontWeight = "Bold"
         $catHeader.Foreground = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#4A90E2")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
         )
         $catHeader.Margin = "0,15,0,8"
         $stack.Children.Add($catHeader) | Out-Null
@@ -197,8 +197,8 @@ function Show-AdbCommandsList {
         foreach ($cmd in $cat.Group) {
             # Карточка команды
             $card = New-Object System.Windows.Controls.Border
-            $card.Background = "White"
-            $card.BorderBrush = "#E1E1E6"
+            $card.Background = "#2B2B2B"
+            $card.BorderBrush = "#3A3A3A"
             $card.BorderThickness = "1"
             $card.CornerRadius = "6"
             $card.Padding = "10"
@@ -223,21 +223,21 @@ function Show-AdbCommandsList {
             $nameTb.Text = $cmd.Name
             $nameTb.FontSize = 13
             $nameTb.FontWeight = "Bold"
-            $nameTb.Foreground = "#2D2D30"
+            $nameTb.Foreground = "#FFFFFF"
             $textStack.Children.Add($nameTb) | Out-Null
 
             $cmdTb = New-Object System.Windows.Controls.TextBlock
             $cmdTb.Text = "adb $($cmd.Command)"
             $cmdTb.FontFamily = "Consolas"
             $cmdTb.FontSize = 11
-            $cmdTb.Foreground = "#4A90E2"
+            $cmdTb.Foreground = "#C8C8C8"
             $cmdTb.Margin = "0,2,0,2"
             $textStack.Children.Add($cmdTb) | Out-Null
 
             $descTb = New-Object System.Windows.Controls.TextBlock
             $descTb.Text = $cmd.Desc
             $descTb.FontSize = 11
-            $descTb.Foreground = "#96969B"
+            $descTb.Foreground = "#A0A0A0"
             $textStack.Children.Add($descTb) | Out-Null
 
             $cardGrid.Children.Add($textStack) | Out-Null
@@ -247,7 +247,7 @@ function Show-AdbCommandsList {
             $btnInsert.Content = "Вставить"
             $btnInsert.Style = $window.Resources["RoundedButton"]
             $btnInsert.Background = New-Object System.Windows.Media.SolidColorBrush(
-                [System.Windows.Media.ColorConverter]::ConvertFromString("#64B5F6")
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
             )
             $btnInsert.Padding = "10,5"
             $btnInsert.Margin = "10,0,5,0"
@@ -266,7 +266,7 @@ function Show-AdbCommandsList {
             $btnExec.Content = "Выполнить"
             $btnExec.Style = $window.Resources["RoundedButton"]
             $btnExec.Background = New-Object System.Windows.Media.SolidColorBrush(
-                [System.Windows.Media.ColorConverter]::ConvertFromString("#66BB6A")
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#588653")
             )
             $btnExec.Padding = "10,5"
             $btnExec.Margin = "5,0,0,0"

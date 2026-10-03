@@ -39,6 +39,8 @@ if ($MyInvocation.MyCommand.Path -and (Test-Path $MyInvocation.MyCommand.Path)) 
 . "$script:AppRoot\Modules\DeviceDump.ps1"       # экспорт дампа
 . "$script:AppRoot\Modules\ScenarioEngine.ps1"   # пакетный режим (сценарии)
 . "$script:AppRoot\Modules\AppOpsHelper.ps1"
+. "$script:AppRoot\Modules\ThermalHelper.ps1"
+. "$script:AppRoot\Modules\PermissionsHelper.ps1"
 
 # ---------------------------------------------------------------------------
 #  4. Состояние
@@ -128,7 +130,8 @@ Load-Scenarios
 . "$script:AppRoot\Views\ViewIntegrity.ps1"
 . "$script:AppRoot\Views\ViewScenarios.ps1"
 . "$script:AppRoot\Views\ViewAutostart.ps1"
-
+. "$script:AppRoot\Views\ViewThermal.ps1"
+. "$script:AppRoot\Views\ViewPermissions.ps1"
 # ---------------------------------------------------------------------------
 #  10. Проверка ADB в PATH
 # ---------------------------------------------------------------------------

@@ -24,7 +24,7 @@
     $btnRefresh = New-Object System.Windows.Controls.Button
     $btnRefresh.Content = "Обновить"
     $btnRefresh.Style = $window.Resources["RoundedButton"]
-    $btnRefresh.Background = "#4A90E2"
+    $btnRefresh.Background = "#4A4A4A"
     $btnRefresh.Padding = "12,6"
     $btnRefresh.Margin = "0,0,8,0"
     $btnRefresh.Add_Click({ Switch-View -ViewName "Files" })
@@ -88,7 +88,7 @@
     $pathLabel.Text = "Путь: $($script:CurrentRemotePath)"
     $pathLabel.FontSize = 14
     $pathLabel.FontWeight = "SemiBold"
-    $pathLabel.Foreground = "#2D2D30"
+    $pathLabel.Foreground = "#FFFFFF"
     $pathLabel.Margin = "0,0,0,10"
     $mainStack.Children.Add($pathLabel) | Out-Null
 
@@ -99,7 +99,9 @@
     $listBox = New-Object System.Windows.Controls.ListBox
     $listBox.FontSize = 13
     $listBox.BorderThickness = "1"
-    $listBox.BorderBrush = "#E1E1E6"
+    $listBox.BorderBrush = "#3A3A3A"
+    $listBox.Background = "#1F1F1F"
+    $listBox.Foreground = "#E0E0E0"
     $listBox.MinHeight = 400
     $listBox.Padding = "5"
 
@@ -140,7 +142,7 @@
             } else {
                 $sizeKB = [math]::Round($f.Size / 1KB, 1)
                 $item.Content = "[ФАЙЛ]   $($f.Name)   ($sizeKB КБ)"
-                $item.Foreground = [System.Windows.Media.Brushes]::Black
+                $item.Foreground = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#E0E0E0"))
             }
             $item.Tag = $f
             $item.Padding = "5"
@@ -188,7 +190,7 @@
     $btnOpen = New-Object System.Windows.Controls.Button
     $btnOpen.Content = "Открыть"
     $btnOpen.Style = $window.Resources["RoundedButton"]
-    $btnOpen.Background = "#4A90E2"
+    $btnOpen.Background = "#4A4A4A"
     $btnOpen.Padding = "12,8"
     $btnOpen.Margin = "0,0,8,0"
     $btnOpen.Add_Click({
@@ -220,7 +222,7 @@
     $btnInstallApk.Content = "Установить APK"
     $btnInstallApk.Style = $window.Resources["RoundedButton"]
     $btnInstallApk.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#66BB6A")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnInstallApk.Padding = "12,8"
     $btnInstallApk.Margin = "0,0,8,0"
@@ -238,7 +240,7 @@
     $btnDownload = New-Object System.Windows.Controls.Button
     $btnDownload.Content = "Скачать на ПК"
     $btnDownload.Style = $window.Resources["RoundedButton"]
-    $btnDownload.Background = "#64B5F6"
+    $btnDownload.Background = "#4A4A4A"
     $btnDownload.Padding = "12,8"
     $btnDownload.Margin = "0,0,8,0"
     $btnDownload.Add_Click({
@@ -259,7 +261,7 @@
     $btnUpload = New-Object System.Windows.Controls.Button
     $btnUpload.Content = "Загрузить на ТВ"
     $btnUpload.Style = $window.Resources["RoundedButton"]
-    $btnUpload.Background = "#FFB74D"
+    $btnUpload.Background = "#4A4A4A"
     $btnUpload.Padding = "12,8"
     $btnUpload.Margin = "0,0,8,0"
     $btnUpload.Add_Click({
@@ -276,7 +278,7 @@
     $btnNewFolder = New-Object System.Windows.Controls.Button
     $btnNewFolder.Content = "Создать папку"
     $btnNewFolder.Style = $window.Resources["RoundedButton"]
-    $btnNewFolder.Background = "#64B5F6"
+    $btnNewFolder.Background = "#4A4A4A"
     $btnNewFolder.Padding = "12,8"
     $btnNewFolder.Margin = "0,0,8,0"
     $btnNewFolder.Add_Click({
@@ -294,7 +296,7 @@
     $btnDelete = New-Object System.Windows.Controls.Button
     $btnDelete.Content = "Удалить"
     $btnDelete.Style = $window.Resources["RoundedButton"]
-    $btnDelete.Background = "#E57373"
+    $btnDelete.Background = "#4A4A4A"
     $btnDelete.Padding = "12,8"
     $btnDelete.Add_Click({
         if ($script:FileListBox.SelectedItem) {

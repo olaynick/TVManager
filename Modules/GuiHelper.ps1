@@ -42,10 +42,18 @@ function Write-Log {
             $run.Text = "$line`r`n"
 
             $color = switch ($Level) {
-                "Error"   { [System.Windows.Media.Brushes]::LightCoral }
-                "Warning" { [System.Windows.Media.Brushes]::Khaki }
-                "Success" { [System.Windows.Media.Brushes]::LightGreen }
-                default   { [System.Windows.Media.Brushes]::LightGray }
+                "Error"   { [System.Windows.Media.SolidColorBrush](
+                    [System.Windows.Media.ColorConverter]::ConvertFromString("#a57777")
+                ) }
+                "Warning" { [System.Windows.Media.SolidColorBrush](
+                    [System.Windows.Media.ColorConverter]::ConvertFromString("#a39571")
+                ) }
+                "Success" { [System.Windows.Media.SolidColorBrush](
+                    [System.Windows.Media.ColorConverter]::ConvertFromString("#8eac89")
+                ) }
+                default   { [System.Windows.Media.SolidColorBrush](
+                    [System.Windows.Media.ColorConverter]::ConvertFromString("#b4b3b3")
+                ) }
             }
             $run.Foreground = $color
             $para.Inlines.Add($run)
@@ -90,26 +98,26 @@ function Write-Log {
 
 # ===== ТЕМА =====
 $script:Theme = @{
-    Background      = "#F7F7FA"
-    Card            = "#FFFFFF"
-    CardBorder      = "#E1E1E6"
-    Text            = "#2D2D30"
-    TextLight       = "#96969B"
-    Primary         = "#4A90E2"
-    Success         = "#66BB6A"
-    Warning         = "#FFB74D"
-    Danger          = "#E57373"
-    Purple          = "#9C27B0"
-    Cyan            = "#00BCD4"
-    Gray            = "#607D8B"
-    LightGray       = "#9E9E9E"
-    TabBg           = "#F0F0F5"
-    TabHover        = "#E4E4EC"
-    TabActive       = "#4A90E2"
-    LogBg           = "#282A30"
-    LogText         = "#D2D2D7"
-    BottomBarBg     = "#F0F0F5"
-    BottomBarBorder = "#E1E1E6"
+    Background      = "#202020"
+    Card            = "#2B2B2B"
+    CardBorder      = "#3A3A3A"
+    Text            = "#FFFFFF"
+    TextLight       = "#A0A0A0"
+    Primary         = "#3e5f6e"
+    Success         = "#588653"
+    Warning         = "#9c8e6a"
+    Danger          = "#724c4c"
+    Purple          = "#6c547e"
+    Cyan            = "#569097"
+    Gray            = "#909090"
+    LightGray       = "#707070"
+    TabBg           = "#2B2B2B"
+    TabHover        = "#2A2A2A"
+    TabActive       = "#333333"
+    LogBg           = "#181818"
+    LogText         = "#D0D0D0"
+    BottomBarBg     = "#2B2B2B"
+    BottomBarBorder = "#3A3A3A"
 }
 
 function Get-ThemeColor {

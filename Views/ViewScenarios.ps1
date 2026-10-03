@@ -50,8 +50,8 @@ function Show-ScenariosView {
 
     if ($scenarios.Count -eq 0) {
         $emptyCard = New-Object System.Windows.Controls.Border
-        $emptyCard.Background = "#F0F4FF"
-        $emptyCard.BorderBrush = "#4A90E2"
+        $emptyCard.Background = "#1A1F2A"
+        $emptyCard.BorderBrush = "#C8C8C8"
         $emptyCard.BorderThickness = "1"
         $emptyCard.CornerRadius = "8"
         $emptyCard.Padding = "20"
@@ -68,7 +68,7 @@ function Show-ScenariosView {
         $script:ScenariosListBox = New-Object System.Windows.Controls.ListBox
         $script:ScenariosListBox.FontSize = 13
         $script:ScenariosListBox.BorderThickness = "1"
-        $script:ScenariosListBox.BorderBrush = "#E1E1E6"
+        $script:ScenariosListBox.BorderBrush = "#3A3A3A"
         $script:ScenariosListBox.MinHeight = 250
         $script:ScenariosListBox.Padding = "5"
         $script:ScenariosListBox.Margin = "0,0,0,15"
@@ -113,7 +113,7 @@ function Show-ScenariosView {
     $btnNew.Content = "Создать"
     $btnNew.Style = $window.Resources["RoundedButton"]
     $btnNew.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#66BB6A")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnNew.Padding = "12,6"
     $btnNew.Margin = "0,0,8,0"
@@ -127,7 +127,7 @@ function Show-ScenariosView {
     $btnImport.Content = "Импорт"
     $btnImport.Style = $window.Resources["RoundedButton"]
     $btnImport.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#607D8B")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnImport.Padding = "12,6"
     $btnImport.Margin = "0,0,8,0"
@@ -162,7 +162,7 @@ function Show-ScenariosView {
         $btnRun.Content = "Запустить"
         $btnRun.Style = $window.Resources["RoundedButton"]
         $btnRun.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#4A90E2")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
         )
         $btnRun.Padding = "12,6"
         $btnRun.Margin = "0,0,8,0"
@@ -186,7 +186,7 @@ function Show-ScenariosView {
         $btnEdit.Content = "Редактировать"
         $btnEdit.Style = $window.Resources["RoundedButton"]
         $btnEdit.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#607D8B")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
         )
         $btnEdit.Padding = "12,6"
         $btnEdit.Margin = "0,0,8,0"
@@ -202,7 +202,7 @@ function Show-ScenariosView {
         $btnExport.Content = "Экспорт"
         $btnExport.Style = $window.Resources["RoundedButton"]
         $btnExport.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#9C27B0")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
         )
         $btnExport.Padding = "12,6"
         $btnExport.Margin = "0,0,8,0"
@@ -222,7 +222,7 @@ function Show-ScenariosView {
         $btnDelete.Content = "Удалить"
         $btnDelete.Style = $window.Resources["RoundedButton"]
         $btnDelete.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#E57373")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
         )
         $btnDelete.Padding = "12,6"
         $btnDelete.Margin = "0,0,8,0"
@@ -310,8 +310,8 @@ function Update-ScenarioStepsList {
     $idx = 1
     foreach ($step in $steps) {
         $row = New-Object System.Windows.Controls.Border
-        $row.Background = "White"
-        $row.BorderBrush = "#E1E1E6"
+        $row.Background = "#2B2B2B"
+        $row.BorderBrush = "#3A3A3A"
         $row.BorderThickness = "1"
         $row.CornerRadius = "5"
         $row.Padding = "8,6"
@@ -320,7 +320,7 @@ function Update-ScenarioStepsList {
         $tb = New-Object System.Windows.Controls.TextBlock
         $tb.Text = "$idx.  $(Get-StepDisplayText -Step $step)"
         $tb.FontSize = 12
-        $tb.Foreground = "#2D2D30"
+        $tb.Foreground = "#FFFFFF"
         $tb.TextWrapping = "Wrap"
         $row.Child = $tb
 
@@ -343,7 +343,7 @@ function Show-ScenarioEditor {
     $dialog.Height = 720
     $dialog.WindowStartupLocation = "CenterOwner"
     $dialog.Owner = $window
-    $dialog.Background = "#F7F7FA"
+    $dialog.Background = "#202020"
 
     # --- Рабочая копия ---
     if ($isNew) {
@@ -382,7 +382,7 @@ function Show-ScenarioEditor {
     $nameLabel = New-Object System.Windows.Controls.TextBlock
     $nameLabel.Text = "Название сценария:"
     $nameLabel.FontSize = 12
-    $nameLabel.Foreground = "#96969B"
+    $nameLabel.Foreground = "#A0A0A0"
     $nameLabel.Margin = "0,0,0,4"
     $topStack.Children.Add($nameLabel) | Out-Null
 
@@ -395,7 +395,7 @@ function Show-ScenarioEditor {
     $descLabel = New-Object System.Windows.Controls.TextBlock
     $descLabel.Text = "Описание:"
     $descLabel.FontSize = 12
-    $descLabel.Foreground = "#96969B"
+    $descLabel.Foreground = "#A0A0A0"
     $descLabel.Margin = "0,0,0,4"
     $topStack.Children.Add($descLabel) | Out-Null
 
@@ -422,14 +422,14 @@ function Show-ScenarioEditor {
     $stepsHeader.Text = "Шаги сценария:"
     $stepsHeader.FontSize = 13
     $stepsHeader.FontWeight = "Bold"
-    $stepsHeader.Foreground = "#2D2D30"
+    $stepsHeader.Foreground = "#FFFFFF"
     $stepsHeader.Margin = "0,0,0,8"
     $leftStack.Children.Add($stepsHeader) | Out-Null
 
     $script:EditorStepsBox = New-Object System.Windows.Controls.ListBox
     $script:EditorStepsBox.FontSize = 12
     $script:EditorStepsBox.BorderThickness = "1"
-    $script:EditorStepsBox.BorderBrush = "#E1E1E6"
+    $script:EditorStepsBox.BorderBrush = "#3A3A3A"
     $script:EditorStepsBox.MinHeight = 380
     $script:EditorStepsBox.Padding = "5"
     $script:EditorStepsBox.Margin = "0,0,15,0"
@@ -445,7 +445,7 @@ function Show-ScenarioEditor {
     $addHeader.Text = "Добавить шаг:"
     $addHeader.FontSize = 13
     $addHeader.FontWeight = "Bold"
-    $addHeader.Foreground = "#4A90E2"
+    $addHeader.Foreground = "#C8C8C8"
     $addHeader.Margin = "0,0,0,8"
     $rightStack.Children.Add($addHeader) | Out-Null
 
@@ -455,7 +455,7 @@ function Show-ScenarioEditor {
         $btnAdd.Content = $st.Name
         $btnAdd.Style = $window.Resources["RoundedButton"]
         $btnAdd.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#4A90E2")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
         )
         $btnAdd.Padding = "10,6"
         $btnAdd.FontSize = 12
@@ -476,7 +476,7 @@ function Show-ScenarioEditor {
     $btnEditStep.Content = "Редактировать шаг"
     $btnEditStep.Style = $window.Resources["RoundedButton"]
     $btnEditStep.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#607D8B")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnEditStep.Padding = "10,6"
     $btnEditStep.FontSize = 12
@@ -494,7 +494,7 @@ function Show-ScenarioEditor {
     $btnDelStep.Content = "Удалить шаг"
     $btnDelStep.Style = $window.Resources["RoundedButton"]
     $btnDelStep.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#E57373")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnDelStep.Padding = "10,6"
     $btnDelStep.FontSize = 12
@@ -576,7 +576,7 @@ function Show-ScenarioEditor {
     $btnSave.Content = "Сохранить"
     $btnSave.Style = $window.Resources["RoundedButton"]
     $btnSave.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#66BB6A")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnSave.Padding = "15,8"
     $btnSave.Margin = "0,0,8,0"
@@ -668,7 +668,7 @@ function Show-StepFormDialog {
     $dialog.Height = 320
     $dialog.WindowStartupLocation = "CenterOwner"
     $dialog.Owner = $window
-    $dialog.Background = "#F7F7FA"
+    $dialog.Background = "#202020"
 
     $stack = New-Object System.Windows.Controls.StackPanel
     $stack.Margin = "25"
@@ -683,7 +683,7 @@ function Show-StepFormDialog {
     $d = New-Object System.Windows.Controls.TextBlock
     $d.Text = $StepType.Desc
     $d.FontSize = 11
-    $d.Foreground = "#96969B"
+    $d.Foreground = "#A0A0A0"
     $d.Margin = "0,0,0,15"
     $stack.Children.Add($d) | Out-Null
 
@@ -692,7 +692,7 @@ function Show-StepFormDialog {
         $lbl = New-Object System.Windows.Controls.TextBlock
         $lbl.Text = $f.Label
         $lbl.FontSize = 12
-        $lbl.Foreground = "#2D2D30"
+        $lbl.Foreground = "#FFFFFF"
         $lbl.Margin = "0,0,0,4"
         $stack.Children.Add($lbl) | Out-Null
 
@@ -721,7 +721,7 @@ function Show-StepFormDialog {
     $btnOk.Content = "Сохранить"
     $btnOk.Style = $window.Resources["RoundedButton"]
     $btnOk.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#66BB6A")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnOk.Padding = "15,8"
     $btnOk.Margin = "0,0,8,0"

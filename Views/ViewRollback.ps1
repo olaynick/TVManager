@@ -47,7 +47,7 @@
     $infoLabel = New-Object System.Windows.Controls.TextBlock
     $infoLabel.Text = "Устройство: $($backup.DeviceIP)   |   Сохранено: $($backup.SavedAt)"
     $infoLabel.FontSize = 11
-    $infoLabel.Foreground = "#96969B"
+    $infoLabel.Foreground = "#A0A0A0"
     $infoLabel.Margin = "0,0,0,10"
     $mainStack.Children.Add($infoLabel) | Out-Null
 
@@ -65,8 +65,8 @@
     foreach ($change in $changes) {
         # Карточка действия
         $card = New-Object System.Windows.Controls.Border
-        $card.Background = "White"
-        $card.BorderBrush = "#E1E1E6"
+        $card.Background = "#2B2B2B"
+        $card.BorderBrush = "#3A3A3A"
         $card.BorderThickness = "1"
         $card.CornerRadius = "6"
         $card.Padding = "10"
@@ -109,7 +109,7 @@
         $titleLabel.Text = "${typeLabel}: $($change.Target)"
         $titleLabel.FontSize = 13
         $titleLabel.FontWeight = "Bold"
-        $titleLabel.Foreground = "#2D2D30"
+        $titleLabel.Foreground = "#FFFFFF"
         $titleLabel.TextWrapping = "Wrap"
         $textStack.Children.Add($titleLabel) | Out-Null
 
@@ -118,7 +118,7 @@
         $cmdLabel.Text = $change.RestoreCommand
         $cmdLabel.FontFamily = "Consolas"
         $cmdLabel.FontSize = 11
-        $cmdLabel.Foreground = "#4A90E2"
+        $cmdLabel.Foreground = "#C8C8C8"
         $cmdLabel.TextWrapping = "Wrap"
         $cmdLabel.Margin = "0,3,0,3"
         $textStack.Children.Add($cmdLabel) | Out-Null
@@ -127,7 +127,7 @@
         $timeLabel = New-Object System.Windows.Controls.TextBlock
         $timeLabel.Text = $change.Timestamp
         $timeLabel.FontSize = 11
-        $timeLabel.Foreground = "#96969B"
+        $timeLabel.Foreground = "#A0A0A0"
         $textStack.Children.Add($timeLabel) | Out-Null
 
         $cardGrid.Children.Add($textStack) | Out-Null
@@ -147,7 +147,7 @@
     $btnSelectAll.Content = "Выбрать всё"
     $btnSelectAll.Style = $window.Resources["RoundedButton"]
     $btnSelectAll.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#64B5F6")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnSelectAll.Padding = "12,6"
     $btnSelectAll.Margin = "0,0,8,0"
@@ -161,7 +161,7 @@
     $btnDeselect.Content = "Снять всё"
     $btnDeselect.Style = $window.Resources["RoundedButton"]
     $btnDeselect.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#FFB74D")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnDeselect.Padding = "12,6"
     $btnDeselect.Margin = "0,0,8,0"
@@ -175,7 +175,7 @@
     $btnRollback.Content = "Откатить выбранные"
     $btnRollback.Style = $window.Resources["RoundedButton"]
     $btnRollback.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#E57373")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnRollback.Padding = "12,6"
     $btnRollback.Margin = "0,0,8,0"
@@ -273,7 +273,7 @@
     $btnRefresh.Content = "Обновить"
     $btnRefresh.Style = $window.Resources["RoundedButton"]
     $btnRefresh.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#607D8B")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnRefresh.Padding = "12,6"
     $btnRefresh.Margin = "0,0,8,0"
@@ -287,7 +287,7 @@
     $btnClear.Content = "Очистить историю"
     $btnClear.Style = $window.Resources["RoundedButton"]
     $btnClear.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#E57373")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnClear.Padding = "12,6"
     $btnClear.Add_Click({

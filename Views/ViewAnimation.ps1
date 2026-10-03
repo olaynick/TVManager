@@ -29,7 +29,7 @@
 
     $valuesBox = New-Object System.Windows.Controls.Border
     $valuesBox.Background = "#FFFFFF"
-    $valuesBox.BorderBrush = "#E1E1E6"
+    $valuesBox.BorderBrush = "#3A3A3A"
     $valuesBox.BorderThickness = "1"
     $valuesBox.CornerRadius = "8"
     $valuesBox.Padding = "15,10"
@@ -41,7 +41,7 @@
     $l1.Text = "Окна:              $windowVal"
     $l1.FontFamily = "Consolas"
     $l1.FontSize = 13
-    $l1.Foreground = "#2D2D30"
+    $l1.Foreground = "#FFFFFF"
     $l1.Margin = "0,2,0,2"
     $valuesStack.Children.Add($l1) | Out-Null
 
@@ -49,7 +49,7 @@
     $l2.Text = "Переходы:          $transitionVal"
     $l2.FontFamily = "Consolas"
     $l2.FontSize = 13
-    $l2.Foreground = "#2D2D30"
+    $l2.Foreground = "#FFFFFF"
     $l2.Margin = "0,2,0,2"
     $valuesStack.Children.Add($l2) | Out-Null
 
@@ -57,7 +57,7 @@
     $l3.Text = "Аниматор:          $animatorVal"
     $l3.FontFamily = "Consolas"
     $l3.FontSize = 13
-    $l3.Foreground = "#2D2D30"
+    $l3.Foreground = "#FFFFFF"
     $l3.Margin = "0,2,0,2"
     $valuesStack.Children.Add($l3) | Out-Null
 
@@ -71,7 +71,7 @@
     # 1x
     $desc1 = New-ViewLabel -Text "1x — стандартная плавность, но интерфейс ощущается медленнее" -Light
     $mainStack.Children.Add($desc1) | Out-Null
-    $mainStack.Children.Add((New-ViewButton -Text "1x  (стандарт)" -Color "#4A90E2" -Margin "0,0,0,15" -Padding "20,10" -OnClick {
+    $mainStack.Children.Add((New-ViewButton -Text "1x  (стандарт)" -Color "#C8C8C8" -Margin "0,0,0,15" -Padding "20,10" -OnClick {
         Set-Animation -Value "1.0"
         Switch-View -ViewName "Animation"
     })) | Out-Null
@@ -79,7 +79,7 @@
     # 0.5x
     $desc2 = New-ViewLabel -Text "0.5x — анимации в 2 раза короче, интерфейс заметно шустрее (рекомендуется)" -Light
     $mainStack.Children.Add($desc2) | Out-Null
-    $mainStack.Children.Add((New-ViewButton -Text "0.5x  (быстрее, рекомендуется)" -Color "#66BB6A" -Margin "0,0,0,15" -Padding "20,10" -OnClick {
+    $mainStack.Children.Add((New-ViewButton -Text "0.5x  (быстрее, рекомендуется)" -Color "#C8C8C8" -Margin "0,0,0,15" -Padding "20,10" -OnClick {
         Set-Animation -Value "0.5"
         Switch-View -ViewName "Animation"
     })) | Out-Null
@@ -87,7 +87,7 @@
     # 0x
     $desc3 = New-ViewLabel -Text "0x — анимации отключены, окна открываются мгновенно, но переходы выглядят резко" -Light
     $mainStack.Children.Add($desc3) | Out-Null
-    $mainStack.Children.Add((New-ViewButton -Text "0x  (мгновенно, максимальная скорость)" -Color "#FFB74D" -Padding "20,10" -OnClick {
+    $mainStack.Children.Add((New-ViewButton -Text "0x  (мгновенно, максимальная скорость)" -Color "#C8C8C8" -Padding "20,10" -OnClick {
         Set-Animation -Value "0.0"
         Switch-View -ViewName "Animation"
     })) | Out-Null

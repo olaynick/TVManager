@@ -19,7 +19,7 @@ function Show-DeviceListInline {
     $script:DeviceListBox = New-Object System.Windows.Controls.ListBox
     $script:DeviceListBox.FontSize = 13
     $script:DeviceListBox.BorderThickness = "1"
-    $script:DeviceListBox.BorderBrush = "#E1E1E6"
+    $script:DeviceListBox.BorderBrush = "#3A3A3A"
     $script:DeviceListBox.MaxHeight = 180
     $script:DeviceListBox.Padding = "5"
 
@@ -57,7 +57,7 @@ function Show-DeviceListInline {
     $hint = New-ViewLabel -Text "Выберите устройство и нажмите «Подключиться»." -Light
     $script:DeviceListContainer.Children.Add($hint) | Out-Null
 
-    $btnConnectSelected = New-ViewButton -Text "Подключиться к выбранному" -Color "#66BB6A" -OnClick {
+    $btnConnectSelected = New-ViewButton -Text "Подключиться к выбранному" -Color "#C8C8C8" -OnClick {
         if ($script:DeviceListBox.SelectedItem) {
             $ip = $script:DeviceListBox.SelectedItem.Tag
             if ($ip) {

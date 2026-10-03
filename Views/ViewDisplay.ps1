@@ -171,7 +171,7 @@ function Show-CustomDisplayDialog {
     $dialog.Height = 380
     $dialog.WindowStartupLocation = "CenterOwner"
     $dialog.Owner = $window
-    $dialog.Background = "#F7F7FA"
+    $dialog.Background = "#202020"
 
     $stack = New-Object System.Windows.Controls.StackPanel
     $stack.Margin = "25"
@@ -277,8 +277,8 @@ function Show-DisplayView {
     $info = Get-DisplayInfo
 
     $stateCard = New-Object System.Windows.Controls.Border
-    $stateCard.Background = "White"
-    $stateCard.BorderBrush = "#E1E1E6"
+    $stateCard.Background = "#2B2B2B"
+    $stateCard.BorderBrush = "#3A3A3A"
     $stateCard.BorderThickness = "1"
     $stateCard.CornerRadius = "8"
     $stateCard.Padding = "15"
@@ -290,14 +290,14 @@ function Show-DisplayView {
     $stateTitle.Text = "Текущее состояние"
     $stateTitle.FontSize = 14
     $stateTitle.FontWeight = "Bold"
-    $stateTitle.Foreground = "#4A90E2"
+    $stateTitle.Foreground = "#C8C8C8"
     $stateTitle.Margin = "0,0,0,10"
     $stateStack.Children.Add($stateTitle) | Out-Null
 
     # Разрешение
     $sizeLine = New-Object System.Windows.Controls.TextBlock
     $sizeLine.FontSize = 13
-    $sizeLine.Foreground = "#2D2D30"
+    $sizeLine.Foreground = "#FFFFFF"
     $sizeLine.Margin = "0,2,0,2"
     if ($info.HasSizeOverride) {
         $sizeLine.Text = "Разрешение: $($info.CurrSize)   (override; физическое $($info.PhysSize))"
@@ -355,8 +355,8 @@ function Show-DisplayView {
 
     foreach ($preset in $sizePresets) {
         $row = New-Object System.Windows.Controls.Border
-        $row.Background = "White"
-        $row.BorderBrush = "#E1E1E6"
+        $row.Background = "#2B2B2B"
+        $row.BorderBrush = "#3A3A3A"
         $row.BorderThickness = "1"
         $row.CornerRadius = "6"
         $row.Padding = "10"
@@ -380,14 +380,14 @@ function Show-DisplayView {
         $nameTb.Text = $preset.Name
         $nameTb.FontSize = 13
         $nameTb.FontWeight = "Bold"
-        $nameTb.Foreground = "#2D2D30"
+        $nameTb.Foreground = "#FFFFFF"
         $textStack.Children.Add($nameTb) | Out-Null
 
         $detailTb = New-Object System.Windows.Controls.TextBlock
         $detailTb.Text = "Разрешение: $($preset.Size)   |   Рекомендуемый DPI: $($preset.Density)"
         $detailTb.FontFamily = "Consolas"
         $detailTb.FontSize = 11
-        $detailTb.Foreground = "#96969B"
+        $detailTb.Foreground = "#A0A0A0"
         $detailTb.Margin = "0,2,0,0"
         $textStack.Children.Add($detailTb) | Out-Null
 
@@ -398,7 +398,7 @@ function Show-DisplayView {
         $btnSizeOnly.Content = "Только размер"
         $btnSizeOnly.Style = $window.Resources["RoundedButton"]
         $btnSizeOnly.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#64B5F6")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
         )
         $btnSizeOnly.Padding = "10,5"
         $btnSizeOnly.FontSize = 11
@@ -418,7 +418,7 @@ function Show-DisplayView {
         $btnBoth.Content = "Размер + DPI"
         $btnBoth.Style = $window.Resources["RoundedButton"]
         $btnBoth.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#66BB6A")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
         )
         $btnBoth.Padding = "10,5"
         $btnBoth.FontSize = 11
@@ -455,7 +455,7 @@ function Show-DisplayView {
         $btn.Content = $preset.Name
         $btn.Style = $window.Resources["RoundedButton"]
         $btn.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#9C27B0")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
         )
         $btn.Padding = "12,6"
         $btn.Margin = "0,0,8,8"
@@ -482,7 +482,7 @@ function Show-DisplayView {
     $btnCustom.Content = "Кастомные значения"
     $btnCustom.Style = $window.Resources["RoundedButton"]
     $btnCustom.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#FFB74D")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnCustom.Padding = "12,6"
     $btnCustom.Margin = "0,0,8,0"
@@ -495,7 +495,7 @@ function Show-DisplayView {
     $btnRefresh.Content = "Обновить"
     $btnRefresh.Style = $window.Resources["RoundedButton"]
     $btnRefresh.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#4A90E2")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnRefresh.Padding = "12,6"
     $btnRefresh.Margin = "0,0,8,0"

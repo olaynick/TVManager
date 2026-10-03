@@ -76,7 +76,7 @@ function Show-AutostartView {
     $btnRefresh.Content = "Обновить"
     $btnRefresh.Style = $window.Resources["RoundedButton"]
     $btnRefresh.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#4A90E2")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnRefresh.Padding = "12,6"
     $btnRefresh.FontSize = 11
@@ -97,8 +97,8 @@ function Show-AutostartView {
 
     foreach ($app in $apps) {
         $row = New-Object System.Windows.Controls.Border
-        $row.Background = "White"
-        $row.BorderBrush = "#E1E1E6"
+        $row.Background = "#2B2B2B"
+        $row.BorderBrush = "#3A3A3A"
         $row.BorderThickness = "1"
         $row.CornerRadius = "6"
         $row.Padding = "10"
@@ -176,7 +176,7 @@ function Show-AutostartView {
         $btnAllowBg.Content = "✓ Фон"
         $btnAllowBg.Style = $window.Resources["RoundedButton"]
         $btnAllowBg.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#66BB6A")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
         )
         $btnAllowBg.Padding = "8,4"
         $btnAllowBg.FontSize = 10
@@ -195,7 +195,7 @@ function Show-AutostartView {
         $btnBlockBg.Content = "✗ Фон"
         $btnBlockBg.Style = $window.Resources["RoundedButton"]
         $btnBlockBg.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#FFB74D")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
         )
         $btnBlockBg.Padding = "8,4"
         $btnBlockBg.FontSize = 10
@@ -220,7 +220,7 @@ function Show-AutostartView {
         $btnAllowBoot.Content = "✓ Авто"
         $btnAllowBoot.Style = $window.Resources["RoundedButton"]
         $btnAllowBoot.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#66BB6A")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
         )
         $btnAllowBoot.Padding = "8,4"
         $btnAllowBoot.FontSize = 10
@@ -239,7 +239,7 @@ function Show-AutostartView {
         $btnBlockBoot.Content = "✗ Авто"
         $btnBlockBoot.Style = $window.Resources["RoundedButton"]
         $btnBlockBoot.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#E57373")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
         )
         $btnBlockBoot.Padding = "8,4"
         $btnBlockBoot.FontSize = 10
@@ -297,7 +297,7 @@ function Show-AutostartView {
     $btnSystemPreset.Content = "Ограничить все пользовательские"
     $btnSystemPreset.Style = $window.Resources["RoundedButton"]
     $btnSystemPreset.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#FFB74D")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnSystemPreset.Padding = "12,6"
     $btnSystemPreset.Margin = "0,0,8,0"
@@ -329,7 +329,7 @@ function Show-AutostartView {
     $btnRestoreAll.Content = "Разрешить всё (сброс)"
     $btnRestoreAll.Style = $window.Resources["RoundedButton"]
     $btnRestoreAll.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#66BB6A")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnRestoreAll.Padding = "12,6"
     $btnRestoreAll.Margin = "0,0,8,0"

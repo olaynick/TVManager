@@ -20,7 +20,7 @@
         $script:ProfilesViewListBox = New-Object System.Windows.Controls.ListBox
         $script:ProfilesViewListBox.FontSize = 13
         $script:ProfilesViewListBox.BorderThickness = "1"
-        $script:ProfilesViewListBox.BorderBrush = "#E1E1E6"
+        $script:ProfilesViewListBox.BorderBrush = "#3A3A3A"
         $script:ProfilesViewListBox.MinHeight = 200
         $script:ProfilesViewListBox.Padding = "5"
         $script:ProfilesViewListBox.Margin = "0,0,0,15"
@@ -186,7 +186,7 @@
     $btnImport.Content = "Импорт"
     $btnImport.Style = $window.Resources["RoundedButton"]
     $btnImport.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#607D8B")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnImport.Padding = "12,6"
     $btnImport.Margin = "0,0,8,0"
@@ -218,7 +218,7 @@
         $btnApply.Content = "Применить профиль"
         $btnApply.Style = $window.Resources["RoundedButton"]
         $btnApply.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#4A90E2")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
         )
         $btnApply.Padding = "12,6"
         $btnApply.Margin = "0,0,8,0"
@@ -246,7 +246,7 @@
         $btnView.Content = "Просмотр"
         $btnView.Style = $window.Resources["RoundedButton"]
         $btnView.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#64B5F6")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
         )
         $btnView.Padding = "12,6"
         $btnView.Margin = "0,0,8,0"
@@ -262,7 +262,7 @@
         $btnExport.Content = "Экспорт"
         $btnExport.Style = $window.Resources["RoundedButton"]
         $btnExport.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#607D8B")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
         )
         $btnExport.Padding = "12,6"
         $btnExport.Margin = "0,0,8,0"
@@ -282,7 +282,7 @@
         $btnDelete.Content = "Удалить"
         $btnDelete.Style = $window.Resources["RoundedButton"]
         $btnDelete.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#E57373")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
         )
         $btnDelete.Padding = "12,6"
         $btnDelete.Add_Click({
@@ -319,7 +319,7 @@ function Show-ProfileDetails {
     $dialog.Height = 650
     $dialog.WindowStartupLocation = "CenterOwner"
     $dialog.Owner = $window
-    $dialog.Background = "#F7F7FA"
+    $dialog.Background = "#202020"
 
     $grid = New-Object System.Windows.Controls.Grid
     $grid.Margin = "20"
@@ -366,7 +366,7 @@ function Show-ProfileDetails {
     $disabledHeader.Text = "Отключённые приложения ($($disabledList.Count)):"
     $disabledHeader.FontSize = 14
     $disabledHeader.FontWeight = "Bold"
-    $disabledHeader.Foreground = "#E57373"
+    $disabledHeader.Foreground = "#C8C8C8"
     $disabledHeader.Margin = "0,10,0,5"
     $stack.Children.Add($disabledHeader) | Out-Null
 
@@ -391,7 +391,7 @@ function Show-ProfileDetails {
     $removedHeader.Text = "Удалённые приложения ($($removedList.Count)):"
     $removedHeader.FontSize = 14
     $removedHeader.FontWeight = "Bold"
-    $removedHeader.Foreground = "#E57373"
+    $removedHeader.Foreground = "#C8C8C8"
     $removedHeader.Margin = "0,15,0,5"
     $stack.Children.Add($removedHeader) | Out-Null
 
@@ -422,7 +422,7 @@ function Show-ProfileDetails {
     $enableHeader.Text = "Должны быть включены ($($enableList.Count)):"
     $enableHeader.FontSize = 14
     $enableHeader.FontWeight = "Bold"
-    $enableHeader.Foreground = "#66BB6A"
+    $enableHeader.Foreground = "#C8C8C8"
     $enableHeader.Margin = "0,15,0,5"
     $stack.Children.Add($enableHeader) | Out-Null
 
@@ -453,7 +453,7 @@ function Show-ProfileDetails {
     $thirdPartyHeader.Text = "Сторонние приложения (устанавливаются вручную) ($($thirdPartyList.Count)):"
     $thirdPartyHeader.FontSize = 14
     $thirdPartyHeader.FontWeight = "Bold"
-    $thirdPartyHeader.Foreground = "#FFB74D"
+    $thirdPartyHeader.Foreground = "#C8C8C8"
     $thirdPartyHeader.Margin = "0,15,0,5"
     $stack.Children.Add($thirdPartyHeader) | Out-Null
 
@@ -479,7 +479,7 @@ function Show-ProfileDetails {
     $btnClose.Content = "Закрыть"
     $btnClose.Style = $window.Resources["RoundedButton"]
     $btnClose.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#4A90E2")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnClose.Padding = "15,8"
     $btnClose.HorizontalAlignment = "Right"

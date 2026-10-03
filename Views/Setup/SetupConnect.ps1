@@ -36,7 +36,7 @@
 
     $ipPanel.Children.Add($script:SetupTxtIp) | Out-Null
 
-    $btnConnectManual = New-ViewButton -Text "Подключиться" -Color "#66BB6A" -Margin "10,0,0,0" -OnClick {
+    $btnConnectManual = New-ViewButton -Text "Подключиться" -Color "#C8C8C8" -Margin "10,0,0,0" -OnClick {
         $ip = $script:SetupTxtIp.Text.Trim()
         if ([string]::IsNullOrWhiteSpace($ip) -or $ip -eq "Введите IP вручную") {
             Write-Log -Message "IP не введён" -Level "Error"
@@ -54,7 +54,7 @@
     }
     $ipPanel.Children.Add($btnConnectManual) | Out-Null
 
-    $script:SetupBtnScan = New-ViewButton -Text "Сканировать" -Color "#4A90E2" -Margin "10,0,0,0" -OnClick {
+    $script:SetupBtnScan = New-ViewButton -Text "Сканировать" -Color "#C8C8C8" -Margin "10,0,0,0" -OnClick {
         Start-NetworkScan
     }
     $ipPanel.Children.Add($script:SetupBtnScan) | Out-Null

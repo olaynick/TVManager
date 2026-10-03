@@ -315,8 +315,8 @@ function Show-WifiView {
     # ===== ПРОВЕРКА ПОДКЛЮЧЕНИЯ =====
     if (-not $script:connected) {
         $warnCard = New-Object System.Windows.Controls.Border
-        $warnCard.Background = "#FFF3CD"
-        $warnCard.BorderBrush = "#FFB74D"
+        $warnCard.Background = "#3D3520"
+        $warnCard.BorderBrush = "#C8C8C8"
         $warnCard.BorderThickness = "1"
         $warnCard.CornerRadius = "8"
         $warnCard.Padding = "12"
@@ -355,8 +355,8 @@ function Show-WifiView {
 
     # --- Строка про активный интерфейс ---
     $ifaceCard = New-Object System.Windows.Controls.Border
-    $ifaceCard.Background = "White"
-    $ifaceCard.BorderBrush = "#E1E1E6"
+    $ifaceCard.Background = "#2B2B2B"
+    $ifaceCard.BorderBrush = "#3A3A3A"
     $ifaceCard.BorderThickness = "1"
     $ifaceCard.CornerRadius = "8"
     $ifaceCard.Padding = "12,10"
@@ -378,7 +378,7 @@ function Show-WifiView {
         $ifaceIcon.Foreground = "#1565C0"
     } else {
         $ifaceIcon.Text = "[ ? ]"
-        $ifaceIcon.Foreground = "#96969B"
+        $ifaceIcon.Foreground = "#A0A0A0"
     }
     $ifaceStack.Children.Add($ifaceIcon) | Out-Null
 
@@ -388,10 +388,10 @@ function Show-WifiView {
     $ifaceText.TextWrapping = "Wrap"
     if ($info.ActiveIfType -ne "—") {
         $ifaceText.Text = "Активное подключение: $($info.ActiveIfType) ($($info.ActiveIfName)) — $($info.ActiveIfIp)"
-        $ifaceText.Foreground = "#2D2D30"
+        $ifaceText.Foreground = "#FFFFFF"
     } else {
         $ifaceText.Text = "Активное подключение не определено"
-        $ifaceText.Foreground = "#96969B"
+        $ifaceText.Foreground = "#A0A0A0"
     }
     $ifaceStack.Children.Add($ifaceText) | Out-Null
 
@@ -400,8 +400,8 @@ function Show-WifiView {
 
     # --- Статус-карточка ---
     $statusCard = New-Object System.Windows.Controls.Border
-    $statusCard.Background = if ($info.Enabled) { "#E8F5E9" } else { "#FFEBEE" }
-    $statusCard.BorderBrush = if ($info.Enabled) { "#66BB6A" } else { "#E57373" }
+    $statusCard.Background = if ($info.Enabled) { "#1F3A1F" } else { "#FFEBEE" }
+    $statusCard.BorderBrush = if ($info.Enabled) { "#C8C8C8" } else { "#C8C8C8" }
     $statusCard.BorderThickness = "1"
     $statusCard.CornerRadius = "8"
     $statusCard.Padding = "15"
@@ -433,7 +433,7 @@ function Show-WifiView {
     if ($info.Enabled -and $info.Ssid -ne "—") {
         $connLine = New-Object System.Windows.Controls.TextBlock
         $connLine.FontSize = 13
-        $connLine.Foreground = "#2D2D30"
+        $connLine.Foreground = "#FFFFFF"
         $connLine.Margin = "0,5,0,0"
         $connLine.Text = "Подключено к: $($info.Ssid)"
         $statusStack.Children.Add($connLine) | Out-Null
@@ -469,7 +469,7 @@ function Show-WifiView {
     $note = New-Object System.Windows.Controls.TextBlock
     $note.Text = "Примечание: включение и выключение Wi-Fi из приложения не поддерживается. Если ТВ подключён по Wi-Fi, любая смена состояния оборвёт соединение. Меняйте Wi-Fi через настройки на телевизоре."
     $note.FontSize = 11
-    $note.Foreground = "#96969B"
+    $note.Foreground = "#A0A0A0"
     $note.TextWrapping = "Wrap"
     $note.Margin = "0,0,0,15"
     $mainStack.Children.Add($note) | Out-Null
@@ -491,8 +491,8 @@ function Show-WifiView {
         )
 
         $infoCard = New-Object System.Windows.Controls.Border
-        $infoCard.Background = "White"
-        $infoCard.BorderBrush = "#E1E1E6"
+        $infoCard.Background = "#2B2B2B"
+        $infoCard.BorderBrush = "#3A3A3A"
         $infoCard.BorderThickness = "1"
         $infoCard.CornerRadius = "8"
         $infoCard.Padding = "15"
@@ -514,14 +514,14 @@ function Show-WifiView {
             $lbl = New-Object System.Windows.Controls.TextBlock
             $lbl.Text = $row.Label
             $lbl.FontSize = 13
-            $lbl.Foreground = "#96969B"
+            $lbl.Foreground = "#A0A0A0"
             [System.Windows.Controls.Grid]::SetColumn($lbl, 0)
             $grid.Children.Add($lbl) | Out-Null
 
             $val = New-Object System.Windows.Controls.TextBlock
             $val.Text = if ($row.Value) { $row.Value } else { "—" }
             $val.FontSize = 13
-            $val.Foreground = "#2D2D30"
+            $val.Foreground = "#FFFFFF"
             $val.FontFamily = "Consolas"
             $val.TextWrapping = "Wrap"
             [System.Windows.Controls.Grid]::SetColumn($val, 1)
@@ -554,7 +554,7 @@ function Show-WifiView {
     $btnScan.Content = "Просканировать сети"
     $btnScan.Style = $window.Resources["RoundedButton"]
     $btnScan.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#4A90E2")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnScan.Padding = "12,6"
     $btnScan.Margin = "0,0,8,0"
@@ -577,8 +577,8 @@ function Show-WifiView {
 
             foreach ($net in $networks) {
                 $row = New-Object System.Windows.Controls.Border
-                $row.Background = "White"
-                $row.BorderBrush = "#E1E1E6"
+                $row.Background = "#2B2B2B"
+                $row.BorderBrush = "#3A3A3A"
                 $row.BorderThickness = "1"
                 $row.CornerRadius = "6"
                 $row.Padding = "10"
@@ -599,14 +599,14 @@ function Show-WifiView {
                 $ssidTb.Text = $net.Ssid
                 $ssidTb.FontSize = 13
                 $ssidTb.FontWeight = "Bold"
-                $ssidTb.Foreground = "#2D2D30"
+                $ssidTb.Foreground = "#FFFFFF"
                 $textStack.Children.Add($ssidTb) | Out-Null
 
                 $detailTb = New-Object System.Windows.Controls.TextBlock
                 $detailTb.Text = "$($net.Bssid)   |   $($net.Level)   |   $($net.Freq)"
                 $detailTb.FontFamily = "Consolas"
                 $detailTb.FontSize = 11
-                $detailTb.Foreground = "#96969B"
+                $detailTb.Foreground = "#A0A0A0"
                 $detailTb.Margin = "0,2,0,0"
                 $textStack.Children.Add($detailTb) | Out-Null
 
@@ -616,7 +616,7 @@ function Show-WifiView {
                 $btnConnect.Content = "Открыть настройки"
                 $btnConnect.Style = $window.Resources["RoundedButton"]
                 $btnConnect.Background = New-Object System.Windows.Media.SolidColorBrush(
-                    [System.Windows.Media.ColorConverter]::ConvertFromString("#64B5F6")
+                    [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
                 )
                 $btnConnect.Padding = "10,5"
                 $btnConnect.FontSize = 11

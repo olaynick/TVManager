@@ -3,53 +3,130 @@
         Title="TCL TV Manager" Height="700" Width="900"
         WindowStartupLocation="CenterScreen"
         WindowState="Maximized"
-        Background="#F7F7FA"
+        Background="#202020"
         MinHeight="550" MinWidth="700">
 
         <Window.Resources>
-        <!-- Кнопка -->
+
+        <!-- ============================================================ -->
+        <!--  ЦВЕТА (можно вынести в отдельный ResourceDictionary)        -->
+        <!-- ============================================================ -->
+        <SolidColorBrush x:Key="BgWindow"       Color="#202020"/>
+        <SolidColorBrush x:Key="BgCard"         Color="#2B2B2B"/>
+        <SolidColorBrush x:Key="BgInput"        Color="#1F1F1F"/>
+        <SolidColorBrush x:Key="BgInputHover"   Color="#262626"/>
+        <SolidColorBrush x:Key="BgTabActive"    Color="#333333"/>
+        <SolidColorBrush x:Key="BgTabHover"     Color="#2A2A2A"/>
+        <SolidColorBrush x:Key="BorderSubtle"   Color="#3A3A3A"/>
+        <SolidColorBrush x:Key="BorderStrong"   Color="#4A4A4A"/>
+        <SolidColorBrush x:Key="TextPrimary"    Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="TextSecondary"  Color="#A0A0A0"/>
+        <SolidColorBrush x:Key="TextTertiary"   Color="#707070"/>
+        <SolidColorBrush x:Key="Accent"         Color="#60CDFF"/>
+        <SolidColorBrush x:Key="AccentHover"    Color="#7ED8FF"/>
+        <SolidColorBrush x:Key="AccentPressed"  Color="#4DB8E8"/>
+        <SolidColorBrush x:Key="Success"        Color="#6CCB5F"/>
+        <SolidColorBrush x:Key="Warning"        Color="#FFC83D"/>
+        <SolidColorBrush x:Key="Danger"         Color="#FF6B6B"/>
+
+        <!-- ============================================================ -->
+        <!--  КНОПКА (Windows 11 стиль)                                   -->
+        <!-- ============================================================ -->
         <Style TargetType="Button" x:Key="RoundedButton">
-            <Setter Property="Background" Value="#4A90E2"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="15,8"/>
-            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Background" Value="{StaticResource BgCard}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSubtle}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="FontSize" Value="13"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" 
-                                CornerRadius="8" 
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"
                                 Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
                         </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Opacity" Value="0.88"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Root" Property="Opacity" Value="0.7"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Root" Property="Opacity" Value="0.4"/>
+                                <Setter Property="Cursor" Value="Arrow"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
 
+        <!-- Кнопка "Назад" -->
         <Style TargetType="Button" x:Key="BackButton" BasedOn="{StaticResource RoundedButton}">
-            <Setter Property="Background" Value="#E57373"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
             <Setter Property="HorizontalAlignment" Value="Right"/>
             <Setter Property="Margin" Value="0,0,20,20"/>
+            <Setter Property="Padding" Value="12,6"/>
         </Style>
 
-        <!-- Поле ввода -->
+        <!-- ============================================================ -->
+        <!--  TEXTBOX (Windows 11 стиль)                                  -->
+        <!-- ============================================================ -->
         <Style TargetType="TextBox" x:Key="RoundedTextBox">
-            <Setter Property="Padding" Value="8"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Foreground" Value="#000000"/>
-            <Setter Property="CaretBrush" Value="#000000"/>
-            <Setter Property="Background" Value="#FFFFFF"/>
-            <Setter Property="BorderBrush" Value="#C0C0C0"/>
+            <Setter Property="Foreground" Value="#E0E0E0"/>
+            <Setter Property="CaretBrush" Value="#E0E0E0"/>
+            <Setter Property="SelectionBrush" Value="#60CDFF"/>
+            <Setter Property="BorderBrush" Value="#3A3A3A"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="MinHeight" Value="32"/>
+            <Setter Property="Background" Value="#1F1F1F"/>
+            <Setter Property="FontSize" Value="13"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="10,0"/>
+            <Setter Property="MinHeight" Value="34"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                        VerticalAlignment="Center"
+                                        Foreground="{TemplateBinding Foreground}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#262626"/>
+                            </Trigger>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#60CDFF"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Root" Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
-        <!-- Чекбокс -->
+        <!-- ============================================================ -->
+        <!--  CHECKBOX (Windows 11 стиль)                                 -->
+        <!-- ============================================================ -->
         <Style TargetType="CheckBox" x:Key="MiuiCheckBox">
-            <Setter Property="Foreground" Value="#2D2D30"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Padding" Value="8,5"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -65,21 +142,21 @@
 
                                 <Border x:Name="CheckBorder"
                                         Grid.Column="0"
-                                        Width="22" Height="22"
-                                        Background="White"
-                                        BorderBrush="#D0D0D5"
-                                        BorderThickness="1.5"
-                                        CornerRadius="6"
+                                        Width="20" Height="20"
+                                        Background="{StaticResource BgInput}"
+                                        BorderBrush="{StaticResource BorderStrong}"
+                                        BorderThickness="1"
+                                        CornerRadius="4"
                                         VerticalAlignment="Center"
                                         Margin="0,0,10,0">
                                     <Viewbox x:Name="CheckMark"
-                                             Width="14" Height="14"
+                                             Width="12" Height="12"
                                              HorizontalAlignment="Center"
                                              VerticalAlignment="Center"
                                              Visibility="Collapsed">
                                         <Path Data="M 2,7 L 6,11 L 13,3"
-                                              Stroke="White"
-                                              StrokeThickness="2.5"
+                                              Stroke="{StaticResource BgWindow}"
+                                              StrokeThickness="2"
                                               StrokeStartLineCap="Round"
                                               StrokeEndLineCap="Round"
                                               StrokeLineJoin="Round"/>
@@ -87,17 +164,18 @@
                                 </Border>
 
                                 <ContentPresenter Grid.Column="1"
-                                                  VerticalAlignment="Center"/>
+                                                  VerticalAlignment="Center"
+                                                  TextElement.Foreground="{TemplateBinding Foreground}"/>
                             </Grid>
                         </Border>
 
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="CheckBorder" Property="BorderBrush" Value="#4A90E2"/>
+                                <Setter TargetName="CheckBorder" Property="BorderBrush" Value="{StaticResource Accent}"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="CheckBorder" Property="Background" Value="#4A90E2"/>
-                                <Setter TargetName="CheckBorder" Property="BorderBrush" Value="#4A90E2"/>
+                                <Setter TargetName="CheckBorder" Property="Background" Value="{StaticResource Accent}"/>
+                                <Setter TargetName="CheckBorder" Property="BorderBrush" Value="{StaticResource Accent}"/>
                                 <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
@@ -109,9 +187,11 @@
             </Setter>
         </Style>
 
-        <!-- Вкладки -->
+        <!-- ============================================================ -->
+        <!--  TABITEM (Windows 11 стиль)                                  -->
+        <!-- ============================================================ -->
         <Style TargetType="TabItem" x:Key="MiuiTabItem">
-            <Setter Property="Foreground" Value="#2D2D30"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Padding" Value="16,8"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -119,21 +199,23 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="TabItem">
                         <Border x:Name="TabBorder"
-                                Background="#F0F0F5"
-                                CornerRadius="8"
+                                Background="Transparent"
+                                CornerRadius="6"
                                 Padding="{TemplateBinding Padding}"
-                                Margin="0,0,6,0">
+                                Margin="0,0,4,0">
                             <ContentPresenter ContentSource="Header"
                                               HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"/>
+                                              VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="TabBorder" Property="Background" Value="#E4E4EC"/>
+                                <Setter TargetName="TabBorder" Property="Background" Value="{StaticResource BgTabHover}"/>
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="TabBorder" Property="Background" Value="#4A90E2"/>
-                                <Setter Property="Foreground" Value="White"/>
+                                <Setter TargetName="TabBorder" Property="Background" Value="{StaticResource BgTabActive}"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -152,8 +234,13 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
-                            <TabPanel Grid.Row="0" IsItemsHost="True" Margin="0,0,0,10"/>
-                            <Border Grid.Row="1" Background="White" CornerRadius="10" Padding="5">
+                            <TabPanel Grid.Row="0" IsItemsHost="True" Margin="0,0,0,12"/>
+                            <Border Grid.Row="1"
+                                    Background="{StaticResource BgCard}"
+                                    BorderBrush="{StaticResource BorderSubtle}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="12">
                                 <ContentPresenter ContentSource="SelectedContent"/>
                             </Border>
                         </Grid>
@@ -161,14 +248,42 @@
                 </Setter.Value>
             </Setter>
         </Style>
-    </Window.Resources>
+
+        <!-- ============================================================ -->
+        <!--  SCROLLBAR (тонкий, Windows 11)                              -->
+        <!-- ============================================================ -->
+        <Style TargetType="ScrollBar">
+            <Setter Property="Width" Value="10"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid Background="Transparent">
+                            <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                <Track.Thumb>
+                                    <Thumb>
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border Background="#4A4A4A" CornerRadius="5" Margin="2,0"/>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        </Window.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="140"/>
+            <RowDefinition Height="160"/>
         </Grid.RowDefinitions>
 
         <!-- Контент -->
@@ -177,8 +292,10 @@
         </ScrollViewer>
 
         <!-- Панель кнопок внизу -->
-        <Border Grid.Row="1" x:Name="BottomBar" Background="#F0F0F5" 
-                BorderBrush="#E1E1E6" BorderThickness="0,1,0,0" Padding="15,10"
+        <Border Grid.Row="1" x:Name="BottomBar"
+                Background="{StaticResource BgCard}"
+                BorderBrush="{StaticResource BorderSubtle}" BorderThickness="0,1,0,0"
+                Padding="15,10"
                 Visibility="Collapsed">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -188,15 +305,15 @@
                 </Grid.ColumnDefinitions>
 
                 <ProgressBar x:Name="BottomBarProgress"
-                            Grid.Column="0"
-                            Width="200"
-                            Height="6"
-                            Margin="0,0,12,0"
-                            VerticalAlignment="Center"
-                            Visibility="Collapsed"
-                            Foreground="#4A90E2"
-                            Background="#E1E1E6"
-                            BorderThickness="0"/>
+                             Grid.Column="0"
+                             Width="200"
+                             Height="4"
+                             Margin="0,0,12,0"
+                             VerticalAlignment="Center"
+                             Visibility="Collapsed"
+                             Foreground="{StaticResource Accent}"
+                             Background="{StaticResource BgInput}"
+                             BorderThickness="0"/>
 
                 <StackPanel x:Name="BottomBarContent"
                             Grid.Column="1"
@@ -204,24 +321,40 @@
                             HorizontalAlignment="Left"/>
 
                 <TextBlock x:Name="BottomBarProgressText"
-                        Grid.Column="2"
-                        Margin="12,0,0,0"
-                        VerticalAlignment="Center"
-                        FontSize="11"
-                        Foreground="#96969B"
-                        Visibility="Collapsed"/>
+                           Grid.Column="2"
+                           Margin="12,0,0,0"
+                           VerticalAlignment="Center"
+                           FontSize="11"
+                           Foreground="{StaticResource TextSecondary}"
+                           Visibility="Collapsed"/>
             </Grid>
         </Border>
 
-        <Border Grid.Row="2" x:Name="StatusBar" Background="White" 
-                BorderBrush="#E1E1E6" BorderThickness="0,1,0,0" Padding="15,6">
-            <TextBlock x:Name="StatusText" Text="● Не подключено" Foreground="#E57373" FontSize="13"/>
+        <!-- Строка статуса -->
+        <Border Grid.Row="2" x:Name="StatusBar"
+                Background="{StaticResource BgCard}"
+                BorderBrush="{StaticResource BorderSubtle}" BorderThickness="0,1,0,0"
+                Padding="15,6">
+            <TextBlock x:Name="StatusText"
+                       Text="● Не подключено"
+                       Foreground="{StaticResource Danger}"
+                       FontSize="13"/>
         </Border>
 
-        <Border Grid.Row="3" Background="#282A30">
-            <RichTextBox x:Name="LogBox" Background="#282A30" Foreground="#D2D2D7" 
-                         FontFamily="Consolas" FontSize="11" IsReadOnly="True" 
-                         BorderThickness="0" Padding="10" VerticalScrollBarVisibility="Auto"/>
+        <!-- Лог -->
+        <Border Grid.Row="3"
+                Background="#181818"
+                BorderBrush="{StaticResource BorderSubtle}"
+                BorderThickness="0,1,0,0">
+            <RichTextBox x:Name="LogBox"
+                         Background="#181818"
+                         Foreground="#D0D0D0"
+                         FontFamily="Cascadia Mono, Consolas, monospace"
+                         FontSize="11"
+                         IsReadOnly="True"
+                         BorderThickness="0"
+                         Padding="12"
+                         VerticalScrollBarVisibility="Auto"/>
         </Border>
     </Grid>
 </Window>

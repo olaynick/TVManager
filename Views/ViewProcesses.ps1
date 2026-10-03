@@ -166,8 +166,8 @@ function Show-ProcessesView {
     $mem = Get-MemorySummary
 
     $memCard = New-Object System.Windows.Controls.Border
-    $memCard.Background = "White"
-    $memCard.BorderBrush = "#E1E1E6"
+    $memCard.Background = "#2B2B2B"
+    $memCard.BorderBrush = "#3A3A3A"
     $memCard.BorderThickness = "1"
     $memCard.CornerRadius = "8"
     $memCard.Padding = "12,10"
@@ -179,13 +179,13 @@ function Show-ProcessesView {
     $memTitle.Text = "Оперативная память"
     $memTitle.FontSize = 13
     $memTitle.FontWeight = "Bold"
-    $memTitle.Foreground = "#4A90E2"
+    $memTitle.Foreground = "#C8C8C8"
     $memTitle.Margin = "0,0,0,8"
     $memStack.Children.Add($memTitle) | Out-Null
 
     $memLine = New-Object System.Windows.Controls.TextBlock
     $memLine.FontSize = 13
-    $memLine.Foreground = "#2D2D30"
+    $memLine.Foreground = "#FFFFFF"
     $memLine.Text = "Всего: $($mem.Total)   |   Свободно: $($mem.Available)   |   Использовано: $($mem.UsedPct)%"
     $memStack.Children.Add($memLine) | Out-Null
 
@@ -196,8 +196,8 @@ function Show-ProcessesView {
         $bar.Maximum = 100
         $bar.Height = 6
         $bar.Margin = "0,8,0,0"
-        $bar.Foreground = if ($mem.UsedPct -gt 85) { "#E57373" } elseif ($mem.UsedPct -gt 65) { "#FFB74D" } else { "#66BB6A" }
-        $bar.Background = "#F0F0F5"
+        $bar.Foreground = if ($mem.UsedPct -gt 85) { "#C8C8C8" } elseif ($mem.UsedPct -gt 65) { "#C8C8C8" } else { "#C8C8C8" }
+        $bar.Background = "#2B2B2B"
         $memStack.Children.Add($bar) | Out-Null
     }
 
@@ -261,7 +261,7 @@ function Show-ProcessesView {
         $tb.Text = $headers[$i]
         $tb.FontSize = 11
         $tb.FontWeight = "Bold"
-        $tb.Foreground = "#96969B"
+        $tb.Foreground = "#A0A0A0"
         [System.Windows.Controls.Grid]::SetColumn($tb, $i)
         $headerRow.Children.Add($tb) | Out-Null
     }
@@ -270,8 +270,8 @@ function Show-ProcessesView {
     # Строки
     foreach ($p in $procs) {
         $row = New-Object System.Windows.Controls.Border
-        $row.Background = "White"
-        $row.BorderBrush = "#E1E1E6"
+        $row.Background = "#2B2B2B"
+        $row.BorderBrush = "#3A3A3A"
         $row.BorderThickness = "1,1,1,0"
         $row.Padding = "8,6"
 
@@ -292,7 +292,7 @@ function Show-ProcessesView {
         $tbPid.Text = $p.PID
         $tbPid.FontFamily = "Consolas"
         $tbPid.FontSize = 11
-        $tbPid.Foreground = "#96969B"
+        $tbPid.Foreground = "#A0A0A0"
         $tbPid.VerticalAlignment = "Center"
         [System.Windows.Controls.Grid]::SetColumn($tbPid, 0)
         $g.Children.Add($tbPid) | Out-Null
@@ -303,7 +303,7 @@ function Show-ProcessesView {
         $tbCpu.FontFamily = "Consolas"
         $tbCpu.FontSize = 11
         $tbCpu.VerticalAlignment = "Center"
-        $tbCpu.Foreground = if ($p.CPU -gt 20) { "#E57373" } elseif ($p.CPU -gt 5) { "#FFB74D" } else { "#2D2D30" }
+        $tbCpu.Foreground = if ($p.CPU -gt 20) { "#C8C8C8" } elseif ($p.CPU -gt 5) { "#C8C8C8" } else { "#FFFFFF" }
         [System.Windows.Controls.Grid]::SetColumn($tbCpu, 1)
         $g.Children.Add($tbCpu) | Out-Null
 
@@ -313,7 +313,7 @@ function Show-ProcessesView {
         $tbMem.FontFamily = "Consolas"
         $tbMem.FontSize = 11
         $tbMem.VerticalAlignment = "Center"
-        $tbMem.Foreground = "#2D2D30"
+        $tbMem.Foreground = "#FFFFFF"
         [System.Windows.Controls.Grid]::SetColumn($tbMem, 2)
         $g.Children.Add($tbMem) | Out-Null
 
@@ -322,7 +322,7 @@ function Show-ProcessesView {
         $tbName.Text = $p.Name
         $tbName.FontFamily = "Consolas"
         $tbName.FontSize = 11
-        $tbName.Foreground = "#2D2D30"
+        $tbName.Foreground = "#FFFFFF"
         $tbName.TextTrimming = "CharacterEllipsis"
         $tbName.VerticalAlignment = "Center"
         [System.Windows.Controls.Grid]::SetColumn($tbName, 3)
@@ -334,7 +334,7 @@ function Show-ProcessesView {
             $btnKill.Content = "Стоп"
             $btnKill.Style = $window.Resources["RoundedButton"]
             $btnKill.Background = New-Object System.Windows.Media.SolidColorBrush(
-                [System.Windows.Media.ColorConverter]::ConvertFromString("#E57373")
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#4d2d2d")
             )
             $btnKill.Padding = "8,3"
             $btnKill.FontSize = 10

@@ -7,155 +7,44 @@
 
     $stack = New-Object System.Windows.Controls.StackPanel
     $stack.HorizontalAlignment = "Center"
-    $stack.VerticalAlignment = "Center"
-    $stack.Width = 540
+    $stack.VerticalAlignment = "Top"
+    $stack.Width = 500
     $stack.Margin = "0,40,0,40"
     $scroll.Content = $stack
 
     # ===== Заголовок =====
     $title = New-Object System.Windows.Controls.TextBlock
     $title.Text = "TCL TV Manager"
-    $title.FontSize = 34
+    $title.FontSize = 32
     $title.FontWeight = "Bold"
+    $title.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#FFFFFF")
+    )
     $title.HorizontalAlignment = "Center"
-    $title.Margin = "0,0,0,10"
+    $title.Margin = "0,0,0,6"
     $stack.Children.Add($title) | Out-Null
 
     $subtitle = New-Object System.Windows.Controls.TextBlock
     $subtitle.Text = "Управление телевизором через ADB"
-    $subtitle.FontSize = 14
-    $subtitle.Foreground = "#96969B"
+    $subtitle.FontSize = 13
+    $subtitle.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#A0A0A0")
+    )
     $subtitle.HorizontalAlignment = "Center"
     $subtitle.Margin = "0,0,0,30"
     $stack.Children.Add($subtitle) | Out-Null
 
-    # ===== Статус ADB =====
-    $adbReady = Test-AdbInPath
-
-    $adbInfo = New-Object System.Windows.Controls.TextBlock
-    $adbInfo.FontSize = 13
-    $adbInfo.HorizontalAlignment = "Center"
-    $adbInfo.Margin = "0,0,0,8"
-    if ($adbReady) {
-        $adbInfo.Foreground = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#66BB6A")
-        )
-        $adbInfo.Text = "ADB найден — программа готова к работе"
-    } else {
-        $adbInfo.Foreground = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#E57373")
-        )
-        $adbInfo.Text = "ADB не найден — потребуется настройка"
-    }
-    $stack.Children.Add($adbInfo) | Out-Null
-
-    # ===== Кнопка "Как установить ADB" =====
-    $btnAdbHelp = New-Object System.Windows.Controls.Button
-    $btnAdbHelp.Content = "Как установить ADB?"
-    $btnAdbHelp.Style = $window.Resources["RoundedButton"]
-    if ($adbReady) {
-        $btnAdbHelp.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#B0BEC5")
-        )
-    } else {
-        $btnAdbHelp.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#FFB74D")
-        )
-    }
-    $btnAdbHelp.Padding = "15,8"
-    $btnAdbHelp.Margin = "0,0,0,25"
-    $btnAdbHelp.HorizontalAlignment = "Center"
-    $btnAdbHelp.Add_Click({ Show-AdbHelpDialog })
-    $stack.Children.Add($btnAdbHelp) | Out-Null
-
-    # ===== РАЗДЕЛ: ПОМОЩЬ =====
-    $helpCard = New-Object System.Windows.Controls.Border
-    $helpCard.Background = "#F0F4FF"
-    $helpCard.BorderBrush = "#4A90E2"
-    $helpCard.BorderThickness = "1"
-    $helpCard.CornerRadius = "10"
-    $helpCard.Padding = "15"
-    $helpCard.Margin = "0,0,0,25"
-
-    $helpStack = New-Object System.Windows.Controls.StackPanel
-
-    $helpTitle = New-Object System.Windows.Controls.TextBlock
-    $helpTitle.Text = "Помощь"
-    $helpTitle.FontSize = 14
-    $helpTitle.FontWeight = "Bold"
-    $helpTitle.Foreground = "#1565C0"
-    $helpTitle.Margin = "0,0,0,10"
-    $helpStack.Children.Add($helpTitle) | Out-Null
-
-    $helpDesc = New-Object System.Windows.Controls.TextBlock
-    $helpDesc.Text = "Описание программы, руководство по подключению и подсказки по работе с TCL-телевизором."
-    $helpDesc.FontSize = 12
-    $helpDesc.Foreground = "#2D2D30"
-    $helpDesc.TextWrapping = "Wrap"
-    $helpDesc.Margin = "0,0,0,12"
-    $helpStack.Children.Add($helpDesc) | Out-Null
-
-    $helpBtnPanel = New-Object System.Windows.Controls.StackPanel
-    $helpBtnPanel.Orientation = "Horizontal"
-    $helpBtnPanel.HorizontalAlignment = "Center"
-
-    # --- Кнопка "О программе" ---
-    $btnAbout = New-Object System.Windows.Controls.Button
-    $btnAbout.Content = "О программе"
-    $btnAbout.Style = $window.Resources["RoundedButton"]
-    $btnAbout.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#4A90E2")
-    )
-    $btnAbout.Padding = "15,8"
-    $btnAbout.Margin = "0,0,8,0"
-    $btnAbout.Add_Click({
-        Show-HelpDialog -Tab "About"
-    })
-    $helpBtnPanel.Children.Add($btnAbout) | Out-Null
-
-    # --- Кнопка "Как подключить ТВ" ---
-    $btnConnect = New-Object System.Windows.Controls.Button
-    $btnConnect.Content = "Как подключить ТВ"
-    $btnConnect.Style = $window.Resources["RoundedButton"]
-    $btnConnect.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#66BB6A")
-    )
-    $btnConnect.Padding = "15,8"
-    $btnConnect.Margin = "0,0,8,0"
-    $btnConnect.Add_Click({
-        Show-HelpDialog -Tab "Connect"
-    })
-    $helpBtnPanel.Children.Add($btnConnect) | Out-Null
-
-    # --- Кнопка "Возможности" ---
-    $btnFeatures = New-Object System.Windows.Controls.Button
-    $btnFeatures.Content = "Возможности"
-    $btnFeatures.Style = $window.Resources["RoundedButton"]
-    $btnFeatures.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#9C27B0")
-    )
-    $btnFeatures.Padding = "15,8"
-    $btnFeatures.Add_Click({
-        Show-HelpDialog -Tab "Features"
-    })
-    $helpBtnPanel.Children.Add($btnFeatures) | Out-Null
-
-    $helpStack.Children.Add($helpBtnPanel) | Out-Null
-
-    $helpCard.Child = $helpStack
-    $stack.Children.Add($helpCard) | Out-Null
-
-    # ===== Основные кнопки меню =====
+    # ===== Основные кнопки =====
     $btnSetup = New-Object System.Windows.Controls.Button
     $btnSetup.Content = "Настройка"
     $btnSetup.Style = $window.Resources["RoundedButton"]
     $btnSetup.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#4A90E2")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
     )
     $btnSetup.Width = 400
-    $btnSetup.Height = 55
-    $btnSetup.FontSize = 15
-    $btnSetup.Margin = "0,0,0,12"
+    $btnSetup.Height = 50
+    $btnSetup.FontSize = 14
+    $btnSetup.Margin = "0,0,0,10"
     $btnSetup.HorizontalAlignment = "Center"
     $btnSetup.Add_Click({ Switch-View -ViewName "Setup" })
     $stack.Children.Add($btnSetup) | Out-Null
@@ -164,12 +53,12 @@
     $btnRollback.Content = "Откат изменений"
     $btnRollback.Style = $window.Resources["RoundedButton"]
     $btnRollback.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#FFB74D")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#9c8e6a")
     )
     $btnRollback.Width = 400
-    $btnRollback.Height = 55
-    $btnRollback.FontSize = 15
-    $btnRollback.Margin = "0,0,0,12"
+    $btnRollback.Height = 50
+    $btnRollback.FontSize = 14
+    $btnRollback.Margin = "0,0,0,10"
     $btnRollback.HorizontalAlignment = "Center"
     $btnRollback.Add_Click({ Switch-View -ViewName "Rollback" })
     $stack.Children.Add($btnRollback) | Out-Null
@@ -178,12 +67,12 @@
     $btnAppSettings.Content = "Настройки приложения"
     $btnAppSettings.Style = $window.Resources["RoundedButton"]
     $btnAppSettings.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#607D8B")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#4A4A4A")
     )
     $btnAppSettings.Width = 400
-    $btnAppSettings.Height = 55
-    $btnAppSettings.FontSize = 15
-    $btnAppSettings.Margin = "0,0,0,12"
+    $btnAppSettings.Height = 50
+    $btnAppSettings.FontSize = 14
+    $btnAppSettings.Margin = "0,0,0,10"
     $btnAppSettings.HorizontalAlignment = "Center"
     $btnAppSettings.Add_Click({ Switch-View -ViewName "Settings" })
     $stack.Children.Add($btnAppSettings) | Out-Null
@@ -192,14 +81,140 @@
     $btnExit.Content = "Выход"
     $btnExit.Style = $window.Resources["RoundedButton"]
     $btnExit.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#E57373")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#724c4c")
     )
     $btnExit.Width = 400
-    $btnExit.Height = 55
-    $btnExit.FontSize = 15
+    $btnExit.Height = 50
+    $btnExit.FontSize = 14
     $btnExit.HorizontalAlignment = "Center"
     $btnExit.Add_Click({ $window.Close() })
     $stack.Children.Add($btnExit) | Out-Null
+
+    # ===== Статус ADB (внизу) =====
+    $adbReady = Test-AdbInPath
+
+    $statusPanel = New-Object System.Windows.Controls.StackPanel
+    $statusPanel.Orientation = "Horizontal"
+    $statusPanel.HorizontalAlignment = "Center"
+    $statusPanel.Margin = "0,30,0,10"
+
+    $statusDot = New-Object System.Windows.Shapes.Ellipse
+    $statusDot.Width = 8
+    $statusDot.Height = 8
+    if ($adbReady) {
+        $statusDot.Fill = [System.Windows.Media.SolidColorBrush](
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#6CCB5F")
+        )
+    } else {
+        $statusDot.Fill = [System.Windows.Media.SolidColorBrush](
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#FF6B6B")
+        )
+    }
+    $statusDot.VerticalAlignment = "Center"
+    $statusDot.Margin = "0,0,8,0"
+    $statusPanel.Children.Add($statusDot) | Out-Null
+
+    $statusLabel = New-Object System.Windows.Controls.TextBlock
+    $statusLabel.Text = if ($adbReady) { "ADB найден — программа готова к работе" } else { "ADB не настроен — потребуется установка" }
+    $statusLabel.FontSize = 12
+    $statusLabel.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#A0A0A0")
+    )
+    $statusLabel.VerticalAlignment = "Center"
+    $statusPanel.Children.Add($statusLabel) | Out-Null
+
+    $stack.Children.Add($statusPanel) | Out-Null
+
+    # ===== Кнопка "Как установить ADB" =====
+    if (-not $adbReady) {
+        $btnAdbHelp = New-Object System.Windows.Controls.Button
+        $btnAdbHelp.Content = "Как установить ADB?"
+        $btnAdbHelp.Style = $window.Resources["RoundedButton"]
+        $btnAdbHelp.Background = New-Object System.Windows.Media.SolidColorBrush(
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#9c8e6a")
+        )
+        $btnAdbHelp.Padding = "15,8"
+        $btnAdbHelp.HorizontalAlignment = "Center"
+        $btnAdbHelp.Margin = "0,0,0,10"
+        $btnAdbHelp.Add_Click({ Show-AdbHelpDialog })
+        $stack.Children.Add($btnAdbHelp) | Out-Null
+    }
+
+    # ===== Карточка "Помощь" (внизу) =====
+    $helpCard = New-Object System.Windows.Controls.Border
+    $helpCard.Background = "#1A2A3A"
+    $helpCard.BorderBrush = "#3A5A7A"
+    $helpCard.BorderThickness = "1"
+    $helpCard.CornerRadius = "8"
+    $helpCard.Padding = "15"
+    $helpCard.Margin = "0,10,0,10"
+    $helpCard.Width = 400
+
+    $helpStack = New-Object System.Windows.Controls.StackPanel
+
+    $helpTitle = New-Object System.Windows.Controls.TextBlock
+    $helpTitle.Text = "Помощь"
+    $helpTitle.FontSize = 13
+    $helpTitle.FontWeight = "Bold"
+    $helpTitle.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#60CDFF")
+    )
+    $helpTitle.Margin = "0,0,0,8"
+    $helpStack.Children.Add($helpTitle) | Out-Null
+
+    $helpDesc = New-Object System.Windows.Controls.TextBlock
+    $helpDesc.Text = "Описание программы, руководство по подключению и подсказки."
+    $helpDesc.FontSize = 11
+    $helpDesc.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#A0A0A0")
+    )
+    $helpDesc.TextWrapping = "Wrap"
+    $helpDesc.Margin = "0,0,0,10"
+    $helpStack.Children.Add($helpDesc) | Out-Null
+
+    $helpBtnPanel = New-Object System.Windows.Controls.StackPanel
+    $helpBtnPanel.Orientation = "Horizontal"
+    $helpBtnPanel.HorizontalAlignment = "Center"
+
+    $btnAbout = New-Object System.Windows.Controls.Button
+    $btnAbout.Content = "О программе"
+    $btnAbout.Style = $window.Resources["RoundedButton"]
+    $btnAbout.Background = New-Object System.Windows.Media.SolidColorBrush(
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
+    )
+    $btnAbout.Padding = "10,5"
+    $btnAbout.FontSize = 11
+    $btnAbout.Margin = "0,0,6,0"
+    $btnAbout.Add_Click({ Show-HelpDialog -Tab "About" })
+    $helpBtnPanel.Children.Add($btnAbout) | Out-Null
+
+    $btnConnect = New-Object System.Windows.Controls.Button
+    $btnConnect.Content = "Как подключить"
+    $btnConnect.Style = $window.Resources["RoundedButton"]
+    $btnConnect.Background = New-Object System.Windows.Media.SolidColorBrush(
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#588653")
+    )
+    $btnConnect.Padding = "10,5"
+    $btnConnect.FontSize = 11
+    $btnConnect.Margin = "0,0,6,0"
+    $btnConnect.Add_Click({ Show-HelpDialog -Tab "Connect" })
+    $helpBtnPanel.Children.Add($btnConnect) | Out-Null
+
+    $btnFeatures = New-Object System.Windows.Controls.Button
+    $btnFeatures.Content = "Возможности"
+    $btnFeatures.Style = $window.Resources["RoundedButton"]
+    $btnFeatures.Background = New-Object System.Windows.Media.SolidColorBrush(
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#6c547e")
+    )
+    $btnFeatures.Padding = "10,5"
+    $btnFeatures.FontSize = 11
+    $btnFeatures.Add_Click({ Show-HelpDialog -Tab "Features" })
+    $helpBtnPanel.Children.Add($btnFeatures) | Out-Null
+
+    $helpStack.Children.Add($helpBtnPanel) | Out-Null
+
+    $helpCard.Child = $helpStack
+    $stack.Children.Add($helpCard) | Out-Null
 
     $contentGrid.Children.Add($outerGrid) | Out-Null
     Write-Log -Message "Главное меню" -Level "Info"
@@ -217,7 +232,7 @@ function Show-HelpDialog {
     $dialog.Height = 640
     $dialog.WindowStartupLocation = "CenterOwner"
     $dialog.Owner = $window
-    $dialog.Background = "#F7F7FA"
+    $dialog.Background = "#202020"
 
     $grid = New-Object System.Windows.Controls.Grid
     $grid.Margin = "20"
@@ -258,21 +273,27 @@ function Show-HelpDialog {
     $aboutTitle.Text = "TCL TV Manager"
     $aboutTitle.FontSize = 22
     $aboutTitle.FontWeight = "Bold"
-    $aboutTitle.Foreground = "#2D2D30"
+    $aboutTitle.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#FFFFFF")
+    )
     $aboutTitle.Margin = "0,0,0,8"
     $aboutStack.Children.Add($aboutTitle) | Out-Null
 
     $aboutVersion = New-Object System.Windows.Controls.TextBlock
-    $aboutVersion.Text = "Версия 0.0.3"
+    $aboutVersion.Text = "Версия 0.0.4"
     $aboutVersion.FontSize = 12
-    $aboutVersion.Foreground = "#96969B"
+    $aboutVersion.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#A0A0A0")
+    )
     $aboutVersion.Margin = "0,0,0,20"
     $aboutStack.Children.Add($aboutVersion) | Out-Null
 
     $aboutText = New-Object System.Windows.Controls.TextBlock
-    $aboutText.Text = "Приложение для управления телевизорами TCL на Android TV через ADB. Позволяет настраивать систему, очищать предустановленный мусор, устанавливать приложения, управлять пультом и многое другое — прямо с ПК.`n`nПрограмма не требует установки сторонних приложений на телевизор. Всё делается через встроенный ADB-протокол, который уже используется вашей системой для отладки."
+    $aboutText.Text = "Приложение для управления телевизорами TCL на Android TV через ADB. Позволяет настраивать систему, очищать предустановленный мусор, устанавливать приложения, управлять пультом и многое другое — прямо с ПК.`n`nПрограмма не требует установки сторонних приложений на телевизор. Всё делается через встроенный ADB-протокол."
     $aboutText.FontSize = 13
-    $aboutText.Foreground = "#2D2D30"
+    $aboutText.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#E0E0E0")
+    )
     $aboutText.TextWrapping = "Wrap"
     $aboutText.Margin = "0,0,0,20"
     $aboutStack.Children.Add($aboutText) | Out-Null
@@ -281,14 +302,18 @@ function Show-HelpDialog {
     $advHeader.Text = "Важно понимать"
     $advHeader.FontSize = 15
     $advHeader.FontWeight = "Bold"
-    $advHeader.Foreground = "#E57373"
+    $advHeader.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+    )
     $advHeader.Margin = "0,0,0,8"
     $aboutStack.Children.Add($advHeader) | Out-Null
 
     $advText = New-Object System.Windows.Controls.TextBlock
     $advText.Text = "• Отключение и удаление системных пакетов может нарушить работу телевизора.`n• Все изменения сохраняются в историю — их можно откатить через раздел «Откат изменений».`n• Перед серьёзными операциями рекомендуется сделать бэкап через «Экспорт дампа устройства».`n• Программа работает напрямую с ADB — если ТВ отключится, изменения не применятся."
     $advText.FontSize = 12
-    $advText.Foreground = "#2D2D30"
+    $advText.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#E0E0E0")
+    )
     $advText.TextWrapping = "Wrap"
     $aboutStack.Children.Add($advText) | Out-Null
 
@@ -313,109 +338,74 @@ function Show-HelpDialog {
     $connTitle.Text = "Пошаговая инструкция"
     $connTitle.FontSize = 18
     $connTitle.FontWeight = "Bold"
-    $connTitle.Foreground = "#2D2D30"
+    $connTitle.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#FFFFFF")
+    )
     $connTitle.Margin = "0,0,0,15"
     $connStack.Children.Add($connTitle) | Out-Null
 
-    # Шаг 1
-    $step1 = New-Object System.Windows.Controls.TextBlock
-    $step1.FontSize = 14
-    $step1.FontWeight = "Bold"
-    $step1.Foreground = "#4A90E2"
-    $step1.Text = "Шаг 1. Включите режим разработчика на ТВ"
-    $step1.Margin = "0,0,0,6"
-    $connStack.Children.Add($step1) | Out-Null
+    $steps = @(
+        @{
+            Title = "Шаг 1. Включите режим разработчика на ТВ"
+            Text = "Откройте «Настройки» → «О телевизоре» → «Сборка». Нажмите на «Сборка» 7 раз подряд. Появится сообщение «Вы стали разработчиком»."
+        },
+        @{
+            Title = "Шаг 2. Включите отладку по ADB"
+            Text = "Зайдите в «Настройки» → «Для разработчиков». Включите: «Отладка по ADB» и «Отладка по сети» (если есть)."
+        },
+        @{
+            Title = "Шаг 3. Узнайте IP-адрес телевизора"
+            Text = "«Настройки» → «Сеть» → «Wi-Fi» → выберите текущую сеть. IP-адрес будет указан в деталях подключения."
+        },
+        @{
+            Title = "Шаг 4. Подключитесь в программе"
+            Text = "На главном экране нажмите «Настройка». Введите IP-адрес телевизора или нажмите «Сканировать» для поиска в сети."
+        },
+        @{
+            Title = "Шаг 5. Разрешите отладку на ТВ"
+            Text = "На экране телевизора появится запрос «Разрешить отладку по USB?». Поставьте галочку «Всегда разрешать» и нажмите «ОК»."
+        }
+    )
 
-    $step1Text = New-Object System.Windows.Controls.TextBlock
-    $step1Text.FontSize = 12
-    $step1Text.Foreground = "#2D2D30"
-    $step1Text.TextWrapping = "Wrap"
-    $step1Text.Margin = "0,0,0,15"
-    $step1Text.Text = "Откройте «Настройки» → «О телевизоре» → «Сборка». Нажмите на «Сборка» 7 раз подряд. Появится сообщение «Вы стали разработчиком»."
-    $connStack.Children.Add($step1Text) | Out-Null
+    foreach ($step in $steps) {
+        $stepTitle = New-Object System.Windows.Controls.TextBlock
+        $stepTitle.Text = $step.Title
+        $stepTitle.FontSize = 14
+        $stepTitle.FontWeight = "Bold"
+        $stepTitle.Foreground = [System.Windows.Media.SolidColorBrush](
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+        )
+        $stepTitle.Margin = "0,0,0,6"
+        $connStack.Children.Add($stepTitle) | Out-Null
 
-    # Шаг 2
-    $step2 = New-Object System.Windows.Controls.TextBlock
-    $step2.FontSize = 14
-    $step2.FontWeight = "Bold"
-    $step2.Foreground = "#4A90E2"
-    $step2.Text = "Шаг 2. Включите отладку по ADB"
-    $step2.Margin = "0,0,0,6"
-    $connStack.Children.Add($step2) | Out-Null
+        $stepText = New-Object System.Windows.Controls.TextBlock
+        $stepText.Text = $step.Text
+        $stepText.FontSize = 12
+        $stepText.Foreground = [System.Windows.Media.SolidColorBrush](
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#E0E0E0")
+        )
+        $stepText.TextWrapping = "Wrap"
+        $stepText.Margin = "0,0,0,15"
+        $connStack.Children.Add($stepText) | Out-Null
+    }
 
-    $step2Text = New-Object System.Windows.Controls.TextBlock
-    $step2Text.FontSize = 12
-    $step2Text.Foreground = "#2D2D30"
-    $step2Text.TextWrapping = "Wrap"
-    $step2Text.Margin = "0,0,0,15"
-    $step2Text.Text = "Зайдите в «Настройки» → «Для разработчиков». Включите: «Отладка по ADB» и «Отладка по сети» (если есть). Также рекомендуется отключить «Автообновление системы»."
-    $connStack.Children.Add($step2Text) | Out-Null
-
-    # Шаг 3
-    $step3 = New-Object System.Windows.Controls.TextBlock
-    $step3.FontSize = 14
-    $step3.FontWeight = "Bold"
-    $step3.Foreground = "#4A90E2"
-    $step3.Text = "Шаг 3. Узнайте IP-адрес телевизора"
-    $step3.Margin = "0,0,0,6"
-    $connStack.Children.Add($step3) | Out-Null
-
-    $step3Text = New-Object System.Windows.Controls.TextBlock
-    $step3Text.FontSize = 12
-    $step3Text.Foreground = "#2D2D30"
-    $step3Text.TextWrapping = "Wrap"
-    $step3Text.Margin = "0,0,0,15"
-    $step3Text.Text = "«Настройки» → «Сеть» → «Wi-Fi» → выберите текущую сеть. IP-адрес будет указан в деталях подключения (например, 192.168.0.104)."
-    $connStack.Children.Add($step3Text) | Out-Null
-
-    # Шаг 4
-    $step4 = New-Object System.Windows.Controls.TextBlock
-    $step4.FontSize = 14
-    $step4.FontWeight = "Bold"
-    $step4.Foreground = "#4A90E2"
-    $step4.Text = "Шаг 4. Подключитесь в программе"
-    $step4.Margin = "0,0,0,6"
-    $connStack.Children.Add($step4) | Out-Null
-
-    $step4Text = New-Object System.Windows.Controls.TextBlock
-    $step4Text.FontSize = 12
-    $step4Text.Foreground = "#2D2D30"
-    $step4Text.TextWrapping = "Wrap"
-    $step4Text.Margin = "0,0,0,15"
-    $step4Text.Text = "На главном экране нажмите «Настройка». Введите IP-адрес телевизора или нажмите «Сканировать» для поиска в сети. Нажмите «Подключиться»."
-    $connStack.Children.Add($step4Text) | Out-Null
-
-    # Шаг 5
-    $step5 = New-Object System.Windows.Controls.TextBlock
-    $step5.FontSize = 14
-    $step5.FontWeight = "Bold"
-    $step5.Foreground = "#4A90E2"
-    $step5.Text = "Шаг 5. Разрешите отладку на ТВ"
-    $step5.Margin = "0,0,0,6"
-    $connStack.Children.Add($step5) | Out-Null
-
-    $step5Text = New-Object System.Windows.Controls.TextBlock
-    $step5Text.FontSize = 12
-    $step5Text.Foreground = "#2D2D30"
-    $step5Text.TextWrapping = "Wrap"
-    $step5Text.Margin = "0,0,0,20"
-    $step5Text.Text = "На экране телевизора появится запрос «Разрешить отладку по USB?». Поставьте галочку «Всегда разрешать с этого компьютера» и нажмите «ОК». Готово — программа подключится автоматически."
-    $connStack.Children.Add($step5Text) | Out-Null
-
-    # --- Возможные проблемы ---
     $troubleHeader = New-Object System.Windows.Controls.TextBlock
     $troubleHeader.Text = "Если что-то не работает"
     $troubleHeader.FontSize = 15
     $troubleHeader.FontWeight = "Bold"
-    $troubleHeader.Foreground = "#E57373"
+    $troubleHeader.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+    )
     $troubleHeader.Margin = "0,10,0,10"
     $connStack.Children.Add($troubleHeader) | Out-Null
 
     $troubleText = New-Object System.Windows.Controls.TextBlock
+    $troubleText.Text = "• «Не удалось подключиться» — проверьте, что ПК и ТВ в одной Wi-Fi сети.`n`n• «Unauthorized» — на экране ТВ не появилось окно подтверждения. Отзовите разрешения через «Для разработчиков» → «Отозвать разрешения отладки» и попробуйте снова.`n`n• «Connection refused» — отладка по сети выключена. Включите её в «Для разработчиков».`n`n• ТВ не подключается после перезагрузки — подождите 30-60 секунд, отладка включается не сразу."
     $troubleText.FontSize = 12
-    $troubleText.Foreground = "#2D2D30"
+    $troubleText.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#E0E0E0")
+    )
     $troubleText.TextWrapping = "Wrap"
-    $troubleText.Text = "• «Не удалось подключиться» — проверьте, что ПК и ТВ в одной Wi-Fi сети. Если ПК по кабелю, а ТВ по Wi-Fi — сканирование может не работать, вводите IP вручную.`n`n• «Unauthorized» — на экране ТВ не появилось окно подтверждения. Отзовите разрешения через «Для разработчиков» → «Отозвать разрешения отладки» и попробуйте снова.`n`n• «Connection refused» — отладка по сети выключена. Включите её в «Для разработчиков».`n`n• ТВ не подключается после перезагрузки — подождите 30-60 секунд после включения, отладка по сети включается не сразу."
     $connStack.Children.Add($troubleText) | Out-Null
 
     $connectTab.Content = $connScroll
@@ -439,87 +429,32 @@ function Show-HelpDialog {
     $featTitle.Text = "Что умеет программа"
     $featTitle.FontSize = 18
     $featTitle.FontWeight = "Bold"
-    $featTitle.Foreground = "#2D2D30"
+    $featTitle.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#FFFFFF")
+    )
     $featTitle.Margin = "0,0,0,15"
     $featStack.Children.Add($featTitle) | Out-Null
 
     $features = @(
-        @{
-            Title = "📦 Управление приложениями"
-            Where = "Setup → Управление пакетами"
-            Text  = "Отключение и удаление предустановленного мусора (реклама, телеметрия, TCL-сервисы). Просмотр всех установленных, системных и сторонних приложений. Очистка данных и кэша."
-        },
-        @{
-            Title = "📥 Установка приложений"
-            Where = "Setup → Установить APK"
-            Text  = "Пакетная установка .apk, .apks, .xapk, .apkm из папки или по одному файлу. Установка APK, лежащего на самом ТВ, через файловый менеджер."
-        },
-        @{
-            Title = "🎮 Пульт"
-            Where = "Setup → Инструменты → Пульт"
-            Text  = "Полноценный пульт с крестовиной, громкостью, медиа-кнопками. Управление с клавиатуры ПК (стрелки, Enter, Space, +/-). Ввод текста с возможностью использования ADBKeyboard для кириллицы."
-        },
-        @{
-            Title = "🖥 Разрешение и DPI"
-            Where = "Setup → Система → Разрешение и DPI"
-            Text  = "Смена разрешения экрана (720p / 1080p / 1440p / 4K) и плотности пикселей (DPI). Пресеты + кастомные значения. Возможность сброса к заводским."
-        },
-        @{
-            Title = "⚙️ Пресеты настроек"
-            Where = "Setup → Система → Пресеты настроек"
-            Text  = "30 готовых настроек в 3 вкладках: тайм-аут экрана, яркость, анимации, immersive-режим, dev-настройки. Применяются одним кликом, сохраняются для отката."
-        },
-        @{
-            Title = "📊 Сведения и дамп"
-            Where = "Setup → Система → Сведения об устройстве"
-            Text  = "Полная информация о ТВ: модель, Android, CPU, RAM, Storage, IP. Экспорт дампа в JSON или TXT для бэкапа перед экспериментами."
-        },
-        @{
-            Title = "🧩 Проверка целостности"
-            Where = "Setup → Система → Проверка целостности"
-            Text  = "Сравнение текущего состояния ТВ с сохранённым дампом. Показывает, что изменилось с момента снятия дампа."
-        },
-        @{
-            Title = "📸 Скриншоты и запись"
-            Where = "Setup → Инструменты → Скриншот"
-            Text  = "Скриншоты экрана и запись видео с прогресс-баром. Галерея сохранённых файлов. Автосохранение в Desktop\\screenshot_tv\\."
-        },
-        @{
-            Title = "📜 Logcat"
-            Where = "Setup → Система → ADB-команды"
-            Text  = "Живые логи Android в реальном времени. Фильтр по тегу и уровню. Сохранение в файл."
-        },
-        @{
-            Title = "🛠 Сервис — 100+ команд"
-            Where = "Setup → Система → ADB-команды"
-            Text  = "Готовые команды по категориям: информация, производительность, сеть, экран, звук, приложения, отладка. Возможность ввести свою команду."
-        },
-        @{
-            Title = "👤 Профили и сценарии"
-            Where = "Setup → Система → Профили устройств"
-            Text  = "Сохранение состояния ТВ как профиля (какие пакеты отключены, какие настройки). Применение профиля к другому ТВ одним кликом."
-        },
-        @{
-            Title = "⏪ Откат изменений"
-            Where = "Главное меню → Откат изменений"
-            Text  = "Все действия логируются. Каждое изменение хранит команду восстановления. Массовый откат выбранных операций."
-        },
-        @{
-            Title = "📶 Wi-Fi"
-            Where = "Setup → Система → Wi-Fi"
-            Text  = "Просмотр текущего подключения (SSID, IP, MAC, шлюз, DNS, сигнал). Список доступных сетей. Без переключения из приложения (чтобы не разорвать ADB)."
-        },
-        @{
-            Title = "📊 Процессы ТВ"
-            Where = "Setup → Система → Процессы ТВ"
-            Text  = "Топ процессов по CPU или памяти. Возможность остановить приложение (force-stop)."
-        }
+        @{ Title = "Управление приложениями";  Where = "Setup → Управление пакетами"; Text = "Отключение и удаление предустановленного мусора. 6 категорий, поиск, сквозной фильтр." }
+        @{ Title = "Установка приложений";     Where = "Setup → Установить APK";       Text = "Установка .apk, .apks, .xapk, .apkm, .zip. Пакетно, в фоне." }
+        @{ Title = "Пульт";                    Where = "Setup → Инструменты → Пульт";  Text = "Управление с клавиатуры ПК. Хоткеи, ввод текста." }
+        @{ Title = "Разрешение и DPI";         Where = "Setup → Система";              Text = "Пресеты 720p – 4K. Кастомные значения, сброс." }
+        @{ Title = "Пресеты настроек";         Where = "Setup → Система";              Text = "30 готовых пресетов: тайм-аут, анимации, яркость." }
+        @{ Title = "Сценарии";                 Where = "Setup → Система";              Text = "Пакетный режим — набор шагов, выполняется одной кнопкой." }
+        @{ Title = "Автозапуск и фон";         Where = "Setup → Система";              Text = "Управление фоновой активностью через appops." }
+        @{ Title = "Разрешения приложений";    Where = "Setup → Система";              Text = "Просмотр и управление разрешениями с описаниями." }
+        @{ Title = "Температура ТВ";           Where = "Setup → Система";              Text = "Мониторинг термодатчиков, график." }
+        @{ Title = "Проверка целостности";     Where = "Setup → Система";              Text = "Сравнение ТВ с сохранённым дампом." }
+        @{ Title = "Экспорт дампа";            Where = "Setup → Система";              Text = "Полный дамп устройства в JSON или TXT." }
+        @{ Title = "Процессы ТВ";              Where = "Setup → Система";              Text = "Топ по CPU/RAM, остановка приложений." }
+        @{ Title = "Откат изменений";          Where = "Главное меню";                 Text = "История действий с командой восстановления." }
     )
 
     foreach ($feat in $features) {
         $itemCard = New-Object System.Windows.Controls.Border
-        $itemCard.Background = "White"
-        $itemCard.BorderBrush = "#E1E1E6"
+        $itemCard.Background = "#2B2B2B"
+        $itemCard.BorderBrush = "#3A3A3A"
         $itemCard.BorderThickness = "1"
         $itemCard.CornerRadius = "8"
         $itemCard.Padding = "12"
@@ -531,20 +466,26 @@ function Show-HelpDialog {
         $itemTitle.Text = $feat.Title
         $itemTitle.FontSize = 14
         $itemTitle.FontWeight = "Bold"
-        $itemTitle.Foreground = "#2D2D30"
+        $itemTitle.Foreground = [System.Windows.Media.SolidColorBrush](
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#FFFFFF")
+        )
         $itemStack.Children.Add($itemTitle) | Out-Null
 
         $itemWhere = New-Object System.Windows.Controls.TextBlock
         $itemWhere.Text = "Где найти: $($feat.Where)"
         $itemWhere.FontSize = 11
-        $itemWhere.Foreground = "#4A90E2"
+        $itemWhere.Foreground = [System.Windows.Media.SolidColorBrush](
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#60CDFF")
+        )
         $itemWhere.Margin = "0,3,0,5"
         $itemStack.Children.Add($itemWhere) | Out-Null
 
         $itemText = New-Object System.Windows.Controls.TextBlock
         $itemText.Text = $feat.Text
         $itemText.FontSize = 12
-        $itemText.Foreground = "#2D2D30"
+        $itemText.Foreground = [System.Windows.Media.SolidColorBrush](
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#E0E0E0")
+        )
         $itemText.TextWrapping = "Wrap"
         $itemStack.Children.Add($itemText) | Out-Null
 
@@ -567,7 +508,7 @@ function Show-HelpDialog {
     $btnClose.Content = "Закрыть"
     $btnClose.Style = $window.Resources["RoundedButton"]
     $btnClose.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#B0BEC5")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#4A4A4A")
     )
     $btnClose.Padding = "15,8"
     $btnClose.HorizontalAlignment = "Right"

@@ -66,7 +66,7 @@
     $script:LogcatToggleBtn.Content = "Запустить"
     $script:LogcatToggleBtn.Style = $window.Resources["RoundedButton"]
     $script:LogcatToggleBtn.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#66BB6A")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $script:LogcatToggleBtn.Padding = "15,6"
     $script:LogcatToggleBtn.Margin = "0,0,8,0"
@@ -77,7 +77,7 @@
     $btnClear.Content = "Очистить"
     $btnClear.Style = $window.Resources["RoundedButton"]
     $btnClear.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#64B5F6")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnClear.Padding = "15,6"
     [System.Windows.Controls.Grid]::SetColumn($btnClear, 4)
@@ -107,7 +107,7 @@
     $script:LogcatStatus = New-Object System.Windows.Controls.TextBlock
     $script:LogcatStatus.Text = "Logcat остановлен"
     $script:LogcatStatus.FontSize = 12
-    $script:LogcatStatus.Foreground = "#96969B"
+    $script:LogcatStatus.Foreground = "#A0A0A0"
     $script:LogcatStatus.Margin = "0,10,0,0"
     $mainStack.Children.Add($script:LogcatStatus) | Out-Null
 
@@ -127,11 +127,11 @@
             # Сначала меняем UI
             $btn.Content = "Запустить"
             $btn.Background = New-Object System.Windows.Media.SolidColorBrush(
-                [System.Windows.Media.ColorConverter]::ConvertFromString("#66BB6A")
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
             )
             $status.Text = "Logcat остановлен"
             $status.Foreground = New-Object System.Windows.Media.SolidColorBrush(
-                [System.Windows.Media.ColorConverter]::ConvertFromString("#96969B")
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#A0A0A0")
             )
 
             # Останавливаем в фоне — UI не блокируется
@@ -163,11 +163,11 @@
                     $script:LogcatProcess = $proc
                     $btn.Content = "Остановить"
                     $btn.Background = New-Object System.Windows.Media.SolidColorBrush(
-                        [System.Windows.Media.ColorConverter]::ConvertFromString("#E57373")
+                        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
                     )
                     $status.Text = "Logcat работает..."
                     $status.Foreground = New-Object System.Windows.Media.SolidColorBrush(
-                        [System.Windows.Media.ColorConverter]::ConvertFromString("#66BB6A")
+                        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
                     )
                 }
             } catch {
@@ -201,7 +201,7 @@
     $btnSave.Content = "Сохранить в файл"
     $btnSave.Style = $window.Resources["RoundedButton"]
     $btnSave.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#FFB74D")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnSave.Padding = "12,6"
     $btnSave.Add_Click({

@@ -1,29 +1,57 @@
 ﻿# ============================================================================
-#  Экран: Установка APK и Bundle (.apks / .xapk / .apkm)
+#  Экран: Установка APK, Bundle и ZIP
 # ============================================================================
 
 function Show-ApkView {
     $mainStack = New-Object System.Windows.Controls.StackPanel
-    $mainStack.Margin = "40,30,40,30"
+    $mainStack.Margin = "25,20,25,20"
 
     $header = New-ViewHeader -Text "Установка приложений"
     $mainStack.Children.Add($header) | Out-Null
 
-    $mainStack.Children.Add((New-ViewLabel -Text "Выберите папку с файлами .apk, .apks, .xapk или .apkm:")) | Out-Null
+    $mainStack.Children.Add((New-ViewLabel -Text "Выберите папку или добавьте файлы .apk, .apks, .xapk, .apkm, .zip:")) | Out-Null
 
+    # ===== ПОДСКАЗКА ПРО ФОРМАТЫ =====
+    $hintCard = New-Object System.Windows.Controls.Border
+    $hintCard.Background = "#1A2A3A"
+    $hintCard.BorderBrush = "#3A5A7A"
+    $hintCard.BorderThickness = "1"
+    $hintCard.CornerRadius = "6"
+    $hintCard.Padding = "10"
+    $hintCard.Margin = "0,0,0,12"
+
+    $hintText = New-Object System.Windows.Controls.TextBlock
+    $hintText.FontSize = 11
+    $hintText.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#A0C8E8")
+    )
+    $hintText.TextWrapping = "Wrap"
+    $hintText.Text = "Поддерживаемые форматы:`n" +
+        "  • .apk    — обычный APK-файл`n" +
+        "  • .apks   — bundle от bundletool (base + splits)`n" +
+        "  • .xapk   — bundle от APKPure`n" +
+        "  • .apkm   — bundle от APKMirror`n" +
+        "  • .zip    — ZIP-архив с APK-файлами (распакуется автоматически)"
+    $hintCard.Child = $hintText
+    $mainStack.Children.Add($hintCard) | Out-Null
+
+    # ===== ПАНЕЛЬ КНОПОК ФАЙЛА =====
     $folderPanel = New-Object System.Windows.Controls.StackPanel
     $folderPanel.Orientation = "Horizontal"
-    $folderPanel.Margin = "0,0,0,15"
+    $folderPanel.Margin = "0,0,0,10"
 
     $script:ApkFolderLabel = New-Object System.Windows.Controls.TextBlock
     $script:ApkFolderLabel.Text = if ($script:ApkFolderPath) { $script:ApkFolderPath } else { "Папка не выбрана" }
     $script:ApkFolderLabel.FontSize = 12
-    $script:ApkFolderLabel.Foreground = "#96969B"
+    $script:ApkFolderLabel.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#A0A0A0")
+    )
     $script:ApkFolderLabel.VerticalAlignment = "Center"
     $script:ApkFolderLabel.Margin = "0,0,15,0"
     $folderPanel.Children.Add($script:ApkFolderLabel) | Out-Null
 
-    $folderPanel.Children.Add((New-ViewButton -Text "Выбрать папку" -Color "#4A90E2" -OnClick {
+    # --- Выбрать папку ---
+    $btnChoose = New-ViewButton -Text "Выбрать папку" -ColorType "Primary" -Compact -OnClick {
         Add-Type -AssemblyName System.Windows.Forms
         $dlg = New-Object System.Windows.Forms.FolderBrowserDialog
         $dlg.Description = "Выберите папку с APK или bundle-файлами"
@@ -31,59 +59,116 @@ function Show-ApkView {
             $script:ApkFolderPath = $dlg.SelectedPath
             Set-ConfigValue -Key "LastApkFolder" -Value $script:ApkFolderPath
             $script:ApkFolderLabel.Text = $script:ApkFolderPath
-            Load-ApkFiles -Folder $script:ApkFolderPath
-        }
-    })) | Out-Null
-
-    $folderPanel.Children.Add((New-ViewButton -Text "Добавить файл" -Color "#9C27B0" -Margin "10,0,0,0" -OnClick {
-        Add-Type -AssemblyName System.Windows.Forms
-        $dlg = New-Object System.Windows.Forms.OpenFileDialog
-        $dlg.Filter = "APK files (*.apk)|*.apk|Bundle files (*.apks;*.xapk;*.apkm)|*.apks;*.xapk;*.apkm|All supported (*.apk;*.apks;*.xapk;*.apkm)|*.apk;*.apks;*.xapk;*.apkm|All files (*.*)|*.*"
-        $dlg.Title = "Выберите APK или bundle-файл"
-        $dlg.Multiselect = $true
-        if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-            $files = $dlg.FileNames
-            if (-not $script:ApkExtraFiles) { $script:ApkExtraFiles = @() }
-            foreach ($f in $files) {
-                if ($script:ApkExtraFiles -notcontains $f) {
-                    $script:ApkExtraFiles += $f
-                }
-            }
-            Write-Log -Message "Добавлено файлов: $($files.Count)" -Level "Info"
             Switch-View -ViewName "Apk"
         }
-    })) | Out-Null
+    }
+    $btnChoose.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
+    $folderPanel.Children.Add($btnChoose) | Out-Null
+
+    # --- Добавить файл ---
+    $btnAddFile = New-ViewButton -Text "Добавить файл" -ColorType "Purple" -Compact -OnClick {
+        Add-Type -AssemblyName System.Windows.Forms
+        $dlg = New-Object System.Windows.Forms.OpenFileDialog
+        $dlg.Filter = "Поддерживаемые (*.apk;*.apks;*.xapk;*.apkm;*.zip)|*.apk;*.apks;*.xapk;*.apkm;*.zip|APK (*.apk)|*.apk|Bundle (*.apks;*.xapk;*.apkm)|*.apks;*.xapk;*.apkm|ZIP (*.zip)|*.zip|All files (*.*)|*.*"
+        $dlg.Title = "Выберите APK, bundle или ZIP-архив"
+        $dlg.Multiselect = $true
+        if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+            $addedCount = 0
+            foreach ($f in $dlg.FileNames) {
+                if ($f -match '\.zip$') {
+                    $tempDir = Join-Path $env:TEMP "TVManager_ApkZip_$(Get-Random)"
+                    try {
+                        New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+                        Add-Type -AssemblyName System.IO.Compression.FileSystem
+                        [System.IO.Compression.ZipFile]::ExtractToDirectory($f, $tempDir)
+
+                        $extracted = Get-ChildItem -Path $tempDir -File -Recurse | Where-Object {
+                            $_.Extension.ToLower() -in @(".apk", ".apks", ".xapk", ".apkm")
+                        }
+
+                        if ($extracted.Count -eq 0) {
+                            Write-Log -Message "В архиве $([System.IO.Path]::GetFileName($f)) нет APK" -Level "Warning"
+                            continue
+                        }
+
+                        if (-not $script:ApkExtraFiles) { $script:ApkExtraFiles = @() }
+                        foreach ($apk in $extracted) {
+                            if ($script:ApkExtraFiles -notcontains $apk.FullName) {
+                                $script:ApkExtraFiles += $apk.FullName
+                                $addedCount++
+                            }
+                        }
+                        Write-Log -Message "Распаковано из $([System.IO.Path]::GetFileName($f)): $($extracted.Count) файлов" -Level "Success"
+                    } catch {
+                        Write-Log -Message "Ошибка распаковки $f`: $_" -Level "Error"
+                    }
+                } else {
+                    if (-not $script:ApkExtraFiles) { $script:ApkExtraFiles = @() }
+                    if ($script:ApkExtraFiles -notcontains $f) {
+                        $script:ApkExtraFiles += $f
+                        $addedCount++
+                    }
+                }
+            }
+            Write-Log -Message "Добавлено файлов: $addedCount" -Level "Info"
+            Switch-View -ViewName "Apk"
+        }
+    }
+    $btnAddFile.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
+    $folderPanel.Children.Add($btnAddFile) | Out-Null
+
+    # --- Установить APK с ТВ ---
+    $btnRemote = New-ViewButton -Text "Установить APK с ТВ" -ColorType "Gray" -Compact -OnClick {
+        Add-Type -AssemblyName Microsoft.VisualBasic
+        $remotePath = [Microsoft.VisualBasic.Interaction]::InputBox(
+            "Укажите полный путь к APK на телевизоре:`n`nНапример: /sdcard/Download/app.apk",
+            "Установка APK с ТВ",
+            "/sdcard/Download/")
+        if (-not [string]::IsNullOrWhiteSpace($remotePath)) {
+            $remotePath = $remotePath.Trim()
+            $fileName = Split-Path $remotePath -Leaf
+            Invoke-InstallRemoteApk -RemotePath $remotePath -Name $fileName
+        }
+    }
+    $folderPanel.Children.Add($btnRemote) | Out-Null
 
     $mainStack.Children.Add($folderPanel) | Out-Null
 
+    # ===== СПИСОК ФАЙЛОВ =====
     $script:ApkListContainer = New-Object System.Windows.Controls.StackPanel
-    $script:ApkListContainer.Margin = "0,10,0,15"
+    $script:ApkListContainer.Margin = "0,10,0,12"
     $mainStack.Children.Add($script:ApkListContainer) | Out-Null
 
     Load-ApkFiles -Folder $script:ApkFolderPath -RestoreSelection
 
+    # ===== КНОПКИ УПРАВЛЕНИЯ =====
     $btnPanel = New-Object System.Windows.Controls.StackPanel
     $btnPanel.Orientation = "Horizontal"
-    $btnPanel.Margin = "0,15,0,0"
+    $btnPanel.Margin = "0,10,0,0"
 
-    $btnPanel.Children.Add((New-ViewButton -Text "Выбрать всё" -Color "#64B5F6" -OnClick {
+    # --- Выбрать всё ---
+    $btnSelectAll = New-ViewButton -Text "Выбрать всё" -ColorType "LightBlue" -Compact -OnClick {
         if ($script:ApkCheckboxes) {
             foreach ($chk in $script:ApkCheckboxes) {
-                if ($chk.IsEnabled -eq $true) {
-                    $chk.IsChecked = $true
-                }
+                if ($chk.IsEnabled -eq $true) { $chk.IsChecked = $true }
             }
         }
-    })) | Out-Null
+    }
+    $btnSelectAll.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
+    $btnPanel.Children.Add($btnSelectAll) | Out-Null
 
-    $btnPanel.Children.Add((New-ViewButton -Text "Снять всё" -Color "#FFB74D" -OnClick {
+    # --- Снять всё ---
+    $btnDeselect = New-ViewButton -Text "Снять всё" -ColorType "Warning" -Compact -OnClick {
         if ($script:ApkCheckboxes) {
             foreach ($chk in $script:ApkCheckboxes) { $chk.IsChecked = $false }
         }
-    })) | Out-Null
+    }
+    $btnDeselect.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
+    $btnPanel.Children.Add($btnDeselect) | Out-Null
 
+    # --- Установить выбранные ---
     $btnText = if ($script:ApkInstallInProgress) { "Установка..." } else { "Установить выбранные" }
-    $script:ApkBtnInstall = New-ViewButton -Text $btnText -Color "#66BB6A" -OnClick {
+    $script:ApkBtnInstall = New-ViewButton -Text $btnText -ColorType "Success" -Compact -OnClick {
         $selected = @()
         if ($script:ApkCheckboxes) {
             foreach ($chk in $script:ApkCheckboxes) {
@@ -128,6 +213,8 @@ function Load-ApkFiles {
         [switch]$RestoreSelection
     )
 
+    if (-not $script:ApkListContainer) { return }
+
     $script:ApkListContainer.Children.Clear()
     $script:ApkCheckboxes = @()
 
@@ -166,14 +253,13 @@ function Load-ApkFiles {
         $isInstalled = $script:ApkInstalledFiles -contains $f.FullName
         $isBundle = Test-IsApkBundle -Path $f.FullName
 
-        # Тип для отображения
         $typeLabel = ""
-        $typeColor = "#2D2D30"
+        $typeColor = "#E0E0E0"
         if ($f.Extension.ToLower() -eq ".apk") {
             $typeLabel = "[APK]"
         } else {
             $typeLabel = "[BUNDLE]"
-            $typeColor = "#9C27B0"
+            $typeColor = "#B57EDC"
         }
 
         $chk = New-Object System.Windows.Controls.CheckBox
@@ -234,8 +320,8 @@ function Convert-InstallError {
 
     if ($installCode) {
         switch ($installCode) {
-            "INSTALL_FAILED_VERSION_DOWNGRADE"             { return "версия ниже установленной. Смотрите подсказку ниже." }
-            "INSTALL_FAILED_UPDATE_INCOMPATIBLE"           { return "подпись не совпадает с установленной. Смотрите подсказку ниже." }
+            "INSTALL_FAILED_VERSION_DOWNGRADE"             { return "версия APK ниже установленной. Смотрите подсказку ниже." }
+            "INSTALL_FAILED_UPDATE_INCOMPATIBLE"           { return "подпись APK не совпадает с установленной. Смотрите подсказку ниже." }
             "INSTALL_FAILED_ALREADY_EXISTS"                { return "приложение уже установлено" }
             "INSTALL_FAILED_INSUFFICIENT_STORAGE"          { return "недостаточно места на ТВ" }
             "INSTALL_FAILED_INVALID_APK"                   { return "повреждённый или невалидный APK" }
@@ -363,7 +449,6 @@ function Start-BackgroundApkInstall {
             $isSuccess = $false
 
             if ($isBundle) {
-                # --- Bundle: распаковка + install-multiple ---
                 $tempDir = Join-Path $env:TEMP "TVManager_Apk_$(Get-Random)"
                 try {
                     New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
@@ -378,7 +463,6 @@ function Start-BackgroundApkInstall {
                         continue
                     }
 
-                    # Базовый APK первым
                     $baseApk = $allApks | Where-Object { $_ -match '\\base\.apk$' } | Select-Object -First 1
                     if (-not $baseApk) {
                         $baseApk = $allApks | Where-Object { (Split-Path $_ -Leaf) -notmatch '^split' } | Select-Object -First 1
@@ -403,7 +487,6 @@ function Start-BackgroundApkInstall {
                     }
                 }
             } else {
-                # --- Обычный APK ---
                 $out = & $adbPath install -r -g -d $f.FullName 2>&1
                 $outText = ($out | Out-String).Trim()
                 if ($outText -match "Success") { $isSuccess = $true }
@@ -424,8 +507,6 @@ function Start-BackgroundApkInstall {
                     Write-BgLog "    1. Setup → Управление пакетами" "Info"
                     Write-BgLog "    2. Найти пакет и удалить" "Info"
                     Write-BgLog "    3. Вернуться сюда и установить заново" "Info"
-                    Write-BgLog "  Или вручную (Сервис → Своя команда):" "Info"
-                    Write-BgLog "    shell pm uninstall --user 0 <имя_пакета>" "Info"
                     Write-BgLog "  ──────────────────────────────────────────────" "Info"
                 }
                 elseif ($outText -match 'INSTALL_FAILED_MISSING_SPLIT') {

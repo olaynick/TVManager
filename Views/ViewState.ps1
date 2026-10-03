@@ -91,3 +91,6 @@ $script:IntegrityReference = $null
 # ===== APK BUNDLES =====
 $script:ApkExtraFiles = @()
 
+# ===== PERMISSIONS =====
+$script:PermLoadTimer = $null
+

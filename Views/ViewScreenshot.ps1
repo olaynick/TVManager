@@ -44,8 +44,8 @@ function New-ScreenshotTile {
     $border.Width = 200
     $border.Height = 180
     $border.Margin = "0,0,12,12"
-    $border.Background = "White"
-    $border.BorderBrush = "#E1E1E6"
+    $border.Background = "#2B2B2B"
+    $border.BorderBrush = "#3A3A3A"
     $border.BorderThickness = "1"
     $border.CornerRadius = "8"
     $border.Cursor = [System.Windows.Input.Cursors]::Hand
@@ -55,13 +55,13 @@ function New-ScreenshotTile {
     # ===== ПРЕВЬЮ =====
     $preview = New-Object System.Windows.Controls.Grid
     $preview.Height = 110
-    $preview.Background = "#2D2D30"
+    $preview.Background = "#FFFFFF"
 
     if ($isVideo) {
         $playBtn = New-Object System.Windows.Controls.TextBlock
         $playBtn.Text = "▶"
         $playBtn.FontSize = 42
-        $playBtn.Foreground = "White"
+        $playBtn.Foreground = "#2B2B2B"
         $playBtn.HorizontalAlignment = "Center"
         $playBtn.VerticalAlignment = "Center"
         $preview.Children.Add($playBtn) | Out-Null
@@ -70,8 +70,8 @@ function New-ScreenshotTile {
         $videoLabel.Text = "ВИДЕО"
         $videoLabel.FontSize = 10
         $videoLabel.FontWeight = "Bold"
-        $videoLabel.Foreground = "White"
-        $videoLabel.Background = "#9C27B0"
+        $videoLabel.Foreground = "#2B2B2B"
+        $videoLabel.Background = "#4A4A4A"
         $videoLabel.Padding = "5,2"
         $videoLabel.HorizontalAlignment = "Left"
         $videoLabel.VerticalAlignment = "Top"
@@ -95,7 +95,7 @@ function New-ScreenshotTile {
             $errLabel = New-Object System.Windows.Controls.TextBlock
             $errLabel.Text = "ФОТО"
             $errLabel.FontSize = 18
-            $errLabel.Foreground = "White"
+            $errLabel.Foreground = "#2B2B2B"
             $errLabel.HorizontalAlignment = "Center"
             $errLabel.VerticalAlignment = "Center"
             $preview.Children.Add($errLabel) | Out-Null
@@ -113,7 +113,7 @@ function New-ScreenshotTile {
     $nameLabel = New-Object System.Windows.Controls.TextBlock
     $nameLabel.Text = $File.Name
     $nameLabel.FontSize = 10
-    $nameLabel.Foreground = "#2D2D30"
+    $nameLabel.Foreground = "#FFFFFF"
     $nameLabel.TextTrimming = "CharacterEllipsis"
     $nameLabel.Margin = "8,5,8,0"
     $tileStack.Children.Add($nameLabel) | Out-Null
@@ -122,7 +122,7 @@ function New-ScreenshotTile {
     $dateLabel = New-Object System.Windows.Controls.TextBlock
     $dateLabel.Text = $File.LastWriteTime.ToString("dd.MM.yyyy HH:mm")
     $dateLabel.FontSize = 10
-    $dateLabel.Foreground = "#96969B"
+    $dateLabel.Foreground = "#A0A0A0"
     $dateLabel.Margin = "8,2,8,5"
     $tileStack.Children.Add($dateLabel) | Out-Null
 
@@ -175,7 +175,7 @@ function Show-ScreenshotView {
     $script:CaptureBtn = New-Object System.Windows.Controls.Button
     $script:CaptureBtn.Content = "Сделать скриншот"
     $script:CaptureBtn.Style = $window.Resources["RoundedButton"]
-    $script:CaptureBtn.Background = "#00BCD4"
+    $script:CaptureBtn.Background = "#4A4A4A"
     $script:CaptureBtn.Height = 55
     $script:CaptureBtn.FontSize = 15
     $script:CaptureBtn.HorizontalAlignment = "Left"
@@ -206,8 +206,8 @@ function Show-ScreenshotView {
 
     # Статус записи (виден во время записи)
     $script:RecordStatusCard = New-Object System.Windows.Controls.Border
-    $script:RecordStatusCard.Background = "#FFF3CD"
-    $script:RecordStatusCard.BorderBrush = "#FFB74D"
+    $script:RecordStatusCard.Background = "#3D3520"
+    $script:RecordStatusCard.BorderBrush = "#C8C8C8"
     $script:RecordStatusCard.BorderThickness = "1"
     $script:RecordStatusCard.CornerRadius = "6"
     $script:RecordStatusCard.Padding = "10"
@@ -225,8 +225,8 @@ function Show-ScreenshotView {
     $script:RecordProgressBar = New-Object System.Windows.Controls.ProgressBar
     $script:RecordProgressBar.Height = 8
     $script:RecordProgressBar.Margin = "0,8,0,0"
-    $script:RecordProgressBar.Foreground = "#FFB74D"
-    $script:RecordProgressBar.Background = "#E1E1E6"
+    $script:RecordProgressBar.Foreground = "#C8C8C8"
+    $script:RecordProgressBar.Background = "#3A3A3A"
     $script:RecordProgressBar.Value = 0
     $script:RecordProgressBar.Maximum = 100
     $recStatusStack.Children.Add($script:RecordProgressBar) | Out-Null
@@ -245,7 +245,7 @@ function Show-ScreenshotView {
         $btn = New-Object System.Windows.Controls.Button
         $btn.Content = $label
         $btn.Style = $window.Resources["RoundedButton"]
-        $btn.Background = "#9C27B0"
+        $btn.Background = "#4A4A4A"
         $btn.Padding = "15,8"
         $btn.Margin = "0,0,8,8"
         $secLocal = $sec
@@ -265,7 +265,7 @@ function Show-ScreenshotView {
     $btnRefreshGallery = New-Object System.Windows.Controls.Button
     $btnRefreshGallery.Content = "Обновить галерею"
     $btnRefreshGallery.Style = $window.Resources["RoundedButton"]
-    $btnRefreshGallery.Background = "#4A90E2"
+    $btnRefreshGallery.Background = "#4A4A4A"
     $btnRefreshGallery.Padding = "15,8"
     $btnRefreshGallery.Margin = "0,0,10,0"
     $btnRefreshGallery.Add_Click({
@@ -277,7 +277,7 @@ function Show-ScreenshotView {
     $btnOpenFolder = New-Object System.Windows.Controls.Button
     $btnOpenFolder.Content = "Открыть папку"
     $btnOpenFolder.Style = $window.Resources["RoundedButton"]
-    $btnOpenFolder.Background = "#607D8B"
+    $btnOpenFolder.Background = "#4A4A4A"
     $btnOpenFolder.Padding = "15,8"
     $btnOpenFolder.Add_Click({
         try {

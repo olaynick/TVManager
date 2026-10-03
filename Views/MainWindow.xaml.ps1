@@ -29,6 +29,8 @@ function Switch-View {
         "Integrity"    { Show-IntegrityView }
         "Scenarios"    { Show-ScenariosView }
         "Autostart"    { Show-AutostartView }
+        "Thermal"      { Show-ThermalView }
+        "Permissions"  { Show-PermissionsView }
         default        { Write-Log -Message "Неизвестный экран: $ViewName" -Level "Warning" }
     }
     Update-StatusBar

@@ -46,11 +46,11 @@
     $infoStack.Children.Add($kbTb) | Out-Null
 
     if ($hasAdbKb) {
-        $infoCard.Background = "#E8F5E9"
-        $infoCard.BorderBrush = "#66BB6A"
+        $infoCard.Background = "#1F3A1F"
+        $infoCard.BorderBrush = "#C8C8C8"
     } else {
-        $infoCard.Background = "#FFF8E1"
-        $infoCard.BorderBrush = "#FFB74D"
+        $infoCard.Background = "#2E2A1A"
+        $infoCard.BorderBrush = "#C8C8C8"
     }
     $infoCard.Child = $infoStack
     $mainStack.Children.Add($infoCard) | Out-Null
@@ -74,7 +74,7 @@
     $btnBack = New-Object System.Windows.Controls.Button
     $btnBack.Content = "◄  Назад"
     $btnBack.Style = $window.Resources["RoundedButton"]
-    $btnBack.Background = "#4A90E2"
+    $btnBack.Background = "#4A4A4A"
     $btnBack.Height = 48
     $btnBack.FontSize = 14
     $btnBack.Margin = "0,0,8,0"
@@ -85,7 +85,7 @@
     $btnHome = New-Object System.Windows.Controls.Button
     $btnHome.Content = "⌂  Домой"
     $btnHome.Style = $window.Resources["RoundedButton"]
-    $btnHome.Background = "#66BB6A"
+    $btnHome.Background = "#4A4A4A"
     $btnHome.Height = 48
     $btnHome.FontSize = 14
     $btnHome.Margin = "0,0,8,0"
@@ -96,7 +96,7 @@
     $btnMenu = New-Object System.Windows.Controls.Button
     $btnMenu.Content = "☰  Меню"
     $btnMenu.Style = $window.Resources["RoundedButton"]
-    $btnMenu.Background = "#FFB74D"
+    $btnMenu.Background = "#4A4A4A"
     $btnMenu.Height = 48
     $btnMenu.FontSize = 14
     $btnMenu.Add_Click({ Send-MenuKey })
@@ -131,7 +131,7 @@
     $btnUp = New-Object System.Windows.Controls.Button
     $btnUp.Content = "▲"
     $btnUp.Style = $window.Resources["RoundedButton"]
-    $btnUp.Background = "#4A90E2"
+    $btnUp.Background = "#4A4A4A"
     $btnUp.FontSize = 18
     $btnUp.Margin = "2"
     $btnUp.Add_Click({ Send-KeyEvent -KeyCode "KEYCODE_DPAD_UP" -Description "Вверх" })
@@ -142,7 +142,7 @@
     $btnLeft = New-Object System.Windows.Controls.Button
     $btnLeft.Content = "◄"
     $btnLeft.Style = $window.Resources["RoundedButton"]
-    $btnLeft.Background = "#4A90E2"
+    $btnLeft.Background = "#4A4A4A"
     $btnLeft.FontSize = 18
     $btnLeft.Margin = "2"
     $btnLeft.Add_Click({ Send-KeyEvent -KeyCode "KEYCODE_DPAD_LEFT" -Description "Влево" })
@@ -153,7 +153,7 @@
     $btnOk = New-Object System.Windows.Controls.Button
     $btnOk.Content = "OK"
     $btnOk.Style = $window.Resources["RoundedButton"]
-    $btnOk.Background = "#66BB6A"
+    $btnOk.Background = "#4A4A4A"
     $btnOk.FontSize = 15
     $btnOk.FontWeight = "Bold"
     $btnOk.Margin = "2"
@@ -165,7 +165,7 @@
     $btnRight = New-Object System.Windows.Controls.Button
     $btnRight.Content = "►"
     $btnRight.Style = $window.Resources["RoundedButton"]
-    $btnRight.Background = "#4A90E2"
+    $btnRight.Background = "#4A4A4A"
     $btnRight.FontSize = 18
     $btnRight.Margin = "2"
     $btnRight.Add_Click({ Send-KeyEvent -KeyCode "KEYCODE_DPAD_RIGHT" -Description "Вправо" })
@@ -176,7 +176,7 @@
     $btnDown = New-Object System.Windows.Controls.Button
     $btnDown.Content = "▼"
     $btnDown.Style = $window.Resources["RoundedButton"]
-    $btnDown.Background = "#4A90E2"
+    $btnDown.Background = "#4A4A4A"
     $btnDown.FontSize = 18
     $btnDown.Margin = "2"
     $btnDown.Add_Click({ Send-KeyEvent -KeyCode "KEYCODE_DPAD_DOWN" -Description "Вниз" })
@@ -205,7 +205,7 @@
     $btnVolDown = New-Object System.Windows.Controls.Button
     $btnVolDown.Content = "−  Тише"
     $btnVolDown.Style = $window.Resources["RoundedButton"]
-    $btnVolDown.Background = "#FFB74D"
+    $btnVolDown.Background = "#4A4A4A"
     $btnVolDown.Height = 46
     $btnVolDown.FontSize = 14
     $btnVolDown.Margin = "0,0,8,0"
@@ -214,7 +214,7 @@
     $volGrid.Children.Add($btnVolDown) | Out-Null
 
     $muteText = if ($script:RemoteMuted) { "🔊  Вкл. звук" } else { "🔇  Mute" }
-    $muteColor = if ($script:RemoteMuted) { "#66BB6A" } else { "#9E9E9E" }
+    $muteColor = if ($script:RemoteMuted) { "#C8C8C8" } else { "#9E9E9E" }
 
     $script:RemoteMuteBtn = New-Object System.Windows.Controls.Button
     $script:RemoteMuteBtn.Content = $muteText
@@ -228,7 +228,7 @@
         $script:RemoteMuted = -not $script:RemoteMuted
         if ($script:RemoteMuted) {
             $script:RemoteMuteBtn.Content = "🔊  Вкл. звук"
-            $script:RemoteMuteBtn.Background = "#66BB6A"
+            $script:RemoteMuteBtn.Background = "#4A4A4A"
         } else {
             $script:RemoteMuteBtn.Content = "🔇  Mute"
             $script:RemoteMuteBtn.Background = "#9E9E9E"
@@ -240,7 +240,7 @@
     $btnVolUp = New-Object System.Windows.Controls.Button
     $btnVolUp.Content = "+  Громче"
     $btnVolUp.Style = $window.Resources["RoundedButton"]
-    $btnVolUp.Background = "#FFB74D"
+    $btnVolUp.Background = "#4A4A4A"
     $btnVolUp.Height = 46
     $btnVolUp.FontSize = 14
     $btnVolUp.Add_Click({ Send-KeyEvent -KeyCode "KEYCODE_VOLUME_UP" -Description "Громче" })
@@ -268,7 +268,7 @@
     $btnPrev = New-Object System.Windows.Controls.Button
     $btnPrev.Content = "⏮  Назад"
     $btnPrev.Style = $window.Resources["RoundedButton"]
-    $btnPrev.Background = "#9C27B0"
+    $btnPrev.Background = "#4A4A4A"
     $btnPrev.Height = 46
     $btnPrev.FontSize = 13
     $btnPrev.Margin = "0,0,8,0"
@@ -279,7 +279,7 @@
     $btnPlay = New-Object System.Windows.Controls.Button
     $btnPlay.Content = "⏯  Пауза"
     $btnPlay.Style = $window.Resources["RoundedButton"]
-    $btnPlay.Background = "#9C27B0"
+    $btnPlay.Background = "#4A4A4A"
     $btnPlay.Height = 46
     $btnPlay.FontSize = 13
     $btnPlay.Margin = "0,0,8,0"
@@ -290,7 +290,7 @@
     $btnNext = New-Object System.Windows.Controls.Button
     $btnNext.Content = "⏭  Вперёд"
     $btnNext.Style = $window.Resources["RoundedButton"]
-    $btnNext.Background = "#9C27B0"
+    $btnNext.Background = "#4A4A4A"
     $btnNext.Height = 46
     $btnNext.FontSize = 13
     $btnNext.Add_Click({ Send-KeyEvent -KeyCode "KEYCODE_MEDIA_NEXT" -Description "Следующий" })
@@ -330,7 +330,7 @@
     $btnSendText = New-Object System.Windows.Controls.Button
     $btnSendText.Content = "Отправить"
     $btnSendText.Style = $window.Resources["RoundedButton"]
-    $btnSendText.Background = "#66BB6A"
+    $btnSendText.Background = "#4A4A4A"
     $btnSendText.Height = 34
     $btnSendText.Margin = "8,0,0,0"
     $btnSendText.Padding = "14,4"
@@ -349,7 +349,7 @@
         $btnKb = New-Object System.Windows.Controls.Button
         $btnKb.Content = "ADB KB"
         $btnKb.Style = $window.Resources["RoundedButton"]
-        $btnKb.Background = "#607D8B"
+        $btnKb.Background = "#4A4A4A"
         $btnKb.Height = 34
         $btnKb.Margin = "8,0,0,0"
         $btnKb.Padding = "12,4"
@@ -363,7 +363,7 @@
         $btnKb = New-Object System.Windows.Controls.Button
         $btnKb.Content = "Открыть APK ADB Keyboard"
         $btnKb.Style = $window.Resources["RoundedButton"]
-        $btnKb.Background = "#9C27B0"
+        $btnKb.Background = "#4A4A4A"
         $btnKb.Height = 34
         $btnKb.Margin = "8,0,0,0"
         $btnKb.Padding = "12,4"

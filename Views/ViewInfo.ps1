@@ -22,7 +22,7 @@
     $btnRefresh.Content = "Обновить сведения"
     $btnRefresh.Style = $window.Resources["RoundedButton"]
     $btnRefresh.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#4A90E2")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#414141")
     )
     $btnRefresh.Padding = "15,8"
     $btnRefresh.Margin = "0,0,10,0"
@@ -37,7 +37,7 @@
     $btnCopy.Content = "Копировать всё"
     $btnCopy.Style = $window.Resources["RoundedButton"]
     $btnCopy.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#607D8B")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#414141")
     )
     $btnCopy.Padding = "15,8"
     $btnCopy.Margin = "0,0,10,0"
@@ -58,7 +58,7 @@
     $btnExport.Content = "Экспорт в файл"
     $btnExport.Style = $window.Resources["RoundedButton"]
     $btnExport.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#9C27B0")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#414141")
     )
     $btnExport.Padding = "15,8"
     $btnExport.Add_Click({
@@ -80,7 +80,7 @@
     $blocks = @(
         @{
             Title = "Устройство"
-            Color = "#4A90E2"
+            Color = "#C8C8C8"
             Rows = @(
                 @{ Label = "Модель";         Value = $info.Model },
                 @{ Label = "Производитель";  Value = $info.Manufacturer },
@@ -90,7 +90,7 @@
         },
         @{
             Title = "Система"
-            Color = "#66BB6A"
+            Color = "#C8C8C8"
             Rows = @(
                 @{ Label = "Версия Android";    Value = $info.AndroidVersion },
                 @{ Label = "Номер сборки";      Value = $info.BuildNumber },
@@ -101,7 +101,7 @@
         },
         @{
             Title = "Процессор и GPU"
-            Color = "#9C27B0"
+            Color = "#C8C8C8"
             Rows = @(
                 @{ Label = "Процессор";   Value = $info.CpuModel },
                 @{ Label = "Ядер CPU";    Value = $info.CpuCores },
@@ -111,7 +111,7 @@
         },
         @{
             Title = "Память"
-            Color = "#FFB74D"
+            Color = "#C8C8C8"
             Rows = @(
                 @{ Label = "Всего RAM";        Value = $info.TotalRam },
                 @{ Label = "Свободно RAM";     Value = $info.AvailableRam },
@@ -121,7 +121,7 @@
         },
         @{
             Title = "Экран и сеть"
-            Color = "#00BCD4"
+            Color = "#C8C8C8"
             Rows = @(
                 @{ Label = "Разрешение";   Value = $info.ScreenResolution },
                 @{ Label = "Плотность";    Value = $info.ScreenDensity },
@@ -133,8 +133,8 @@
 
     foreach ($block in $blocks) {
         $card = New-Object System.Windows.Controls.Border
-        $card.Background = "White"
-        $card.BorderBrush = "#E1E1E6"
+        $card.Background = "#2B2B2B"
+        $card.BorderBrush = "#3A3A3A"
         $card.BorderThickness = "1"
         $card.CornerRadius = "10"
         $card.Padding = "15"
@@ -164,14 +164,14 @@
             $lbl = New-Object System.Windows.Controls.TextBlock
             $lbl.Text = $row.Label
             $lbl.FontSize = 13
-            $lbl.Foreground = "#96969B"
+            $lbl.Foreground = "#A0A0A0"
             [System.Windows.Controls.Grid]::SetColumn($lbl, 0)
             $grid.Children.Add($lbl) | Out-Null
 
             $val = New-Object System.Windows.Controls.TextBlock
             $val.Text = if ($row.Value) { $row.Value } else { "—" }
             $val.FontSize = 13
-            $val.Foreground = "#2D2D30"
+            $val.Foreground = "#FFFFFF"
             $val.FontFamily = "Consolas"
             $val.TextWrapping = "Wrap"
             [System.Windows.Controls.Grid]::SetColumn($val, 1)

@@ -50,7 +50,7 @@
     $script:SettingsProfilesListBox = New-Object System.Windows.Controls.ListBox
     $script:SettingsProfilesListBox.FontSize = 13
     $script:SettingsProfilesListBox.BorderThickness = "1"
-    $script:SettingsProfilesListBox.BorderBrush = "#E1E1E6"
+    $script:SettingsProfilesListBox.BorderBrush = "#3A3A3A"
     $script:SettingsProfilesListBox.MinHeight = 200
     $script:SettingsProfilesListBox.Padding = "5"
     $script:SettingsProfilesListBox.Margin = "0,10,0,10"
@@ -137,7 +137,7 @@
     $configPathLabel.Text = $script:ConfigPath
     $configPathLabel.FontFamily = "Consolas"
     $configPathLabel.FontSize = 11
-    $configPathLabel.Foreground = "#2D2D30"
+    $configPathLabel.Foreground = "#FFFFFF"
     $configPathLabel.TextWrapping = "Wrap"
     $configPathLabel.Margin = "0,5,0,15"
     $configPanel.Children.Add($configPathLabel) | Out-Null
@@ -153,7 +153,7 @@
     $logsPathLabel.Text = $logDirPath
     $logsPathLabel.FontFamily = "Consolas"
     $logsPathLabel.FontSize = 11
-    $logsPathLabel.Foreground = "#2D2D30"
+    $logsPathLabel.Foreground = "#FFFFFF"
     $logsPathLabel.TextWrapping = "Wrap"
     $logsPathLabel.Margin = "0,0,0,15"
     $configPanel.Children.Add($logsPathLabel) | Out-Null
@@ -251,7 +251,7 @@ function Show-AddProfileDialog {
     $dialog.Height = 300
     $dialog.WindowStartupLocation = "CenterOwner"
     $dialog.Owner = $window
-    $dialog.Background = "#F7F7FA"
+    $dialog.Background = "#202020"
 
     $stack = New-Object System.Windows.Controls.StackPanel
     $stack.Margin = "25"

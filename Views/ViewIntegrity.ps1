@@ -137,8 +137,8 @@ function New-DiffSection {
     )
 
     $section = New-Object System.Windows.Controls.Border
-    $section.Background = "White"
-    $section.BorderBrush = "#E1E1E6"
+    $section.Background = "#2B2B2B"
+    $section.BorderBrush = "#3A3A3A"
     $section.BorderThickness = "1"
     $section.CornerRadius = "6"
     $section.Padding = "12"
@@ -160,7 +160,7 @@ function New-DiffSection {
     $countTb = New-Object System.Windows.Controls.TextBlock
     $countTb.Text = "   ($($Items.Count))"
     $countTb.FontSize = 13
-    $countTb.Foreground = "#96969B"
+    $countTb.Foreground = "#A0A0A0"
     $countTb.VerticalAlignment = "Center"
     $headerStack.Children.Add($countTb) | Out-Null
 
@@ -170,7 +170,7 @@ function New-DiffSection {
         $empty = New-Object System.Windows.Controls.TextBlock
         $empty.Text = "  (нет)"
         $empty.FontSize = 12
-        $empty.Foreground = "#96969B"
+        $empty.Foreground = "#A0A0A0"
         $empty.Margin = "10,6,0,0"
         $stack.Children.Add($empty) | Out-Null
     } else {
@@ -184,7 +184,7 @@ function New-DiffSection {
                 $moreTb = New-Object System.Windows.Controls.TextBlock
                 $moreTb.Text = "  ... и ещё $($Items.Count - $maxShow)"
                 $moreTb.FontSize = 11
-                $moreTb.Foreground = "#96969B"
+                $moreTb.Foreground = "#A0A0A0"
                 $moreTb.Margin = "0,2,0,0"
                 $listStack.Children.Add($moreTb) | Out-Null
                 break
@@ -194,7 +194,7 @@ function New-DiffSection {
             $itemTb.Text = "  $item"
             $itemTb.FontFamily = "Consolas"
             $itemTb.FontSize = 12
-            $itemTb.Foreground = "#2D2D30"
+            $itemTb.Foreground = "#FFFFFF"
             $itemTb.Margin = "0,2,0,0"
             $listStack.Children.Add($itemTb) | Out-Null
             $shown++
@@ -220,7 +220,7 @@ function Show-IntegrityResultDialog {
     $dialog.Height = 700
     $dialog.WindowStartupLocation = "CenterOwner"
     $dialog.Owner = $window
-    $dialog.Background = "#F7F7FA"
+    $dialog.Background = "#202020"
 
     $grid = New-Object System.Windows.Controls.Grid
     $grid.Margin = "20"
@@ -250,7 +250,7 @@ function Show-IntegrityResultDialog {
 
     $infoTb = New-Object System.Windows.Controls.TextBlock
     $infoTb.FontSize = 11
-    $infoTb.Foreground = "#96969B"
+    $infoTb.Foreground = "#A0A0A0"
     $infoTb.TextWrapping = "Wrap"
     $infoTb.Text = "Эталон: $RefPath`nУстройство: $($Diff.RefDeviceIP)   |   Дамп от: $($Diff.RefTimestamp)"
     $infoTb.Margin = "0,0,0,15"
@@ -270,8 +270,8 @@ function Show-IntegrityResultDialog {
 
     if ($Diff.IsSame) {
         $okCard = New-Object System.Windows.Controls.Border
-        $okCard.Background = "#E8F5E9"
-        $okCard.BorderBrush = "#66BB6A"
+        $okCard.Background = "#1F3A1F"
+        $okCard.BorderBrush = "#C8C8C8"
         $okCard.BorderThickness = "1"
         $okCard.CornerRadius = "8"
         $okCard.Padding = "20"
@@ -285,16 +285,16 @@ function Show-IntegrityResultDialog {
         $contentStack.Children.Add($okCard) | Out-Null
     } else {
         # Установленные
-        $contentStack.Children.Add((New-DiffSection -Title "Установленные после дампа" -Items $Diff.Added -Color "#66BB6A")) | Out-Null
+        $contentStack.Children.Add((New-DiffSection -Title "Установленные после дампа" -Items $Diff.Added -Color "#C8C8C8")) | Out-Null
 
         # Удалённые
-        $contentStack.Children.Add((New-DiffSection -Title "Удалённые с момента дампа" -Items $Diff.Removed -Color "#E57373")) | Out-Null
+        $contentStack.Children.Add((New-DiffSection -Title "Удалённые с момента дампа" -Items $Diff.Removed -Color "#C8C8C8")) | Out-Null
 
         # Отключённые
-        $contentStack.Children.Add((New-DiffSection -Title "Отключённые с момента дампа" -Items $Diff.DisabledNow -Color "#FFB74D")) | Out-Null
+        $contentStack.Children.Add((New-DiffSection -Title "Отключённые с момента дампа" -Items $Diff.DisabledNow -Color "#C8C8C8")) | Out-Null
 
         # Включённые
-        $contentStack.Children.Add((New-DiffSection -Title "Включённые обратно" -Items $Diff.EnabledNow -Color "#4A90E2")) | Out-Null
+        $contentStack.Children.Add((New-DiffSection -Title "Включённые обратно" -Items $Diff.EnabledNow -Color "#C8C8C8")) | Out-Null
     }
 
     # --- Кнопки ---
@@ -309,7 +309,7 @@ function Show-IntegrityResultDialog {
     $btnSaveReport.Content = "Сохранить отчёт"
     $btnSaveReport.Style = $window.Resources["RoundedButton"]
     $btnSaveReport.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#607D8B")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnSaveReport.Padding = "15,8"
     $btnSaveReport.Margin = "0,0,10,0"
@@ -323,7 +323,7 @@ function Show-IntegrityResultDialog {
     $btnClose.Content = "Закрыть"
     $btnClose.Style = $window.Resources["RoundedButton"]
     $btnClose.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#4A90E2")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnClose.Padding = "15,8"
     $btnClose.Add_Click({ $dialog.Close() })
@@ -419,8 +419,8 @@ function Show-IntegrityView {
 
     # ===== КАРТОЧКА С ТЕКУЩИМ СОСТОЯНИЕМ =====
     $currentCard = New-Object System.Windows.Controls.Border
-    $currentCard.Background = "White"
-    $currentCard.BorderBrush = "#E1E1E6"
+    $currentCard.Background = "#2B2B2B"
+    $currentCard.BorderBrush = "#3A3A3A"
     $currentCard.BorderThickness = "1"
     $currentCard.CornerRadius = "8"
     $currentCard.Padding = "15"
@@ -432,7 +432,7 @@ function Show-IntegrityView {
     $currentTitle.Text = "Текущее состояние ТВ"
     $currentTitle.FontSize = 14
     $currentTitle.FontWeight = "Bold"
-    $currentTitle.Foreground = "#4A90E2"
+    $currentTitle.Foreground = "#C8C8C8"
     $currentTitle.Margin = "0,0,0,10"
     $currentStack.Children.Add($currentTitle) | Out-Null
 
@@ -458,7 +458,7 @@ function Show-IntegrityView {
 
     $statLine = New-Object System.Windows.Controls.TextBlock
     $statLine.FontSize = 13
-    $statLine.Foreground = "#2D2D30"
+    $statLine.Foreground = "#FFFFFF"
     $statLine.Text = "Всего пакетов: $nowAllCount   |   Сторонних: $nowThirdCount   |   Отключённых: $nowDisabledCount"
     $currentStack.Children.Add($statLine) | Out-Null
 
@@ -471,8 +471,8 @@ function Show-IntegrityView {
     if ($script:IntegrityReference) {
         # Уже загружен эталон
         $refCard = New-Object System.Windows.Controls.Border
-        $refCard.Background = "#E8F5E9"
-        $refCard.BorderBrush = "#66BB6A"
+        $refCard.Background = "#1F3A1F"
+        $refCard.BorderBrush = "#C8C8C8"
         $refCard.BorderThickness = "1"
         $refCard.CornerRadius = "6"
         $refCard.Padding = "12"
@@ -491,14 +491,14 @@ function Show-IntegrityView {
         $refPathTb.Text = $script:IntegrityReference.Path
         $refPathTb.FontFamily = "Consolas"
         $refPathTb.FontSize = 11
-        $refPathTb.Foreground = "#2D2D30"
+        $refPathTb.Foreground = "#FFFFFF"
         $refPathTb.TextWrapping = "Wrap"
         $refPathTb.Margin = "0,5,0,0"
         $refStack.Children.Add($refPathTb) | Out-Null
 
         $refInfoTb = New-Object System.Windows.Controls.TextBlock
         $refInfoTb.FontSize = 11
-        $refInfoTb.Foreground = "#96969B"
+        $refInfoTb.Foreground = "#A0A0A0"
         $refInfoTb.Margin = "0,3,0,0"
         $refInfoTb.Text = "Дамп создан: $($script:IntegrityReference.Data.ExportedAt)   |   IP: $($script:IntegrityReference.Data.DeviceIP)"
         $refStack.Children.Add($refInfoTb) | Out-Null
@@ -522,7 +522,7 @@ function Show-IntegrityView {
     $btnSelect.Content = "Выбрать дамп"
     $btnSelect.Style = $window.Resources["RoundedButton"]
     $btnSelect.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#607D8B")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnSelect.Padding = "12,6"
     $btnSelect.Margin = "0,0,8,0"
@@ -540,7 +540,7 @@ function Show-IntegrityView {
         $btnCompare.Content = "Сравнить"
         $btnCompare.Style = $window.Resources["RoundedButton"]
         $btnCompare.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#66BB6A")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
         )
         $btnCompare.Padding = "12,6"
         $btnCompare.Margin = "0,0,8,0"
@@ -554,7 +554,7 @@ function Show-IntegrityView {
         $btnClear.Content = "Сбросить эталон"
         $btnClear.Style = $window.Resources["RoundedButton"]
         $btnClear.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#FFB74D")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
         )
         $btnClear.Padding = "12,6"
         $btnClear.Margin = "0,0,8,0"
@@ -570,7 +570,7 @@ function Show-IntegrityView {
     $btnRefresh.Content = "Обновить"
     $btnRefresh.Style = $window.Resources["RoundedButton"]
     $btnRefresh.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#4A90E2")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
     )
     $btnRefresh.Padding = "12,6"
     $btnRefresh.Margin = "0,0,8,0"

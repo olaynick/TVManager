@@ -38,7 +38,7 @@ function Update-CleanupFilter {
             $catHeader.Text = "📁 $catName"
             $catHeader.FontSize = 12
             $catHeader.FontWeight = "Bold"
-            $catHeader.Foreground = "#4A90E2"
+            $catHeader.Foreground = "#C8C8C8"
             $catHeader.Margin = "0,10,0,5"
 
             $catContainer = New-Object System.Windows.Controls.StackPanel
@@ -83,7 +83,7 @@ function Update-CleanupFilter {
             $empty = New-Object System.Windows.Controls.TextBlock
             $empty.Text = "Ничего не найдено по запросу: $query"
             $empty.FontSize = 13
-            $empty.Foreground = "#96969B"
+            $empty.Foreground = "#A0A0A0"
             $empty.Margin = "20"
             $script:CleanupResultsPanel.Children.Add($empty) | Out-Null
         }
@@ -148,7 +148,7 @@ function Show-CleanupView {
     $searchBox.Add_GotFocus({
         if ($this.Text -eq $placeholderText) {
             $this.Text = ""
-            $this.Foreground = [System.Windows.Media.Brushes]::Black
+            $this.Foreground = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#E0E0E0"))
         }
     }.GetNewClosure())
 
@@ -167,7 +167,7 @@ function Show-CleanupView {
 
     $searchInfo = New-Object System.Windows.Controls.TextBlock
     $searchInfo.FontSize = 11
-    $searchInfo.Foreground = "#96969B"
+    $searchInfo.Foreground = "#A0A0A0"
     $searchInfo.VerticalAlignment = "Center"
     $searchInfo.Margin = "0,0,8,0"
     [System.Windows.Controls.Grid]::SetColumn($searchInfo, 1)
@@ -184,7 +184,7 @@ function Show-CleanupView {
     $btnClearSearch.Visibility = "Collapsed"
     $btnClearSearch.Add_Click({
         $script:CleanupSearchBox.Text = ""
-        $script:CleanupSearchBox.Foreground = [System.Windows.Media.Brushes]::Black
+        $script:CleanupSearchBox.Foreground = [System.Windows.Media.SolidColorBrush]([System.Windows.Media.ColorConverter]::ConvertFromString("#E0E0E0"))
         Update-CleanupFilter
     })
     [System.Windows.Controls.Grid]::SetColumn($btnClearSearch, 2)
@@ -221,8 +221,8 @@ function Show-CleanupView {
         # ===== ПРЕДУПРЕЖДЕНИЕ ДЛЯ ВКЛАДКИ "ЛАУНЧЕРЫ" =====
         if ($cat.Name -eq "Лаунчеры") {
             $warnCard = New-Object System.Windows.Controls.Border
-            $warnCard.Background = "#FFF3CD"
-            $warnCard.BorderBrush = "#FFB74D"
+            $warnCard.Background = "#3D3520"
+            $warnCard.BorderBrush = "#C8C8C8"
             $warnCard.BorderThickness = "1"
             $warnCard.CornerRadius = "6"
             $warnCard.Padding = "12"
@@ -254,8 +254,8 @@ function Show-CleanupView {
             $btnRestoreGoogle.Content = "Восстановить Google Launcher"
             $btnRestoreGoogle.Style = $window.Resources["RoundedButton"]
             $btnRestoreGoogle.Background = New-Object System.Windows.Media.SolidColorBrush(
-                [System.Windows.Media.ColorConverter]::ConvertFromString("#4A90E2")
-            )
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
+        )
             $btnRestoreGoogle.Padding = "12,6"
             $btnRestoreGoogle.FontSize = 11
             $btnRestoreGoogle.Margin = "0,0,8,0"
@@ -287,8 +287,8 @@ function Show-CleanupView {
             $btnRestoreTcl.Content = "Восстановить TCL Launcher"
             $btnRestoreTcl.Style = $window.Resources["RoundedButton"]
             $btnRestoreTcl.Background = New-Object System.Windows.Media.SolidColorBrush(
-                [System.Windows.Media.ColorConverter]::ConvertFromString("#9C27B0")
-            )
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#6c547e")
+        )
             $btnRestoreTcl.Padding = "12,6"
             $btnRestoreTcl.FontSize = 11
             $btnRestoreTcl.Add_Click({
@@ -354,7 +354,7 @@ function Show-CleanupView {
                 "low"    { "#2E7D32" }
                 "medium" { "#F57C00" }
                 "high"   { "#C62828" }
-                default  { "#2D2D30" }
+                default  { "#FFFFFF" }
             }
 
             $baseText = "$riskIcon $($pkg.Desc)  ($($pkg.Package))"
@@ -566,8 +566,8 @@ function Show-CleanupView {
     $btnSelectAll.Content = "Выбрать всё"
     $btnSelectAll.Style = $window.Resources["RoundedButton"]
     $btnSelectAll.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#64B5F6")
-    )
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#4e7891")
+        )
     $btnSelectAll.Padding = "12,6"
     $btnSelectAll.Margin = "0,0,8,0"
     $btnSelectAll.Add_Click({
@@ -584,8 +584,8 @@ function Show-CleanupView {
     $btnDeselect.Content = "Снять всё"
     $btnDeselect.Style = $window.Resources["RoundedButton"]
     $btnDeselect.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#FFB74D")
-    )
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#9c8e6a")
+        )
     $btnDeselect.Padding = "12,6"
     $btnDeselect.Margin = "0,0,8,0"
     $btnDeselect.Add_Click({
@@ -598,8 +598,8 @@ function Show-CleanupView {
     $btnDisable.Content = "Отключить"
     $btnDisable.Style = $window.Resources["RoundedButton"]
     $btnDisable.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#FFB74D")
-    )
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#9c8e6a")
+        )
     $btnDisable.Padding = "12,6"
     $btnDisable.Margin = "0,0,8,0"
     $btnDisable.Add_Click({
@@ -651,8 +651,8 @@ function Show-CleanupView {
     $btnDelete.Content = "Удалить"
     $btnDelete.Style = $window.Resources["RoundedButton"]
     $btnDelete.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#E57373")
-    )
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#724c4c")
+        )
     $btnDelete.Padding = "12,6"
     $btnDelete.Margin = "0,0,8,0"
     $btnDelete.Add_Click({
@@ -685,7 +685,7 @@ function Show-CleanupView {
         $choiceDialog.Height = 340
         $choiceDialog.WindowStartupLocation = "CenterOwner"
         $choiceDialog.Owner = $window
-        $choiceDialog.Background = "#F7F7FA"
+        $choiceDialog.Background = "#202020"
 
         $cStack = New-Object System.Windows.Controls.StackPanel
         $cStack.Margin = "25"
@@ -700,7 +700,7 @@ function Show-CleanupView {
         $cInfo = New-Object System.Windows.Controls.TextBlock
         $cInfo.Text = "Выберите метод удаления. Если не уверены — оставьте «Автоматически»."
         $cInfo.FontSize = 12
-        $cInfo.Foreground = "#96969B"
+        $cInfo.Foreground = "#A0A0A0"
         $cInfo.TextWrapping = "Wrap"
         $cInfo.Margin = "0,0,0,15"
         $cStack.Children.Add($cInfo) | Out-Null
@@ -748,7 +748,7 @@ function Show-CleanupView {
         $btnOk.Content = "Продолжить"
         $btnOk.Style = $window.Resources["RoundedButton"]
         $btnOk.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#E57373")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#724c4c")
         )
         $btnOk.Padding = "15,8"
         $btnOk.Margin = "0,0,8,0"
@@ -806,8 +806,8 @@ function Show-CleanupView {
     $btnClearData.Content = "Очистить данные"
     $btnClearData.Style = $window.Resources["RoundedButton"]
     $btnClearData.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#9C27B0")
-    )
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#6c547e")
+        )
     $btnClearData.Padding = "12,6"
     $btnClearData.Add_Click({
         $selected = @()
@@ -901,8 +901,8 @@ function Show-DisabledAppsView {
     $btnSelectAll.Content = "Выбрать всё"
     $btnSelectAll.Style = $window.Resources["RoundedButton"]
     $btnSelectAll.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#64B5F6")
-    )
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#4e7891")
+        )
     $btnSelectAll.Padding = "12,6"
     $btnSelectAll.Margin = "0,0,8,0"
     $btnSelectAll.Add_Click({
@@ -914,8 +914,8 @@ function Show-DisabledAppsView {
     $btnDeselect.Content = "Снять всё"
     $btnDeselect.Style = $window.Resources["RoundedButton"]
     $btnDeselect.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#FFB74D")
-    )
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#9c8e6a")
+        )
     $btnDeselect.Padding = "12,6"
     $btnDeselect.Margin = "0,0,8,0"
     $btnDeselect.Add_Click({
@@ -927,8 +927,8 @@ function Show-DisabledAppsView {
     $btnEnable.Content = "Включить"
     $btnEnable.Style = $window.Resources["RoundedButton"]
     $btnEnable.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#66BB6A")
-    )
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#588653")
+        )
     $btnEnable.Padding = "12,6"
     $btnEnable.Add_Click({
         $selected = @()

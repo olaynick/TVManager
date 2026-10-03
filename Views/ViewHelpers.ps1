@@ -1,28 +1,24 @@
-﻿# Views\ViewHelpers.ps1
-# ============================================================================
-#  ЕДИНЫЙ набор UI-хелперов.
-#  Все дубли из GuiHelper.ps1 удалены.
-#  Поддерживает старый API (-ColorType) и новый (-Color, -Padding, -Compact).
+﻿# ============================================================================
+#  UI ХЕЛПЕРЫ
 # ============================================================================
 
 # ===== ПАЛИТРА ПО ИМЕНАМ =====
 $script:ButtonPalette = @{
-    Primary = "#4A90E2"
-    Danger  = "#E57373"
-    Neutral = "#B0BEC5"
-    Warning = "#FFB74D"
-    Success = "#66BB6A"
-    Purple  = "#9C27B0"
-    Cyan    = "#00BCD4"
-    Gray    = "#607D8B"
-    LightBlue = "#64B5F6"
+    Primary   = "#3e5f6e"
+    Danger    = "#724c4c"
+    Neutral   = "#4A4A4A"
+    Warning   = "#9c8e6a"
+    Success   = "#588653"
+    Purple    = "#6c547e"
+    Cyan      = "#569097"
+    Gray      = "#909090"
+    LightBlue = "#4e7891"
 }
 
 function Resolve-ButtonColor {
     param([string]$ColorType, [string]$Color)
 
     if ($Color) {
-        # Явный hex имеет приоритет
         return $Color
     }
     if ($ColorType -and $script:ButtonPalette.ContainsKey($ColorType)) {
@@ -32,68 +28,23 @@ function Resolve-ButtonColor {
 }
 
 # ============================================================================
-#  КНОПКА
-# ============================================================================
-function New-ViewButton {
-    param(
-        [Parameter(Mandatory)][string]$Text,
-        [string]$ColorType = "Primary",     # Primary / Danger / Neutral / Warning / Success / Purple / Cyan / Gray / LightBlue
-        [string]$Color = $null,             # явный hex (#RRGGBB), переопределяет ColorType
-        [scriptblock]$OnClick,
-        [string]$Margin = "0,0,8,0",
-        [string]$Padding = $null,           # если не задан — вычисляется из -Compact
-        [switch]$Compact,
-        [int]$Width = 0                     # 0 = авто
-    )
-
-    $bg = Resolve-ButtonColor -ColorType $ColorType -Color $Color
-
-    $btn = New-Object System.Windows.Controls.Button
-    $btn.Content = $Text
-
-    # Style может не быть в Resources — подстрахуемся
-    if ($window -and $window.Resources["RoundedButton"]) {
-        $btn.Style = $window.Resources["RoundedButton"]
-    }
-
-    $btn.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString($bg)
-    )
-
-    if ($Padding) {
-        $btn.Padding = $Padding
-    } elseif ($Compact) {
-        $btn.Padding = "10,4"
-    } else {
-        $btn.Padding = "14,6"
-    }
-
-    $btn.FontSize = if ($Compact) { 11 } else { 13 }
-    $btn.Height   = if ($Compact) { 30 } else { 36 }
-    $btn.HorizontalAlignment = "Left"
-    $btn.Margin = $Margin
-
-    if ($Width -gt 0) { $btn.Width = $Width }
-
-    if ($OnClick) { $btn.Add_Click($OnClick) }
-    return $btn
-}
-
-# ============================================================================
 #  ЗАГОЛОВОК ЭКРАНА
 # ============================================================================
 function New-ViewHeader {
     param(
         [Parameter(Mandatory)][string]$Text,
-        [int]$X = 20,
-        [int]$Y = 15,
+        [int]$X = 0,
+        [int]$Y = 0,
         [int]$Width = 0
     )
     $tb = New-Object System.Windows.Controls.TextBlock
     $tb.Text = $Text
     $tb.FontSize = 26
     $tb.FontWeight = "Bold"
-    $tb.Margin = "0,0,0,20"
+    $tb.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#FFFFFF")
+    )
+    $tb.Margin = "0,0,0,12"
     if ($Width -gt 0) { $tb.Width = $Width }
     return $tb
 }
@@ -105,9 +56,12 @@ function New-StepTitle {
     param([Parameter(Mandatory)][string]$Text)
     $tb = New-Object System.Windows.Controls.TextBlock
     $tb.Text = $Text
-    $tb.FontSize = 16
+    $tb.FontSize = 15
     $tb.FontWeight = "SemiBold"
-    $tb.Margin = "0,15,0,10"
+    $tb.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+    )
+    $tb.Margin = "0,12,0,8"
     return $tb
 }
 
@@ -124,12 +78,108 @@ function New-ViewLabel {
     $tb = New-Object System.Windows.Controls.TextBlock
     $tb.Text = $Text
     $tb.FontSize = 12
-    $tb.Foreground = if ($Light) { "#96969B" } else { "#2D2D30" }
+    if ($Light) {
+        $tb.Foreground = [System.Windows.Media.SolidColorBrush](
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#909090")
+        )
+    } else {
+        $tb.Foreground = [System.Windows.Media.SolidColorBrush](
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#E0E0E0")
+        )
+    }
     $tb.Margin = "0,0,0,8"
     $tb.TextWrapping = "Wrap"
     if ($Width  -gt 0) { $tb.Width  = $Width }
     if ($Height -gt 0) { $tb.Height = $Height }
     return $tb
+}
+
+# ============================================================================
+#  КНОПКА
+# ============================================================================
+function New-ViewButton {
+    param(
+        [Parameter(Mandatory)][string]$Text,
+        [string]$ColorType = "Primary",
+        [string]$Color = $null,
+        [scriptblock]$OnClick,
+        [string]$Margin = "0,0,0,8",
+        [switch]$Compact,
+        [switch]$Stretch
+    )
+
+    $btn = New-Object System.Windows.Controls.Button
+
+    # --- Цвет фона ---
+    $bg = Resolve-ButtonColor -ColorType $ColorType -Color $Color
+
+    # --- Габариты ---
+    if ($Compact) {
+        $btn.Height = 30
+        $btn.FontSize = 11
+        $pad = "8,0"
+    } else {
+        $btn.Height = 40
+        $btn.FontSize = 13
+        $pad = "18,0"
+    }
+
+    $btn.Padding = New-Object System.Windows.Thickness(8, 0, 8, 0)
+    $btn.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#FFFFFF")
+    )
+    $btn.Background = New-Object System.Windows.Media.SolidColorBrush(
+        [System.Windows.Media.ColorConverter]::ConvertFromString($bg)
+    )
+    $btn.BorderThickness = New-Object System.Windows.Thickness(0)
+    $btn.Cursor = [System.Windows.Input.Cursors]::Hand
+
+    # --- Выравнивания ---
+    if ($Stretch) {
+        $btn.HorizontalAlignment = "Stretch"
+    } else {
+        $btn.HorizontalAlignment = "Left"
+    }
+    $btn.VerticalAlignment = "Top"   # ← ключевое: Top, а не Stretch/Center
+    $btn.HorizontalContentAlignment = "Center"
+    $btn.VerticalContentAlignment = "Center"
+
+    # --- Шаблон без Style ---
+    $templateStr = @"
+<ControlTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 TargetType="{x:Type Button}">
+    <Border Background="{TemplateBinding Background}"
+            CornerRadius="6"
+            Padding="{TemplateBinding Padding}">
+        <ContentPresenter HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          RecognizesAccessKey="True"/>
+    </Border>
+</ControlTemplate>
+"@
+    $reader = New-Object System.Xml.XmlNodeReader ([xml]$templateStr)
+    $btn.Template = [System.Windows.Markup.XamlReader]::Load($reader)
+
+    # --- Текст ---
+    $tb = New-Object System.Windows.Controls.TextBlock
+    $tb.Text = $Text
+    $tb.TextTrimming = "CharacterEllipsis"
+    $tb.TextWrapping = "NoWrap"
+    $tb.TextAlignment = "Center"
+    $tb.FontSize = if ($Compact) { 11 } else { 13 }
+    $tb.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#FFFFFF")
+    )
+    $tb.VerticalAlignment = "Center"
+    $tb.HorizontalAlignment = "Center"
+    $btn.Content = $tb
+
+    # ВАЖНО: обнуляем Margin у кнопки — он передаётся через Padding
+    $btn.Margin = New-Object System.Windows.Thickness(0)
+
+    if ($OnClick) { $btn.Add_Click($OnClick) }
+    return $btn
 }
 
 # ============================================================================
@@ -139,7 +189,7 @@ function New-BackButton {
     param([scriptblock]$OnClick)
     $btn = New-Object System.Windows.Controls.Button
     $btn.Content = "← Назад"
-    if ($window -and $window.Resources["BackButton"]) {
+    if ($window.Resources["BackButton"]) {
         $btn.Style = $window.Resources["BackButton"]
     }
     $btn.VerticalAlignment = "Top"

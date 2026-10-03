@@ -80,47 +80,47 @@ function Apply-SettingsBatch {
 function Get-SettingPresets {
     return @(
         # ===== Тайм-аут экрана =====
-        @{ Group = "Тайм-аут экрана"; Name = "5 минут"; Desc = "Экран отключается через 5 минут бездействия"; Color = "#4A90E2";
+        @{ Group = "Тайм-аут экрана"; Name = "5 минут"; Desc = "Экран отключается через 5 минут бездействия"; Color = "#C8C8C8";
            Settings = @(@{ Namespace = "system"; Key = "screen_off_timeout"; Value = "300000" }) }
 
-        @{ Group = "Тайм-аут экрана"; Name = "15 минут"; Desc = "Экран отключается через 15 минут бездействия"; Color = "#4A90E2";
+        @{ Group = "Тайм-аут экрана"; Name = "15 минут"; Desc = "Экран отключается через 15 минут бездействия"; Color = "#C8C8C8";
            Settings = @(@{ Namespace = "system"; Key = "screen_off_timeout"; Value = "900000" }) }
 
-        @{ Group = "Тайм-аут экрана"; Name = "30 минут"; Desc = "Экран отключается через 30 минут бездействия"; Color = "#4A90E2";
+        @{ Group = "Тайм-аут экрана"; Name = "30 минут"; Desc = "Экран отключается через 30 минут бездействия"; Color = "#C8C8C8";
            Settings = @(@{ Namespace = "system"; Key = "screen_off_timeout"; Value = "1800000" }) }
 
-        @{ Group = "Тайм-аут экрана"; Name = "1 час"; Desc = "Экран отключается через 1 час бездействия"; Color = "#4A90E2";
+        @{ Group = "Тайм-аут экрана"; Name = "1 час"; Desc = "Экран отключается через 1 час бездействия"; Color = "#C8C8C8";
            Settings = @(@{ Namespace = "system"; Key = "screen_off_timeout"; Value = "3600000" }) }
 
-        @{ Group = "Тайм-аут экрана"; Name = "2 часа"; Desc = "Экран отключается через 2 часа бездействия"; Color = "#4A90E2";
+        @{ Group = "Тайм-аут экрана"; Name = "2 часа"; Desc = "Экран отключается через 2 часа бездействия"; Color = "#C8C8C8";
            Settings = @(@{ Namespace = "system"; Key = "screen_off_timeout"; Value = "7200000" }) }
 
-        @{ Group = "Тайм-аут экрана"; Name = "Никогда"; Desc = "Экран не отключается автоматически"; Color = "#FFB74D";
+        @{ Group = "Тайм-аут экрана"; Name = "Никогда"; Desc = "Экран не отключается автоматически"; Color = "#C8C8C8";
            Settings = @(@{ Namespace = "system"; Key = "screen_off_timeout"; Value = "2147483647" }) }
 
         # ===== Анимации =====
-        @{ Group = "Анимации"; Name = "Стандарт (1x)"; Desc = "Обычная плавность, как при первом запуске"; Color = "#4A90E2";
+        @{ Group = "Анимации"; Name = "Стандарт (1x)"; Desc = "Обычная плавность, как при первом запуске"; Color = "#C8C8C8";
            Settings = @(
                @{ Namespace = "global"; Key = "window_animation_scale";     Value = "1.0" }
                @{ Namespace = "global"; Key = "transition_animation_scale"; Value = "1.0" }
                @{ Namespace = "global"; Key = "animator_duration_scale";    Value = "1.0" }
            ) }
 
-        @{ Group = "Анимации"; Name = "Быстро (0.5x)"; Desc = "Анимации в 2 раза быстрее. Рекомендуется."; Color = "#66BB6A";
+        @{ Group = "Анимации"; Name = "Быстро (0.5x)"; Desc = "Анимации в 2 раза быстрее. Рекомендуется."; Color = "#C8C8C8";
            Settings = @(
                @{ Namespace = "global"; Key = "window_animation_scale";     Value = "0.5" }
                @{ Namespace = "global"; Key = "transition_animation_scale"; Value = "0.5" }
                @{ Namespace = "global"; Key = "animator_duration_scale";    Value = "0.5" }
            ) }
 
-        @{ Group = "Анимации"; Name = "Очень быстро (0.25x)"; Desc = "Почти мгновенно, переходы едва заметны"; Color = "#66BB6A";
+        @{ Group = "Анимации"; Name = "Очень быстро (0.25x)"; Desc = "Почти мгновенно, переходы едва заметны"; Color = "#C8C8C8";
            Settings = @(
                @{ Namespace = "global"; Key = "window_animation_scale";     Value = "0.25" }
                @{ Namespace = "global"; Key = "transition_animation_scale"; Value = "0.25" }
                @{ Namespace = "global"; Key = "animator_duration_scale";    Value = "0.25" }
            ) }
 
-        @{ Group = "Анимации"; Name = "Отключить (0x)"; Desc = "Мгновенные переходы. Интерфейс работает максимально быстро."; Color = "#FFB74D";
+        @{ Group = "Анимации"; Name = "Отключить (0x)"; Desc = "Мгновенные переходы. Интерфейс работает максимально быстро."; Color = "#C8C8C8";
            Settings = @(
                @{ Namespace = "global"; Key = "window_animation_scale";     Value = "0.0" }
                @{ Namespace = "global"; Key = "transition_animation_scale"; Value = "0.0" }
@@ -128,54 +128,54 @@ function Get-SettingPresets {
            ) }
 
         # ===== Яркость экрана =====
-        @{ Group = "Яркость экрана"; Name = "25%"; Desc = "Минимальная комфортная яркость (для тёмных помещений)"; Color = "#607D8B";
+        @{ Group = "Яркость экрана"; Name = "25%"; Desc = "Минимальная комфортная яркость (для тёмных помещений)"; Color = "#C8C8C8";
            Settings = @(
                @{ Namespace = "system"; Key = "screen_brightness";      Value = "64" }
                @{ Namespace = "system"; Key = "screen_brightness_mode"; Value = "0" }
            ) }
 
-        @{ Group = "Яркость экрана"; Name = "50%"; Desc = "Средняя яркость. Подходит для большинства помещений."; Color = "#607D8B";
+        @{ Group = "Яркость экрана"; Name = "50%"; Desc = "Средняя яркость. Подходит для большинства помещений."; Color = "#C8C8C8";
            Settings = @(
                @{ Namespace = "system"; Key = "screen_brightness";      Value = "127" }
                @{ Namespace = "system"; Key = "screen_brightness_mode"; Value = "0" }
            ) }
 
-        @{ Group = "Яркость экрана"; Name = "75%"; Desc = "Повышенная яркость для светлых помещений"; Color = "#607D8B";
+        @{ Group = "Яркость экрана"; Name = "75%"; Desc = "Повышенная яркость для светлых помещений"; Color = "#C8C8C8";
            Settings = @(
                @{ Namespace = "system"; Key = "screen_brightness";      Value = "191" }
                @{ Namespace = "system"; Key = "screen_brightness_mode"; Value = "0" }
            ) }
 
-        @{ Group = "Яркость экрана"; Name = "100%"; Desc = "Максимальная яркость"; Color = "#607D8B";
+        @{ Group = "Яркость экрана"; Name = "100%"; Desc = "Максимальная яркость"; Color = "#C8C8C8";
            Settings = @(
                @{ Namespace = "system"; Key = "screen_brightness";      Value = "255" }
                @{ Namespace = "system"; Key = "screen_brightness_mode"; Value = "0" }
            ) }
 
-        @{ Group = "Яркость экрана"; Name = "Автоматически"; Desc = "Адаптивная яркость от датчика освещения"; Color = "#64B5F6";
+        @{ Group = "Яркость экрана"; Name = "Автоматически"; Desc = "Адаптивная яркость от датчика освещения"; Color = "#C8C8C8";
            Settings = @(@{ Namespace = "system"; Key = "screen_brightness_mode"; Value = "1" }) }
 
         # ===== Immersive =====
-        @{ Group = "Immersive режим"; Name = "Скрыть всё (полный)"; Desc = "Убирает статус-бар и навигацию. Полноэкранный режим."; Color = "#E57373";
+        @{ Group = "Immersive режим"; Name = "Скрыть всё (полный)"; Desc = "Убирает статус-бар и навигацию. Полноэкранный режим."; Color = "#C8C8C8";
            Settings = @(@{ Namespace = "global"; Key = "policy_control"; Value = "immersive.full=*" }) }
 
-        @{ Group = "Immersive режим"; Name = "Скрыть только статус-бар"; Desc = "Убирает верхнюю полосу, оставляет навигацию"; Color = "#FFB74D";
+        @{ Group = "Immersive режим"; Name = "Скрыть только статус-бар"; Desc = "Убирает верхнюю полосу, оставляет навигацию"; Color = "#C8C8C8";
            Settings = @(@{ Namespace = "global"; Key = "policy_control"; Value = "immersive.status=*" }) }
 
-        @{ Group = "Immersive режим"; Name = "Показать всё обратно"; Desc = "Возвращает статус-бар и навигацию"; Color = "#66BB6A";
+        @{ Group = "Immersive режим"; Name = "Показать всё обратно"; Desc = "Возвращает статус-бар и навигацию"; Color = "#C8C8C8";
            Settings = @(@{ Namespace = "global"; Key = "policy_control"; Value = "null" }) }
 
         # ===== Разработчик =====
-        @{ Group = "Для разработчиков"; Name = "Показывать касания"; Desc = "На экране отображаются точки нажатий (для отладки пультов)"; Color = "#9C27B0";
+        @{ Group = "Для разработчиков"; Name = "Показывать касания"; Desc = "На экране отображаются точки нажатий (для отладки пультов)"; Color = "#C8C8C8";
            Settings = @(@{ Namespace = "system"; Key = "show_touches"; Value = "1" }) }
 
-        @{ Group = "Для разработчиков"; Name = "Границы макета"; Desc = "Показывает границы элементов UI (полезно для разработки лаунчеров)"; Color = "#9C27B0";
+        @{ Group = "Для разработчиков"; Name = "Границы макета"; Desc = "Показывает границы элементов UI (полезно для разработки лаунчеров)"; Color = "#C8C8C8";
            Settings = @(@{ Namespace = "global"; Key = "debug_layout"; Value = "1" }) }
 
-        @{ Group = "Для разработчиков"; Name = "GPU-рендеринг"; Desc = "Показывает профилировку GPU (полосы на экране)"; Color = "#9C27B0";
+        @{ Group = "Для разработчиков"; Name = "GPU-рендеринг"; Desc = "Показывает профилировку GPU (полосы на экране)"; Color = "#C8C8C8";
            Settings = @(@{ Namespace = "global"; Key = "show_gpu_view"; Value = "1" }) }
 
-        @{ Group = "Для разработчиков"; Name = "Выключить отладку"; Desc = "Убрать все визуальные отладочные оверлеи"; Color = "#607D8B";
+        @{ Group = "Для разработчиков"; Name = "Выключить отладку"; Desc = "Убрать все визуальные отладочные оверлеи"; Color = "#C8C8C8";
            Settings = @(
                @{ Namespace = "system"; Key = "show_touches";  Value = "0" }
                @{ Namespace = "global"; Key = "debug_layout";  Value = "0" }
@@ -183,33 +183,33 @@ function Get-SettingPresets {
            ) }
 
         # ===== Питание и блокировка =====
-        @{ Group = "Питание и блокировка"; Name = "Не гасить при зарядке"; Desc = "ТВ не будет уходить в сон, пока подключён к сети"; Color = "#00BCD4";
+        @{ Group = "Питание и блокировка"; Name = "Не гасить при зарядке"; Desc = "ТВ не будет уходить в сон, пока подключён к сети"; Color = "#C8C8C8";
            Settings = @(@{ Namespace = "global"; Key = "stay_on_while_plugged_in"; Value = "7" }) }
 
-        @{ Group = "Питание и блокировка"; Name = "Обычное поведение сна"; Desc = "Разрешить ТВ уходить в сон по тайм-ауту"; Color = "#607D8B";
+        @{ Group = "Питание и блокировка"; Name = "Обычное поведение сна"; Desc = "Разрешить ТВ уходить в сон по тайм-ауту"; Color = "#C8C8C8";
            Settings = @(@{ Namespace = "global"; Key = "stay_on_while_plugged_in"; Value = "0" }) }
 
-        @{ Group = "Питание и блокировка"; Name = "Отключить блокировку экрана"; Desc = "ТВ не запрашивает PIN после пробуждения"; Color = "#FFB74D";
+        @{ Group = "Питание и блокировка"; Name = "Отключить блокировку экрана"; Desc = "ТВ не запрашивает PIN после пробуждения"; Color = "#C8C8C8";
            Settings = @(@{ Namespace = "secure"; Key = "lockscreen.disabled"; Value = "1" }) }
 
-        @{ Group = "Питание и блокировка"; Name = "Включить блокировку экрана"; Desc = "Вернуть запрос PIN после пробуждения"; Color = "#607D8B";
+        @{ Group = "Питание и блокировка"; Name = "Включить блокировку экрана"; Desc = "Вернуть запрос PIN после пробуждения"; Color = "#C8C8C8";
            Settings = @(@{ Namespace = "secure"; Key = "lockscreen.disabled"; Value = "0" }) }
 
         # ===== Звук =====
-        @{ Group = "Звук"; Name = "Отключить предупреждение громкости"; Desc = "Убирает всплывающее окно «Безопасный уровень громкости»"; Color = "#9C27B0";
+        @{ Group = "Звук"; Name = "Отключить предупреждение громкости"; Desc = "Убирает всплывающее окно «Безопасный уровень громкости»"; Color = "#C8C8C8";
            Settings = @(@{ Namespace = "global"; Key = "audio_safe_volume_state"; Value = "2" }) }
 
-        @{ Group = "Звук"; Name = "Включить предупреждение громкости"; Desc = "Вернуть системное предупреждение при высокой громкости"; Color = "#607D8B";
+        @{ Group = "Звук"; Name = "Включить предупреждение громкости"; Desc = "Вернуть системное предупреждение при высокой громкости"; Color = "#C8C8C8";
            Settings = @(@{ Namespace = "global"; Key = "audio_safe_volume_state"; Value = "0" }) }
 
         # ===== Прочее =====
-        @{ Group = "Прочее"; Name = "Оставить ADB включённым"; Desc = "ADB не отключается после перезагрузки"; Color = "#66BB6A";
+        @{ Group = "Прочее"; Name = "Оставить ADB включённым"; Desc = "ADB не отключается после перезагрузки"; Color = "#C8C8C8";
            Settings = @(
                @{ Namespace = "global"; Key = "adb_enabled";                   Value = "1" }
                @{ Namespace = "global"; Key = "development_settings_enabled";  Value = "1" }
            ) }
 
-        @{ Group = "Прочее"; Name = "Скрыть значки уведомлений"; Desc = "Убирает иконки приложений из статус-бара"; Color = "#607D8B";
+        @{ Group = "Прочее"; Name = "Скрыть значки уведомлений"; Desc = "Убирает иконки приложений из статус-бара"; Color = "#C8C8C8";
            Settings = @(@{ Namespace = "secure"; Key = "icon_blacklist"; Value = "com.android.systemui.statusbar.notification,com.android.systemui.statusbar.phone" }) }
     )
 }
@@ -285,7 +285,7 @@ function Show-PresetsView {
                 $subHeader.Text = $preset.Group
                 $subHeader.FontSize = 14
                 $subHeader.FontWeight = "Bold"
-                $subHeader.Foreground = "#4A90E2"
+                $subHeader.Foreground = "#C8C8C8"
                 $subHeader.Margin = "0,10,0,8"
                 $tabPanel.Children.Add($subHeader) | Out-Null
                 $lastSubGroup = $preset.Group
@@ -293,8 +293,8 @@ function Show-PresetsView {
 
             # --- Карточка пресета ---
             $row = New-Object System.Windows.Controls.Border
-            $row.Background = "White"
-            $row.BorderBrush = "#E1E1E6"
+            $row.Background = "#2B2B2B"
+            $row.BorderBrush = "#3A3A3A"
             $row.BorderThickness = "1"
             $row.CornerRadius = "6"
             $row.Padding = "12"
@@ -315,13 +315,13 @@ function Show-PresetsView {
             $nameTb.Text = $preset.Name
             $nameTb.FontSize = 13
             $nameTb.FontWeight = "Bold"
-            $nameTb.Foreground = "#2D2D30"
+            $nameTb.Foreground = "#FFFFFF"
             $textStack.Children.Add($nameTb) | Out-Null
 
             $descTb = New-Object System.Windows.Controls.TextBlock
             $descTb.Text = $preset.Desc
             $descTb.FontSize = 11
-            $descTb.Foreground = "#96969B"
+            $descTb.Foreground = "#A0A0A0"
             $descTb.TextWrapping = "Wrap"
             $descTb.Margin = "0,3,0,0"
             $textStack.Children.Add($descTb) | Out-Null
@@ -335,7 +335,7 @@ function Show-PresetsView {
             $cmdTb.Text = $cmdText
             $cmdTb.FontFamily = "Consolas"
             $cmdTb.FontSize = 10
-            $cmdTb.Foreground = "#4A90E2"
+            $cmdTb.Foreground = "#C8C8C8"
             $cmdTb.TextWrapping = "Wrap"
             $cmdTb.Margin = "0,3,0,0"
             $textStack.Children.Add($cmdTb) | Out-Null
