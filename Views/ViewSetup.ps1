@@ -66,6 +66,7 @@
     })) | Out-Null
 
     $tabApps.Content = $appsPanel
+
     $tabControl.Items.Add($tabApps) | Out-Null
 
     # =========================================================================
@@ -92,7 +93,7 @@
     $tabControl.Items.Add($tabTools) | Out-Null
 
     # =========================================================================
-    #  ВКЛАДКА 3: СИСТЕМА (кнопки сгруппированы по 2 в ряд)
+    #  ВКЛАДКА 3: СИСТЕМА
     # =========================================================================
     $tabSystem = New-Object System.Windows.Controls.TabItem
     $tabSystem.Header = "Система"
@@ -252,19 +253,42 @@
     $actionsHeader.Margin = "0,0,0,8"
     $systemPanel.Children.Add($actionsHeader) | Out-Null
 
-    $gridAct = New-Object System.Windows.Controls.Grid
-    $gridAct.Margin = "0,0,0,15"
+    $gridAct1 = New-Object System.Windows.Controls.Grid
+    $gridAct1.Margin = "0,0,0,8"
     $ac1 = New-Object System.Windows.Controls.ColumnDefinition; $ac1.Width = "*"
     $ac2 = New-Object System.Windows.Controls.ColumnDefinition; $ac2.Width = "*"
-    $gridAct.ColumnDefinitions.Add($ac1)
-    $gridAct.ColumnDefinitions.Add($ac2)
+    $gridAct1.ColumnDefinitions.Add($ac1)
+    $gridAct1.ColumnDefinitions.Add($ac2)
+
+    $btnScenarios = New-ViewButton -Text "Сценарии" -ColorType "Primary" -Margin "0,0,8,0" -OnClick {
+        Switch-View -ViewName "Scenarios"
+    }
+    $btnScenarios.HorizontalAlignment = "Stretch"
+    [System.Windows.Controls.Grid]::SetColumn($btnScenarios, 0)
+    $gridAct1.Children.Add($btnScenarios) | Out-Null
+
+    $btnAutostart = New-ViewButton -Text "Автозапуск и фон" -ColorType "Primary" -OnClick {
+        Switch-View -ViewName "Autostart"
+    }
+    $btnAutostart.HorizontalAlignment = "Stretch"
+    [System.Windows.Controls.Grid]::SetColumn($btnAutostart, 1)
+    $gridAct1.Children.Add($btnAutostart) | Out-Null
+
+    $systemPanel.Children.Add($gridAct1) | Out-Null
+
+    $gridAct2 = New-Object System.Windows.Controls.Grid
+    $gridAct2.Margin = "0,0,0,15"
+    $ac3 = New-Object System.Windows.Controls.ColumnDefinition; $ac3.Width = "*"
+    $ac4 = New-Object System.Windows.Controls.ColumnDefinition; $ac4.Width = "*"
+    $gridAct2.ColumnDefinitions.Add($ac3)
+    $gridAct2.ColumnDefinitions.Add($ac4)
 
     $btnProfiles = New-ViewButton -Text "Профили устройств" -ColorType "Primary" -Margin "0,0,8,0" -OnClick {
         Switch-View -ViewName "Profiles"
     }
     $btnProfiles.HorizontalAlignment = "Stretch"
     [System.Windows.Controls.Grid]::SetColumn($btnProfiles, 0)
-    $gridAct.Children.Add($btnProfiles) | Out-Null
+    $gridAct2.Children.Add($btnProfiles) | Out-Null
 
     $btnBackupApk = New-ViewButton -Text "Резервная копия APK" -ColorType "Primary" -OnClick {
         Add-Type -AssemblyName System.Windows.Forms
@@ -288,9 +312,9 @@
     }
     $btnBackupApk.HorizontalAlignment = "Stretch"
     [System.Windows.Controls.Grid]::SetColumn($btnBackupApk, 1)
-    $gridAct.Children.Add($btnBackupApk) | Out-Null
+    $gridAct2.Children.Add($btnBackupApk) | Out-Null
 
-    $systemPanel.Children.Add($gridAct) | Out-Null
+    $systemPanel.Children.Add($gridAct2) | Out-Null
 
     # ---------- Группа: БЕЗОПАСНОСТЬ И OTA ----------
     $secHeader = New-Object System.Windows.Controls.TextBlock

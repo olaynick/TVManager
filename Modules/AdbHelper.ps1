@@ -125,25 +125,75 @@ function Get-AdbDevices {
     return & $script:adbPath devices 2>&1
 }
 
-# ===== УДАЛЕНИЕ ПАКЕТА =====
+# ===== УДАЛЕНИЕ ПАКЕТА (с автоопределением метода) =====
 function Remove-Package {
-    param([string]$Package)
-    Write-Log -Message "Удаляю: $Package" -Level "Info"
-    $out = & $script:adbPath shell pm uninstall --user 0 $Package 2>&1
+    param(
+        [string]$Package,
+        [ValidateSet("auto","user0","all","disable")]
+        [string]$Mode = "auto"
+    )
 
-    if ($out -match "Success") {
-        Write-Log -Message "Удалён: $Package" -Level "Success"
-        return $true
-    } elseif ($out -match "not installed for 0") {
-        Write-Log -Message "Пропущен: $Package — не установлен на устройстве" -Level "Warning"
-        return $false
-    } elseif ($out -match "DELETE_FAILED") {
-        Write-Log -Message "Защищён системой: $Package (можно только отключить)" -Level "Warning"
-        return $false
-    } else {
-        Write-Log -Message "Не удалось удалить: $Package — $out" -Level "Warning"
-        return $false
+    Write-Log -Message "Удаляю: $Package (режим: $Mode)" -Level "Info"
+
+    # ===== Режим "отключить" — просто disable-user =====
+    if ($Mode -eq "disable") {
+        $out = & $script:adbPath shell pm disable-user --user 0 $Package 2>&1
+        $outText = ($out | Out-String).Trim()
+        if ($outText -match "new state: disabled") {
+            Write-Log -Message "OK: $Package отключён" -Level "Success"
+            return @{ Success = $true; Method = "disable"; Message = "Отключён" }
+        }
+        Write-Log -Message "Не удалось отключить: $outText" -Level "Warning"
+        return @{ Success = $false; Method = "disable"; Message = $outText }
     }
+
+    # ===== Режим "только user 0" =====
+    if ($Mode -eq "user0") {
+        $out = & $script:adbPath shell pm uninstall --user 0 $Package 2>&1
+        $outText = ($out | Out-String).Trim()
+        if ($outText -match "Success") {
+            Write-Log -Message "OK: $Package удалён для user 0" -Level "Success"
+            return @{ Success = $true; Method = "user0"; Message = "Удалён для user 0" }
+        } elseif ($outText -match "not installed for 0") {
+            Write-Log -Message "Пакет не установлен для user 0 (системный или preload)" -Level "Warning"
+            return @{ Success = $false; Method = "user0"; Message = "не установлен для user 0" }
+        } elseif ($outText -match "DELETE_FAILED") {
+            Write-Log -Message "Защищён системой: $Package" -Level "Warning"
+            return @{ Success = $false; Method = "user0"; Message = "защищён системой" }
+        }
+        Write-Log -Message "Не удалось удалить: $outText" -Level "Warning"
+        return @{ Success = $false; Method = "user0"; Message = $outText }
+    }
+
+    # ===== Режим "для всех" =====
+    if ($Mode -eq "all") {
+        $out = & $script:adbPath shell pm uninstall $Package 2>&1
+        $outText = ($out | Out-String).Trim()
+        if ($outText -match "Success") {
+            Write-Log -Message "OK: $Package удалён для всех" -Level "Success"
+            return @{ Success = $true; Method = "all"; Message = "Удалён для всех" }
+        }
+        Write-Log -Message "Не удалось удалить для всех: $outText" -Level "Warning"
+        return @{ Success = $false; Method = "all"; Message = $outText }
+    }
+
+    # ===== AUTO: пробуем по очереди =====
+    Write-Log -Message "Авто-режим: пробую удалить для user 0..." -Level "Info"
+    $r1 = Remove-Package -Package $Package -Mode "user0"
+    if ($r1.Success) { return $r1 }
+
+    if ($r1.Message -match "not installed for 0") {
+        Write-Log -Message "Пробую удалить для всех..." -Level "Info"
+        $r2 = Remove-Package -Package $Package -Mode "all"
+        if ($r2.Success) { return $r2 }
+
+        Write-Log -Message "Удаление для всех не удалось. Пробую отключить..." -Level "Warning"
+        $r3 = Remove-Package -Package $Package -Mode "disable"
+        if ($r3.Success) { return $r3 }
+        return $r3
+    }
+
+    return $r1
 }
 
 # ===== ОТКЛЮЧЕНИЕ ПАКЕТА =====
@@ -1790,4 +1840,107 @@ function Get-AdbExtraCommands {
         [PSCustomObject]@{ Category = "Специальные"; Name = "Убить все процессы"; Command = "shell am kill-all"; Desc = "Закрыть всё фоновое" },
         [PSCustomObject]@{ Category = "Специальные"; Name = "Стереть данные приложения"; Command = "shell pm clear <package>"; Desc = "Сброс данных" }
     )
+}
+
+# ============================================================================
+#  УСТАНОВКА SPLIT APK (.apks / .xapk / .apkm)
+# ============================================================================
+
+# ===== РАСПАКОВКА ARCHIVE ВО ВРЕМЕННУЮ ПАПКУ =====
+function Expand-ApkArchive {
+    param(
+        [Parameter(Mandatory)][string]$ArchivePath
+    )
+
+    if (-not (Test-Path $ArchivePath)) {
+        Write-Log -Message "Архив не найден: $ArchivePath" -Level "Error"
+        return $null
+    }
+
+    $tempDir = Join-Path $env:TEMP "TVManager_Apk_$(Get-Random)"
+    try {
+        New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+
+        # .apks / .xapk / .apkm — это ZIP
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        [System.IO.Compression.ZipFile]::ExtractToDirectory($ArchivePath, $tempDir)
+
+        Write-Log -Message "Архив распакован: $tempDir" -Level "Info"
+        return $tempDir
+    } catch {
+        Write-Log -Message "Ошибка распаковки: $_" -Level "Error"
+        if (Test-Path $tempDir) {
+            Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        return $null
+    }
+}
+
+# ===== УСТАНОВКА .apks / .xapk / .apkm =====
+function Install-ApkBundle {
+    param(
+        [Parameter(Mandatory)][string]$BundlePath
+    )
+
+    $name = Split-Path $BundlePath -Leaf
+    Write-Log -Message "Установка bundle: $name" -Level "Info"
+
+    $tempDir = Expand-ApkArchive -ArchivePath $BundlePath
+    if (-not $tempDir) {
+        return @{ Success = $false; Output = "Не удалось распаковать архив" }
+    }
+
+    try {
+        # --- Ищем базовый и split APK ---
+        $allApks = Get-ChildItem -Path $tempDir -Filter "*.apk" -File -Recurse | Select-Object -ExpandProperty FullName
+
+        if (-not $allApks -or $allApks.Count -eq 0) {
+            Write-Log -Message "В архиве нет APK-файлов" -Level "Error"
+            return @{ Success = $false; Output = "APK не найдены в архиве" }
+        }
+
+        # Базовый APK — обычно base.apk, или тот, что без split_ в имени
+        $baseApk = $allApks | Where-Object { $_ -match '\\base\.apk$' } | Select-Object -First 1
+        if (-not $baseApk) {
+            $baseApk = $allApks | Where-Object { (Split-Path $_ -Leaf) -notmatch '^split' } | Select-Object -First 1
+        }
+
+        # Все остальные — split'ы
+        $splits = $allApks | Where-Object { $_ -ne $baseApk }
+
+        Write-Log -Message "  Базовый: $(Split-Path $baseApk -Leaf)" -Level "Info"
+        Write-Log -Message "  Split'ов: $($splits.Count)" -Level "Info"
+
+        # --- Формируем аргументы для install-multiple ---
+        # Порядок: base.apk первым, потом split'ы
+        $apkList = @($baseApk) + @($splits)
+
+        $adbArgs = @("install-multiple", "-r", "-g", "-d") + $apkList
+
+        $out = & $script:adbPath @adbArgs 2>&1
+        $outText = ($out | Out-String).Trim()
+
+        if ($outText -match "Success") {
+            Write-Log -Message "OK: $name (установлено $($apkList.Count) APK)" -Level "Success"
+            return @{ Success = $true; Output = $outText }
+        } else {
+            Write-Log -Message "FAIL: $name — $outText" -Level "Error"
+            return @{ Success = $false; Output = $outText }
+        }
+    } catch {
+        Write-Log -Message "Ошибка установки bundle: $_" -Level "Error"
+        return @{ Success = $false; Output = "$_" }
+    } finally {
+        # --- Чистим временную папку ---
+        if ($tempDir -and (Test-Path $tempDir)) {
+            Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+# ===== УНИВЕРСАЛЬНЫЙ ОПРЕДЕЛИТЕЛЬ =====
+function Test-IsApkBundle {
+    param([string]$Path)
+    $ext = [System.IO.Path]::GetExtension($Path).ToLower()
+    return ($ext -in @(".apks", ".xapk", ".apkm"))
 }

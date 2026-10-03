@@ -1,4 +1,6 @@
-﻿# ===== КОНФИГ ПРИЛОЖЕНИЯ =====
+﻿# ============================================================================
+#  КОНФИГ ПРИЛОЖЕНИЯ
+# ============================================================================
 
 $script:ConfigPath = Join-Path (Split-Path $PSScriptRoot -Parent) "config.json"
 $script:Config = $null
@@ -68,7 +70,9 @@ function Get-ConfigValue {
     return $null
 }
 
-# ===== ПРОФИЛИ УСТРОЙСТВ =====
+# ============================================================================
+#  ПРОФИЛИ УСТРОЙСТВ
+# ============================================================================
 
 function Get-Profiles {
     $profiles = Get-ConfigValue -Key "SavedProfiles"
@@ -137,6 +141,9 @@ function Remove-Profile {
     return $true
 }
 
+# ============================================================================
+#  ПРИМЕНЕНИЕ ПРОФИЛЯ
+# ============================================================================
 function Apply-Profile {
     param([PSCustomObject]$Profile)
 
@@ -151,7 +158,7 @@ function Apply-Profile {
     $installedNow = Get-InstalledPackagesSet
     $disabledNow = Get-DisabledPackagesSet
 
-    # Настройки анимации
+    # ===== Настройки анимации =====
     if ($Profile.AnimationScale) {
         Write-Log -Message "Устанавливаю анимацию: $($Profile.AnimationScale)" -Level "Info"
         & $script:adbPath shell settings put global window_animation_scale $Profile.AnimationScale
@@ -159,7 +166,7 @@ function Apply-Profile {
         & $script:adbPath shell settings put global animator_duration_scale $Profile.AnimationScale
     }
 
-    # OTA
+    # ===== OTA =====
     if ($Profile.OtaDisabled -eq $true) {
         Write-Log -Message "Отключаю OTA..." -Level "Info"
         foreach ($item in $script:otaPackages) {
@@ -174,7 +181,7 @@ function Apply-Profile {
         $script:OtaDisabled = $false
     }
 
-    # Синхронизация пакетов
+    # ===== Синхронизация пакетов =====
     $toEnable = @()
     $toDisable = @()
     $toRemove = @()
@@ -205,12 +212,14 @@ function Apply-Profile {
     Write-Log -Message "  К отключению: $($toDisable.Count)" -Level "Info"
     Write-Log -Message "  К удалению: $($toRemove.Count)" -Level "Info"
 
+    # ===== Включение =====
     foreach ($pkg in $toEnable) {
         if (Enable-Package -Package $pkg) {
             Write-Log -Message "  Включён: $pkg" -Level "Success"
         }
     }
 
+    # ===== Отключение =====
     foreach ($pkg in $toDisable) {
         if (Disable-Package -Package $pkg) {
             Write-Log -Message "  Отключён: $pkg" -Level "Success"
@@ -218,13 +227,29 @@ function Apply-Profile {
         }
     }
 
+    # ===== Удаление =====
     foreach ($pkg in $toRemove) {
-        if (Remove-Package -Package $pkg) {
-            Write-Log -Message "  Удалён: $pkg" -Level "Success"
+        # Remove-Package теперь возвращает объект @{Success; Method; Message}
+        $rmResult = Remove-Package -Package $pkg -Mode "auto"
+
+        if ($rmResult.Success) {
+            Write-Log -Message "  Удалён ($($rmResult.Method)): $pkg" -Level "Success"
+
             if ($script:RemovedPackages -notcontains $pkg) {
                 $script:RemovedPackages += $pkg
             }
-            Save-Change -Type "package_removed" -Target $pkg -RestoreCommand "adb shell cmd package install-existing $pkg"
+
+            # Формируем команду отката в зависимости от метода
+            $restoreCmd = switch ($rmResult.Method) {
+                "user0"   { "adb shell cmd package install-existing $pkg" }
+                "all"     { "adb shell cmd package install-existing $pkg" }
+                "disable" { "adb shell pm enable $pkg" }
+                default   { "adb shell cmd package install-existing $pkg" }
+            }
+
+            Save-Change -Type "package_removed" -Target $pkg -RestoreCommand $restoreCmd
+        } else {
+            Write-Log -Message "  Не удалось обработать: $pkg ($($rmResult.Message))" -Level "Warning"
         }
     }
 

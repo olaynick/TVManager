@@ -27,6 +27,8 @@ function Switch-View {
         "Presets"      { Show-PresetsView }
         "Processes"    { Show-ProcessesView }
         "Integrity"    { Show-IntegrityView }
+        "Scenarios"    { Show-ScenariosView }
+        "Autostart"    { Show-AutostartView }
         default        { Write-Log -Message "Неизвестный экран: $ViewName" -Level "Warning" }
     }
     Update-StatusBar

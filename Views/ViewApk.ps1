@@ -1,15 +1,15 @@
 ﻿# ============================================================================
-#  Экран: Установка APK
+#  Экран: Установка APK и Bundle (.apks / .xapk / .apkm)
 # ============================================================================
 
 function Show-ApkView {
     $mainStack = New-Object System.Windows.Controls.StackPanel
     $mainStack.Margin = "40,30,40,30"
 
-    $header = New-ViewHeader -Text "Установка APK"
+    $header = New-ViewHeader -Text "Установка приложений"
     $mainStack.Children.Add($header) | Out-Null
 
-    $mainStack.Children.Add((New-ViewLabel -Text "Выберите папку с APK-файлами:")) | Out-Null
+    $mainStack.Children.Add((New-ViewLabel -Text "Выберите папку с файлами .apk, .apks, .xapk или .apkm:")) | Out-Null
 
     $folderPanel = New-Object System.Windows.Controls.StackPanel
     $folderPanel.Orientation = "Horizontal"
@@ -26,12 +26,31 @@ function Show-ApkView {
     $folderPanel.Children.Add((New-ViewButton -Text "Выбрать папку" -Color "#4A90E2" -OnClick {
         Add-Type -AssemblyName System.Windows.Forms
         $dlg = New-Object System.Windows.Forms.FolderBrowserDialog
-        $dlg.Description = "Выберите папку с APK"
+        $dlg.Description = "Выберите папку с APK или bundle-файлами"
         if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
             $script:ApkFolderPath = $dlg.SelectedPath
             Set-ConfigValue -Key "LastApkFolder" -Value $script:ApkFolderPath
             $script:ApkFolderLabel.Text = $script:ApkFolderPath
             Load-ApkFiles -Folder $script:ApkFolderPath
+        }
+    })) | Out-Null
+
+    $folderPanel.Children.Add((New-ViewButton -Text "Добавить файл" -Color "#9C27B0" -Margin "10,0,0,0" -OnClick {
+        Add-Type -AssemblyName System.Windows.Forms
+        $dlg = New-Object System.Windows.Forms.OpenFileDialog
+        $dlg.Filter = "APK files (*.apk)|*.apk|Bundle files (*.apks;*.xapk;*.apkm)|*.apks;*.xapk;*.apkm|All supported (*.apk;*.apks;*.xapk;*.apkm)|*.apk;*.apks;*.xapk;*.apkm|All files (*.*)|*.*"
+        $dlg.Title = "Выберите APK или bundle-файл"
+        $dlg.Multiselect = $true
+        if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+            $files = $dlg.FileNames
+            if (-not $script:ApkExtraFiles) { $script:ApkExtraFiles = @() }
+            foreach ($f in $files) {
+                if ($script:ApkExtraFiles -notcontains $f) {
+                    $script:ApkExtraFiles += $f
+                }
+            }
+            Write-Log -Message "Добавлено файлов: $($files.Count)" -Level "Info"
+            Switch-View -ViewName "Apk"
         }
     })) | Out-Null
 
@@ -41,9 +60,7 @@ function Show-ApkView {
     $script:ApkListContainer.Margin = "0,10,0,15"
     $mainStack.Children.Add($script:ApkListContainer) | Out-Null
 
-    if ($script:ApkFolderPath -and (Test-Path $script:ApkFolderPath)) {
-        Load-ApkFiles -Folder $script:ApkFolderPath -RestoreSelection
-    }
+    Load-ApkFiles -Folder $script:ApkFolderPath -RestoreSelection
 
     $btnPanel = New-Object System.Windows.Controls.StackPanel
     $btnPanel.Orientation = "Horizontal"
@@ -82,7 +99,7 @@ function Show-ApkView {
         }
 
         $confirm = [System.Windows.MessageBox]::Show(
-            "Установить $($selected.Count) APK?",
+            "Установить $($selected.Count) файлов?",
             "Подтверждение",
             [System.Windows.MessageBoxButton]::YesNo,
             [System.Windows.MessageBoxImage]::Question)
@@ -102,7 +119,7 @@ function Show-ApkView {
 
     $rootGrid = New-ViewRoot -Stack $mainStack -OnBack { Switch-View -ViewName "Setup" }
     $contentGrid.Children.Add($rootGrid) | Out-Null
-    Write-Log -Message "Экран установки APK" -Level "Info"
+    Write-Log -Message "Экран установки приложений" -Level "Info"
 }
 
 function Load-ApkFiles {
@@ -114,31 +131,69 @@ function Load-ApkFiles {
     $script:ApkListContainer.Children.Clear()
     $script:ApkCheckboxes = @()
 
-    $apkFiles = Get-ChildItem -Path $Folder -Filter *.apk -File | Sort-Object Name
-    if ($apkFiles.Count -eq 0) {
-        $script:ApkListContainer.Children.Add((New-ViewLabel -Text "В папке нет APK-файлов.")) | Out-Null
+    $allFiles = @()
+
+    # --- Файлы из папки ---
+    if ($Folder -and (Test-Path $Folder)) {
+        $allFiles += Get-ChildItem -Path $Folder -File | Where-Object {
+            $_.Extension.ToLower() -in @(".apk", ".apks", ".xapk", ".apkm")
+        }
+    }
+
+    # --- Файлы, добавленные через "Добавить файл" ---
+    if ($script:ApkExtraFiles -and $script:ApkExtraFiles.Count -gt 0) {
+        foreach ($f in $script:ApkExtraFiles) {
+            if (Test-Path $f) {
+                $allFiles += Get-Item $f
+            }
+        }
+    }
+
+    # --- Уникальные + сортировка ---
+    $allFiles = $allFiles | Sort-Object FullName -Unique | Sort-Object Name
+
+    if ($allFiles.Count -eq 0) {
+        $script:ApkListContainer.Children.Add((New-ViewLabel -Text "Не найдено файлов .apk / .apks / .xapk / .apkm.")) | Out-Null
         return
     }
 
     if (-not $RestoreSelection) {
-        Write-Log -Message "Найдено APK: $($apkFiles.Count)" -Level "Info"
+        Write-Log -Message "Найдено файлов: $($allFiles.Count)" -Level "Info"
     }
 
-    foreach ($f in $apkFiles) {
+    foreach ($f in $allFiles) {
         $sizeMB = [math]::Round($f.Length / 1MB, 2)
         $isInstalled = $script:ApkInstalledFiles -contains $f.FullName
+        $isBundle = Test-IsApkBundle -Path $f.FullName
+
+        # Тип для отображения
+        $typeLabel = ""
+        $typeColor = "#2D2D30"
+        if ($f.Extension.ToLower() -eq ".apk") {
+            $typeLabel = "[APK]"
+        } else {
+            $typeLabel = "[BUNDLE]"
+            $typeColor = "#9C27B0"
+        }
 
         $chk = New-Object System.Windows.Controls.CheckBox
         $chk.Style = $window.Resources["MiuiCheckBox"]
 
         if ($isInstalled) {
-            $chk.Content = "$($f.Name)  ($sizeMB МБ)  — Установлено"
+            $chk.Content = "$typeLabel  $($f.Name)  ($sizeMB МБ)  — Установлено"
             $chk.Foreground = [System.Windows.Media.Brushes]::Gray
             $chk.IsEnabled = $false
             $chk.IsChecked = $false
         } else {
-            $chk.Content = "$($f.Name)  ($sizeMB МБ)"
+            $chk.Content = "$typeLabel  $($f.Name)  ($sizeMB МБ)"
             $chk.Tag = $f
+
+            if ($isBundle) {
+                $chk.Foreground = New-Object System.Windows.Media.SolidColorBrush(
+                    [System.Windows.Media.ColorConverter]::ConvertFromString($typeColor)
+                )
+                $chk.ToolTip = "Bundle-файл: содержит базовый APK + split'ы. Устанавливается через adb install-multiple."
+            }
 
             if ($RestoreSelection -and $script:ApkSelectedFiles -contains $f.FullName) {
                 $chk.IsChecked = $true
@@ -161,19 +216,17 @@ function Load-ApkFiles {
     }
 }
 
-# ===== ПРЕОБРАЗОВАНИЕ ОШИБКИ ADB INSTALL В ЧИТАЕМЫЙ ВИД =====
+# ===== ПРЕОБРАЗОВАНИЕ ОШИБКИ =====
 function Convert-InstallError {
     param([string]$RawOutput)
 
     if (-not $RawOutput) { return "неизвестная ошибка (пустой вывод adb)" }
 
-    # Нормализуем: убираем CLIXML-мусор от PowerShell и лишние переводы строк
     $clean = $RawOutput -replace "`r?`n", " "
     $clean = $clean -replace '#<\s*CLIXML.*?</\s*CLIXML>', ''
     $clean = $clean -replace 'System\.Management\.Automation\.RemoteException', ''
     $clean = ($clean -replace '\s+', ' ').Trim()
 
-    # --- Ищем все INSTALL_* коды в тексте ---
     $installCode = $null
     if ($clean -match 'INSTALL_[A-Z_]+') {
         $installCode = $matches[0]
@@ -181,36 +234,36 @@ function Convert-InstallError {
 
     if ($installCode) {
         switch ($installCode) {
-            "INSTALL_FAILED_VERSION_DOWNGRADE"             { return "версия APK ниже установленной. Нужен флаг -d или удаление старой версии (см. подсказку в логе)." }
-            "INSTALL_FAILED_UPDATE_INCOMPATIBLE"            { return "подпись APK не совпадает с установленной. Удалите старую версию через «Управление пакетами»." }
-            "INSTALL_FAILED_ALREADY_EXISTS"                 { return "приложение уже установлено" }
-            "INSTALL_FAILED_INSUFFICIENT_STORAGE"           { return "недостаточно места на ТВ" }
-            "INSTALL_FAILED_INVALID_APK"                    { return "повреждённый или невалидный APK" }
-            "INSTALL_FAILED_INVALID_URI"                    { return "неверный путь к файлу" }
-            "INSTALL_FAILED_CONFLICTING_PROVIDER"           { return "конфликт с другим приложением (общий ContentProvider)" }
-            "INSTALL_FAILED_DUPLICATE_PACKAGE"              { return "пакет уже установлен под другим именем" }
-            "INSTALL_FAILED_NO_MATCHING_ABIS"               { return "APK не подходит под архитектуру ТВ" }
-            "INSTALL_FAILED_OLDER_SDK"                      { return "APK требует более старую версию Android" }
-            "INSTALL_FAILED_NEWER_SDK"                      { return "APK требует более новую версию Android" }
-            "INSTALL_FAILED_MISSING_SHARED_LIBRARY"         { return "APK требует отсутствующую библиотеку" }
-            "INSTALL_FAILED_USER_RESTRICTED"                { return "установка запрещена политикой устройства" }
-            "INSTALL_PARSE_FAILED_NO_CERTIFICATES"          { return "APK не подписан" }
-            "INSTALL_PARSE_FAILED_INCONSISTENT_CERTIFICATES" { return "подписи разных APK одного пакета различаются" }
-            "INSTALL_FAILED_DEXOPT"                         { return "ошибка оптимизации dex — APK повреждён" }
-            default                                          { return "ошибка установки: $installCode" }
+            "INSTALL_FAILED_VERSION_DOWNGRADE"             { return "версия ниже установленной. Смотрите подсказку ниже." }
+            "INSTALL_FAILED_UPDATE_INCOMPATIBLE"           { return "подпись не совпадает с установленной. Смотрите подсказку ниже." }
+            "INSTALL_FAILED_ALREADY_EXISTS"                { return "приложение уже установлено" }
+            "INSTALL_FAILED_INSUFFICIENT_STORAGE"          { return "недостаточно места на ТВ" }
+            "INSTALL_FAILED_INVALID_APK"                   { return "повреждённый или невалидный APK" }
+            "INSTALL_FAILED_INVALID_URI"                   { return "неверный путь к файлу" }
+            "INSTALL_FAILED_CONFLICTING_PROVIDER"          { return "конфликт с другим приложением" }
+            "INSTALL_FAILED_DUPLICATE_PACKAGE"             { return "пакет уже установлен под другим именем" }
+            "INSTALL_FAILED_NO_MATCHING_ABIS"              { return "APK не подходит под архитектуру ТВ" }
+            "INSTALL_FAILED_OLDER_SDK"                     { return "APK требует более старую версию Android" }
+            "INSTALL_FAILED_NEWER_SDK"                     { return "APK требует более новую версию Android" }
+            "INSTALL_FAILED_MISSING_SHARED_LIBRARY"        { return "APK требует отсутствующую библиотеку" }
+            "INSTALL_FAILED_USER_RESTRICTED"               { return "установка запрещена политикой устройства" }
+            "INSTALL_PARSE_FAILED_NO_CERTIFICATES"         { return "APK не подписан" }
+            "INSTALL_PARSE_FAILED_INCONSISTENT_CERTIFICATES" { return "подписи APK различаются" }
+            "INSTALL_FAILED_DEXOPT"                        { return "ошибка оптимизации dex" }
+            "INSTALL_FAILED_MISSING_SPLIT"                 { return "не хватает split-APK — bundle повреждён" }
+            default                                         { return "ошибка установки: $installCode" }
         }
     }
 
-    # Если не нашли INSTALL_*, вернём хотя бы часть сообщения
     if ($clean.Length -gt 200) { $clean = $clean.Substring(0, 200) + "..." }
     return $clean
 }
 
-# ===== ФОНОВАЯ УСТАНОВКА APK =====
+# ===== ФОНОВАЯ УСТАНОВКА =====
 function Start-BackgroundApkInstall {
     param([array]$Files)
 
-    Write-Log -Message "=== Запуск установки $($Files.Count) APK ===" -Level "Info"
+    Write-Log -Message "=== Запуск установки $($Files.Count) файлов ===" -Level "Info"
 
     $script:ApkInstallInProgress = $true
 
@@ -266,44 +319,24 @@ function Start-BackgroundApkInstall {
             Start-Sleep -Milliseconds 80
         }
 
-        # --- Функция разбора ошибки ---
         function Convert-InstallError {
             param([string]$RawOutput)
-
-            if (-not $RawOutput) { return "неизвестная ошибка (пустой вывод adb)" }
-
+            if (-not $RawOutput) { return "неизвестная ошибка" }
             $clean = $RawOutput -replace "`r?`n", " "
             $clean = $clean -replace '#<\s*CLIXML.*?</\s*CLIXML>', ''
             $clean = $clean -replace 'System\.Management\.Automation\.RemoteException', ''
             $clean = ($clean -replace '\s+', ' ').Trim()
-
-            $installCode = $null
             if ($clean -match 'INSTALL_[A-Z_]+') {
-                $installCode = $matches[0]
-            }
-
-            if ($installCode) {
-                switch ($installCode) {
-                    "INSTALL_FAILED_VERSION_DOWNGRADE"             { return "версия APK ниже установленной. Смотрите подсказку ниже." }
-                    "INSTALL_FAILED_UPDATE_INCOMPATIBLE"           { return "подпись APK не совпадает с установленной. Смотрите подсказку ниже." }
-                    "INSTALL_FAILED_ALREADY_EXISTS"                { return "приложение уже установлено" }
-                    "INSTALL_FAILED_INSUFFICIENT_STORAGE"          { return "недостаточно места на ТВ" }
-                    "INSTALL_FAILED_INVALID_APK"                   { return "повреждённый или невалидный APK" }
-                    "INSTALL_FAILED_INVALID_URI"                   { return "неверный путь к файлу" }
-                    "INSTALL_FAILED_CONFLICTING_PROVIDER"          { return "конфликт с другим приложением (общий ContentProvider)" }
-                    "INSTALL_FAILED_DUPLICATE_PACKAGE"             { return "пакет уже установлен под другим именем" }
-                    "INSTALL_FAILED_NO_MATCHING_ABIS"              { return "APK не подходит под архитектуру ТВ" }
-                    "INSTALL_FAILED_OLDER_SDK"                     { return "APK требует более старую версию Android" }
-                    "INSTALL_FAILED_NEWER_SDK"                     { return "APK требует более новую версию Android" }
-                    "INSTALL_FAILED_MISSING_SHARED_LIBRARY"        { return "APK требует отсутствующую библиотеку" }
-                    "INSTALL_FAILED_USER_RESTRICTED"               { return "установка запрещена политикой устройства" }
-                    "INSTALL_PARSE_FAILED_NO_CERTIFICATES"         { return "APK не подписан" }
-                    "INSTALL_PARSE_FAILED_INCONSISTENT_CERTIFICATES" { return "подписи разных APK одного пакета различаются" }
-                    "INSTALL_FAILED_DEXOPT"                        { return "ошибка оптимизации dex — APK повреждён" }
-                    default                                         { return "ошибка установки: $installCode" }
+                $code = $matches[0]
+                switch ($code) {
+                    "INSTALL_FAILED_VERSION_DOWNGRADE"   { return "версия ниже установленной" }
+                    "INSTALL_FAILED_UPDATE_INCOMPATIBLE" { return "подпись не совпадает" }
+                    "INSTALL_FAILED_MISSING_SPLIT"       { return "не хватает split-APK" }
+                    "INSTALL_FAILED_INVALID_APK"         { return "повреждённый APK" }
+                    "INSTALL_FAILED_NO_MATCHING_ABIS"    { return "APK не подходит под архитектуру" }
+                    default                              { return "ошибка: $code" }
                 }
             }
-
             if ($clean.Length -gt 200) { $clean = $clean.Substring(0, 200) + "..." }
             return $clean
         }
@@ -317,15 +350,66 @@ function Start-BackgroundApkInstall {
             $f = $files[$i]
             $num = $i + 1
 
-            Write-BgLog "[$num/$total] Установка: $($f.Name)" "Info"
+            $ext = [System.IO.Path]::GetExtension($f.FullName).ToLower()
+            $isBundle = ($ext -in @(".apks", ".xapk", ".apkm"))
 
-            # -r — перезаписать
-            # -g — выдать все разрешения
-            # -d — разрешить downgrade (установка старой версии поверх новой)
-            $out = & $adbPath install -r -g -d $f.FullName 2>&1
-            $outText = ($out | Out-String).Trim()
+            if ($isBundle) {
+                Write-BgLog "[$num/$total] Bundle: $($f.Name) — распаковка и установка" "Info"
+            } else {
+                Write-BgLog "[$num/$total] Установка: $($f.Name)" "Info"
+            }
 
-            if ($outText -match "Success") {
+            $outText = ""
+            $isSuccess = $false
+
+            if ($isBundle) {
+                # --- Bundle: распаковка + install-multiple ---
+                $tempDir = Join-Path $env:TEMP "TVManager_Apk_$(Get-Random)"
+                try {
+                    New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+                    Add-Type -AssemblyName System.IO.Compression.FileSystem
+                    [System.IO.Compression.ZipFile]::ExtractToDirectory($f.FullName, $tempDir)
+
+                    $allApks = Get-ChildItem -Path $tempDir -Filter "*.apk" -File -Recurse | Select-Object -ExpandProperty FullName
+
+                    if (-not $allApks -or $allApks.Count -eq 0) {
+                        Write-BgLog "  В архиве нет APK" "Error"
+                        $failed++
+                        continue
+                    }
+
+                    # Базовый APK первым
+                    $baseApk = $allApks | Where-Object { $_ -match '\\base\.apk$' } | Select-Object -First 1
+                    if (-not $baseApk) {
+                        $baseApk = $allApks | Where-Object { (Split-Path $_ -Leaf) -notmatch '^split' } | Select-Object -First 1
+                    }
+                    $splits = $allApks | Where-Object { $_ -ne $baseApk }
+                    $apkList = @($baseApk) + @($splits)
+
+                    Write-BgLog "  Базовый + $($splits.Count) split'ов" "Info"
+
+                    $adbArgs = @("install-multiple", "-r", "-g", "-d") + $apkList
+                    $out = & $adbPath @adbArgs 2>&1
+                    $outText = ($out | Out-String).Trim()
+
+                    if ($outText -match "Success") {
+                        $isSuccess = $true
+                    }
+                } catch {
+                    Write-BgLog "  Ошибка bundle: $_" "Error"
+                } finally {
+                    if ($tempDir -and (Test-Path $tempDir)) {
+                        Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+                    }
+                }
+            } else {
+                # --- Обычный APK ---
+                $out = & $adbPath install -r -g -d $f.FullName 2>&1
+                $outText = ($out | Out-String).Trim()
+                if ($outText -match "Success") { $isSuccess = $true }
+            }
+
+            if ($isSuccess) {
                 Write-BgLog "  OK: $($f.Name)" "Success"
                 $success++
                 $installedPaths += $f.FullName
@@ -333,41 +417,22 @@ function Start-BackgroundApkInstall {
                 $humanMsg = Convert-InstallError -RawOutput $outText
                 Write-BgLog "  FAIL: $($f.Name) — $humanMsg" "Error"
 
-                # --- Расширенные подсказки ---
                 if ($outText -match 'INSTALL_FAILED_VERSION_DOWNGRADE') {
-                    Write-BgLog "  ──────────────────────────────────────────────────" "Info"
-                    Write-BgLog "  ПОДСКАЗКА: Android блокирует установку старой версии поверх новой." "Warning"
-                    Write-BgLog "" "Info"
-                    Write-BgLog "  Вариант 1 — Разрешить downgrade (уже применён флаг -d):" "Info"
-                    Write-BgLog "    Текущий вызов: adb install -r -g -d <файл>" "Info"
-                    Write-BgLog "    Если всё равно отказ — подписи APK различаются." "Info"
-                    Write-BgLog "" "Info"
-                    Write-BgLog "  Вариант 2 — Удалить старую версию и установить заново:" "Info"
-                    Write-BgLog "    Через приложение:" "Info"
-                    Write-BgLog "      1. Setup → Управление пакетами" "Info"
-                    Write-BgLog "      2. Найдите установленный пакет (например, ru.more.play)" "Info"
-                    Write-BgLog "      3. Нажмите «Удалить»" "Info"
-                    Write-BgLog "      4. Вернитесь сюда и установите APK заново" "Info"
-                    Write-BgLog "" "Info"
-                    Write-BgLog "    Вручную через ADB (Сервис → Своя команда):" "Info"
-                    Write-BgLog "      shell pm uninstall --user 0 <имя_пакета>" "Info"
-                    Write-BgLog "      Пример: shell pm uninstall --user 0 ru.more.play" "Info"
-                    Write-BgLog "  ──────────────────────────────────────────────────" "Info"
-                }
-                elseif ($outText -match 'INSTALL_FAILED_UPDATE_INCOMPATIBLE') {
-                    Write-BgLog "  ──────────────────────────────────────────────────" "Info"
-                    Write-BgLog "  ПОДСКАЗКА: Установленный APK подписан другим ключом." "Warning"
-                    Write-BgLog "" "Info"
+                    Write-BgLog "  ──────────────────────────────────────────────" "Info"
+                    Write-BgLog "  ПОДСКАЗКА: Android блокирует старую версию поверх новой." "Warning"
                     Write-BgLog "  Решение — удалить старую версию и установить заново:" "Info"
-                    Write-BgLog "    Через приложение:" "Info"
-                    Write-BgLog "      1. Setup → Управление пакетами" "Info"
-                    Write-BgLog "      2. Найдите установленный пакет" "Info"
-                    Write-BgLog "      3. Нажмите «Удалить»" "Info"
-                    Write-BgLog "      4. Вернитесь сюда и установите APK заново" "Info"
-                    Write-BgLog "" "Info"
-                    Write-BgLog "    Вручную через ADB (Сервис → Своя команда):" "Info"
-                    Write-BgLog "      shell pm uninstall --user 0 <имя_пакета>" "Info"
-                    Write-BgLog "  ──────────────────────────────────────────────────" "Info"
+                    Write-BgLog "    1. Setup → Управление пакетами" "Info"
+                    Write-BgLog "    2. Найти пакет и удалить" "Info"
+                    Write-BgLog "    3. Вернуться сюда и установить заново" "Info"
+                    Write-BgLog "  Или вручную (Сервис → Своя команда):" "Info"
+                    Write-BgLog "    shell pm uninstall --user 0 <имя_пакета>" "Info"
+                    Write-BgLog "  ──────────────────────────────────────────────" "Info"
+                }
+                elseif ($outText -match 'INSTALL_FAILED_MISSING_SPLIT') {
+                    Write-BgLog "  ──────────────────────────────────────────────" "Info"
+                    Write-BgLog "  ПОДСКАЗКА: bundle повреждён — не хватает split-APK." "Warning"
+                    Write-BgLog "  Скачайте .apks / .xapk заново из надёжного источника." "Info"
+                    Write-BgLog "  ──────────────────────────────────────────────" "Info"
                 }
 
                 $failed++
@@ -375,7 +440,7 @@ function Start-BackgroundApkInstall {
             Start-Sleep -Milliseconds 200
         }
 
-        Write-BgLog "=== Установка завершена: успешно $success, ошибок $failed из $total ===" "Success"
+        Write-BgLog "=== Готово: успешно $success, ошибок $failed из $total ===" "Success"
         return @{ Success = $success; Failed = $failed; Total = $total; InstalledPaths = $installedPaths }
     })
 
@@ -416,7 +481,7 @@ function Start-BackgroundApkInstall {
     $script:ApkTimer.Start()
 }
 
-# ===== ПОЛУЧЕНИЕ СПИСКА УСТАНОВЛЕННЫХ ПАКЕТОВ =====
+# ===== СПИСКИ ПАКЕТОВ =====
 function Get-InstalledPackagesSet {
     $out = & $script:adbPath shell pm list packages 2>&1
     $set = @{}
@@ -428,7 +493,6 @@ function Get-InstalledPackagesSet {
     return $set
 }
 
-# ===== ПОЛУЧЕНИЕ СПИСКА ОТКЛЮЧЁННЫХ ПАКЕТОВ =====
 function Get-DisabledPackagesSet {
     $out = & $script:adbPath shell pm list packages -d 2>&1
     $set = @{}

@@ -88,3 +88,6 @@ $script:IntegrityReference = $null
 # ===== ADBKEYBOARD =====
 # Ппеременные определены в Modules\AdbKeyboard.ps1
 
+# ===== APK BUNDLES =====
+$script:ApkExtraFiles = @()
+

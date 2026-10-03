@@ -2,63 +2,158 @@
 $script:adbPath = "adb"
 $script:backupFile = "$env:USERPROFILE\Desktop\tv_changes_backup.json"
 
-# ===== КАТЕГОРИИ ПАКЕТОВ =====
+# ============================================================================
+#  КАТЕГОРИИ ПАКЕТОВ
+#  Risk: low = безопасно, medium = осторожно, high = может сломать
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+#  РЕКЛАМА И ТЕЛЕМЕТРИЯ
+# ----------------------------------------------------------------------------
 $script:adwarePackages = @(
-    @{Package="com.tcl.waterfall";     Desc="TCL Channel — загрузчик рекламы"},
-    @{Package="com.tcl.bi";            Desc="TCL Telemetry — сборщик статистики"},
-    @{Package="com.tcl.guard";         Desc="Safety Guard — оптимизатор памяти"},
-    @{Package="com.tcl.tvwebrs";       Desc="TCL Ads — рекламные баннеры"},
-    @{Package="com.tcl.bootadservice"; Desc="Реклама при загрузке"},
-    @{Package="com.tcl.c2dm.client";   Desc="Рекламные push-уведомления"}
+    @{Package="com.tcl.waterfall.overseas"; Desc="TCL Channel — рекомендации и реклама на главном экране"; Risk="low"}
+    @{Package="com.tcl.guard";              Desc="Safety Guard — телеметрия и «оптимизация» памяти";        Risk="low"}
+    @{Package="com.tcl.interactive";        Desc="Интерактивные рекламные баннеры";                          Risk="low"}
+    @{Package="com.tcl.tv.tclhome_passive"; Desc="Пассивная реклама на главном экране";                      Risk="medium"}
+    @{Package="com.tcl.partnercustomizer";  Desc="Партнёрские рекламные плейсменты";                         Risk="low"}
+    @{Package="com.tcl.useragreement";      Desc="Соглашение с пользователем и телеметрия";                  Risk="low"}
+    @{Package="com.tcl.hearaid";            Desc="HearAid — сбор статистики прослушивания";                  Risk="low"}
+    @{Package="com.tcl.exhibit";            Desc="Демо-контент (для магазинов) — показ рекламы";             Risk="low"}
+    @{Package="com.tcl.logkit";             Desc="Сбор логов TCL для аналитики";                             Risk="low"}
+    @{Package="com.tcl.suspension";         Desc="Рекламные push-уведомления";                               Risk="low"}
+    @{Package="com.tcl.esticker";           Desc="Рекламные стикеры на экране";                              Risk="low"}
+    @{Package="com.tcl.channelplus";        Desc="Дополнительные рекламные каналы";                          Risk="low"}
+    @{Package="com.tcl.ocean.instructions"; Desc="Обучающие подсказки с рекламой";                           Risk="low"}
+    @{Package="tv.mopa.ginga";              Desc="Ginga — интерактивный ТВ (реклама, Бразилия)";             Risk="low"}
+    @{Package="com.google.android.feedback";Desc="Отправка отзывов Google";                                 Risk="low"}
+    @{Package="com.google.android.partnersetup"; Desc="Настройка Google-партнёров";                          Risk="low"}
+    @{Package="com.google.android.onetimeinitializer"; Desc="Одноразовая инициализация Google";               Risk="low"}
 )
 
+# ----------------------------------------------------------------------------
+#  СТРИМИНГ И МЕДИА
+# ----------------------------------------------------------------------------
+$script:streamingPackages = @(
+    @{Package="com.netflix.ninja";                    Desc="Netflix — приложение для просмотра";                     Risk="low"}
+    @{Package="com.netflix.tokenmanager";             Desc="Токен-менеджер Netflix (нужен, если Netflix установлен)";  Risk="medium"}
+    @{Package="com.amazon.amazonvideo.livingroom";    Desc="Amazon Prime Video — приложение для просмотра";            Risk="low"}
+    @{Package="com.iqiyi.i18n.tv";                    Desc="iQIYI — азиатский стриминг (часто с рекламой)";            Risk="low"}
+    @{Package="com.google.android.youtube.tv";        Desc="YouTube для Android TV — встроенное приложение";           Risk="medium"}
+    @{Package="com.google.android.apps.mediashell";   Desc="Media Shell — приёмник Google Cast";                       Risk="medium"}
+)
+
+# ----------------------------------------------------------------------------
+#  ЛАУНЧЕРЫ (главные экраны ТВ)
+#  ⚠️ Отключать только после установки и проверки стороннего лаунчера!
+# ----------------------------------------------------------------------------
+$script:launcherPackages = @(
+    @{Package="com.google.android.apps.tv.launcherx"; Desc="Google TV Launcher — стандартный главный экран";       Risk="high"}
+    @{Package="com.tcl.tv";                           Desc="TCL Launcher — альтернативный главный экран от TCL";    Risk="high"}
+    @{Package="com.tcl.tv.tclhome_passive";           Desc="TCL Home Passive — вспомогательный компонент лаунчера";  Risk="high"}
+)
+
+# ----------------------------------------------------------------------------
+#  TCL-СЕРВИСЫ
+# ----------------------------------------------------------------------------
 $script:tclServicesPackages = @(
-    @{Package="com.tcl.browser";       Desc="BrowseHere — браузер"},
-    @{Package="com.tcl.appmarket2";    Desc="TCL App Store"},
-    @{Package="com.tcl.usercenter";    Desc="Центр отзывов"},
-    @{Package="com.tcl.tcast";         Desc="MagiConnect — каст"},
-    @{Package="com.tcl.gamecenter";    Desc="Игровой центр"},
-    @{Package="com.tcl.tshop";         Desc="T慧购 — магазин"},
-    @{Package="com.tcl.playskill";     Desc="玩机技巧 — советы"},
-    @{Package="com.tcl.ffeducation";   Desc="Образование"},
-    @{Package="com.tcl.weixin";        Desc="WeChat для ТВ"},
-    @{Package="com.tcl.videocall";     Desc="Видеозвонки"},
-    @{Package="com.tcl.appreciate.art";Desc="艺生活 — арт-галерея"},
-    @{Package="com.tcl.vod";           Desc="Video On Demand"},
-    @{Package="com.tcl.tvsmartalbum";  Desc="Умный альбом"}
+    @{Package="com.tcl.usercenter";              Desc="Центр аккаунтов TCL — если не пользуетесь";     Risk="medium"}
+    @{Package="com.tcl.gamebar";                 Desc="Игровая панель — если не играете";               Risk="medium"}
+    @{Package="com.tcl.ttvs";                    Desc="Магазин приложений TCL (может ломать апдейты)";  Risk="high"}
+    @{Package="com.tcl.ui_mediaCenter";          Desc="Медиа-центр TCL — если не пользуетесь";          Risk="medium"}
+    @{Package="com.tcl.messagebox";              Desc="Сообщения от TCL";                               Risk="low"}
+    @{Package="com.tcl.repairguide";             Desc="Гид по ремонту";                                 Risk="low"}
+    @{Package="com.tcl.eva";                     Desc="EVA — голосовой ассистент TCL";                  Risk="medium"}
+    @{Package="com.tcl.miracast";                Desc="Miracast — трансляция экрана";                   Risk="medium"}
+    @{Package="com.tcl.airplay2";                Desc="AirPlay 2 от TCL";                               Risk="medium"}
+    @{Package="com.tcl.hotelmenu";               Desc="Hotel Menu — только для гостиниц";               Risk="low"}
+    @{Package="com.tcl.t_solo";                  Desc="TCL Solo — сервис (назначение неизвестно)";      Risk="medium"}
+    @{Package="com.mediatek.AirplayAPK";         Desc="AirPlay APK от MediaTek (дубль com.tcl.airplay2)"; Risk="medium"}
+    @{Package="com.mediatek.airplaydaemon";      Desc="AirPlay daemon MediaTek";                        Risk="medium"}
+    @{Package="com.tvos";                        Desc="Samsung TV OS / AirPlay совместимость";          Risk="medium"}
 )
 
+# ----------------------------------------------------------------------------
+#  GOOGLE-МУСОР
+# ----------------------------------------------------------------------------
 $script:googleJunkPackages = @(
-    @{Package="com.google.android.youtube.tvmusic"; Desc="YouTube Music"},
-    @{Package="com.google.android.videos";          Desc="Google Play Фильмы"},
-    @{Package="com.google.android.apps.tachyon";    Desc="Google Meet"},
-    @{Package="com.google.android.play.games";      Desc="Play Игры"},
-    @{Package="com.android.camera2";                Desc="Камера"},
-    @{Package="com.google.android.music";           Desc="Google Music"}
+    @{Package="com.google.android.youtube.tvmusic";  Desc="YouTube Music";                          Risk="low"}
+    @{Package="com.google.android.play.games";       Desc="Play Games";                             Risk="low"}
+    @{Package="com.google.android.marvin.talkback";  Desc="TalkBack — для слабовидящих";            Risk="low"}
+    @{Package="com.google.android.syncadapters.calendar"; Desc="Синхронизация календаря";           Risk="low"}
+    @{Package="com.google.android.apps.tv.dreamx";   Desc="Daydream screensaver";                   Risk="low"}
+    @{Package="com.google.android.katniss";          Desc="Google Assistant — если не используете"; Risk="medium"}
+    @{Package="com.google.android.tv.remote.service";Desc="Сервис пульта Google TV";                Risk="low"}
+    @{Package="com.google.android.tts";              Desc="Google TTS — синтез речи";               Risk="medium"}
 )
 
+# ----------------------------------------------------------------------------
+#  СИСТЕМНЫЕ ДОПОЛНЕНИЯ
+# ----------------------------------------------------------------------------
 $script:systemJunkPackages = @(
-    @{Package="com.android.providers.contacts";       Desc="Контакты"},
-    @{Package="com.android.providers.calendar";       Desc="Календарь"},
-    @{Package="com.android.printspooler";             Desc="Служба печати"},
-    @{Package="com.google.android.marvin.talkback";   Desc="TalkBack"},
-    @{Package="com.android.dreams.basic";             Desc="Заставки"},
-    @{Package="com.android.htmlviewer";               Desc="HTML-просмотрщик"},
-    @{Package="com.android.wallpaperbackup";          Desc="Бэкап обоев"},
-    @{Package="com.android.sharedstoragebackup";      Desc="Общий бэкап"},
-    @{Package="com.android.backupconfirm";            Desc="Подтверждение бэкапа"},
-    @{Package="com.android.providers.userdictionary"; Desc="Словарь"}
+    @{Package="com.android.providers.contacts";       Desc="Провайдер контактов — не нужен на ТВ"; Risk="low"}
+    @{Package="com.android.providers.calendar";       Desc="Провайдер календаря";                   Risk="low"}
+    @{Package="com.android.printspooler";             Desc="Служба печати";                         Risk="low"}
+    @{Package="com.android.dreams.basic";             Desc="Базовые заставки";                      Risk="low"}
+    @{Package="com.android.htmlviewer";               Desc="HTML-просмотрщик";                      Risk="low"}
+    @{Package="com.android.wallpaperbackup";          Desc="Резерв обоев";                          Risk="low"}
+    @{Package="com.android.sharedstoragebackup";      Desc="Общий резерв";                          Risk="low"}
+    @{Package="com.android.backupconfirm";            Desc="Подтверждение резерва";                 Risk="low"}
+    @{Package="com.android.providers.userdictionary"; Desc="Словарь пользователя";                  Risk="low"}
 )
 
+# ----------------------------------------------------------------------------
+#  OTA-ОБНОВЛЕНИЯ
+# ----------------------------------------------------------------------------
 $script:otaPackages = @(
-    @{Package="com.snm.upgrade";          Desc="Системный апдейтер SNM"},
-    @{Package="com.tcl.versionUpdateApp"; Desc="TCL-обновлятор прошивки"}
+    @{Package="com.tcl.UpdatePeripheral"; Desc="Обновление периферии TCL"}
+    # На этой прошивке нет com.snm.upgrade / com.tcl.versionUpdateApp
 )
 
+# ----------------------------------------------------------------------------
+#  ❌ ОПАСНЫЕ ПАКЕТЫ (справочно, в UI не показываем)
+# ----------------------------------------------------------------------------
+$script:systemCriticalPackages = @(
+    # TCL ядро
+    "com.tcl.systemserver"
+    "com.tcl.providers.config"
+    "com.tcl.systemui.plugin"
+    "com.tcl.globalkeyoverlay"
+    "com.tcl.tvinput"
+    "com.tcl.tv"
+    "com.tcl.autopair"
+    "com.tcl.android.webview"
+    "com.tcl.initsetup"
+    # MediaTek
+    "com.mediatek.speakerservice"
+    "com.mediatek.network"
+    "com.mediatek.backgrounddetection"
+    "com.mediatek.android.tv.mdns.offload"
+    "com.mediatek.android.tv.mdns.offload.overlay"
+    "com.mediatek.support.webview"
+    # Dolby
+    "com.dolby.android.audio.service"
+    "com.dolby.android.audio.calibration"
+    # Google ядро
+    "com.google.android.gms"
+    "com.google.android.gsf"
+    "com.android.vending"
+    "com.google.android.apps.tv.launcherx"
+    # Android ядро
+    "com.android.systemui"
+    "com.android.settings"
+    "android"
+    "com.android.se"
+    "com.android.shell"
+    "com.android.providers.settings"
+)
+
+# ----------------------------------------------------------------------------
+#  LAUNCHER LIST
+# ----------------------------------------------------------------------------
 $script:launcherList = @(
-    @{Name="ATV Launcher Pro";      Package="ca.dstudio.atvlauncher.pro"; Activity="ca.dstudio.atvlauncher.pro/.ui.MainActivity"},
-    @{Name="Projectivy Launcher";   Package="com.spocky.projengmenu";     Activity="com.spocky.projengmenu/.ui.home.MainActivity"},
-    @{Name="FLauncher";             Package="me.efesser.flauncher";       Activity="me.efesser.flauncher/.MainActivity"},
+    @{Name="ATV Launcher Pro";      Package="ca.dstudio.atvlauncher.pro"; Activity="ca.dstudio.atvlauncher.pro/.ui.MainActivity"}
+    @{Name="Projectivy Launcher";   Package="com.spocky.projengmenu";     Activity="com.spocky.projengmenu/.ui.home.MainActivity"}
+    @{Name="FLauncher";             Package="me.efesser.flauncher";       Activity="me.efesser.flauncher/.MainActivity"}
     @{Name="Monet Launcher";        Package="com.klevico.monet";          Activity="com.klevico.monet/.MainActivity"}
 )
 

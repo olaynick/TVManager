@@ -18,7 +18,6 @@ Add-Type -AssemblyName System.Windows.Forms
 if ($MyInvocation.MyCommand.Path -and (Test-Path $MyInvocation.MyCommand.Path)) {
     $script:AppRoot = Split-Path $MyInvocation.MyCommand.Path -Parent
 } else {
-    # Запущено из .exe — берём папку исполняемого файла
     try {
         $exePath = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
         $script:AppRoot = Split-Path $exePath -Parent
@@ -32,10 +31,14 @@ if ($MyInvocation.MyCommand.Path -and (Test-Path $MyInvocation.MyCommand.Path)) 
 # ---------------------------------------------------------------------------
 . "$script:AppRoot\Modules\Config.ps1"           # списки пакетов, пути
 . "$script:AppRoot\Modules\AdbHelper.ps1"        # ADB-команды
+. "$script:AppRoot\Modules\AdbKeyboard.ps1"      # ADBKeyboard
 . "$script:AppRoot\Modules\NetworkScanner.ps1"   # сканер сети
 . "$script:AppRoot\Modules\ChangeLogger.ps1"     # откат изменений
 . "$script:AppRoot\Modules\GuiHelper.ps1"        # логгер + тема
 . "$script:AppRoot\Modules\AppConfig.ps1"        # config.json + профили
+. "$script:AppRoot\Modules\DeviceDump.ps1"       # экспорт дампа
+. "$script:AppRoot\Modules\ScenarioEngine.ps1"   # пакетный режим (сценарии)
+. "$script:AppRoot\Modules\AppOpsHelper.ps1"
 
 # ---------------------------------------------------------------------------
 #  4. Состояние
@@ -71,19 +74,21 @@ $logBox      = $window.FindName("LogBox")
 $script:BottomBar        = $window.FindName("BottomBar")
 $script:BottomBarContent = $window.FindName("BottomBarContent")
 
+# Прогресс-бар (если есть в XAML)
 $script:BottomBarProgress     = $window.FindName("BottomBarProgress")
 $script:BottomBarProgressText = $window.FindName("BottomBarProgressText")
 
-# Делаем contentGrid и statusText доступными из вьюх (они используют $contentGrid напрямую)
+# Делаем contentGrid и statusText доступными из вьюх
 $global:contentGrid = $contentGrid
 $global:statusText  = $statusText
 
 Set-LogBox -Box $logBox
 
 # ---------------------------------------------------------------------------
-#  7. Конфиг приложения
+#  7. Конфиг приложения + сценарии
 # ---------------------------------------------------------------------------
 Load-AppConfig
+Load-Scenarios
 
 # ---------------------------------------------------------------------------
 #  8. UI-хелперы (после Load-AppConfig, т.к. некоторые хелперы читают конфиг)
@@ -117,12 +122,12 @@ Load-AppConfig
 . "$script:AppRoot\Views\ViewLogcat.ps1"
 . "$script:AppRoot\Views\ViewService.ps1"
 . "$script:AppRoot\Views\ViewWifi.ps1"
-. "$script:AppRoot\Modules\DeviceDump.ps1"
-. "$script:AppRoot\Views\ViewDisplay.ps1" 
+. "$script:AppRoot\Views\ViewDisplay.ps1"
 . "$script:AppRoot\Views\ViewPresets.ps1"
 . "$script:AppRoot\Views\ViewProcesses.ps1"
 . "$script:AppRoot\Views\ViewIntegrity.ps1"
-. "$script:AppRoot\Modules\AdbKeyboard.ps1"
+. "$script:AppRoot\Views\ViewScenarios.ps1"
+. "$script:AppRoot\Views\ViewAutostart.ps1"
 
 # ---------------------------------------------------------------------------
 #  10. Проверка ADB в PATH
@@ -159,7 +164,7 @@ if ($autoConnect -and $lastIp) {
 }
 
 # ---------------------------------------------------------------------------
-#  12. Точка входа (переключение на главный экран + первичная отрисовка)
+#  12. Точка входа (переключение на главный экран)
 # ---------------------------------------------------------------------------
 . "$script:AppRoot\Views\MainWindow.xaml.ps1"
 
