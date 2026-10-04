@@ -447,12 +447,13 @@ function Show-WifiView {
     $actionsPanel.Orientation = "Horizontal"
     $actionsPanel.Margin = "0,0,0,15"
 
-    $btnRefresh = New-ViewButton -Text "Обновить" -ColorType "Primary" -OnClick {
+    $btnRefresh = New-ViewButton -Text "Обновить" -ColorType "Primary" -Compact -OnClick {
         Switch-View -ViewName "Wifi"
     }
+    $btnRefresh.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
     $actionsPanel.Children.Add($btnRefresh) | Out-Null
 
-    $btnSystemSettings = New-ViewButton -Text "Открыть настройки Wi-Fi на ТВ" -ColorType "Neutral" -OnClick {
+    $btnSystemSettings = New-ViewButton -Text "Открыть настройки Wi-Fi на ТВ" -ColorType "Neutral" -Compact -OnClick {
         Write-Log -Message "Открываю настройки Wi-Fi на ТВ..." -Level "Info"
         try {
             & $script:adbPath shell am start -a android.settings.WIFI_SETTINGS 2>&1 | Out-Null
@@ -554,7 +555,7 @@ function Show-WifiView {
     $btnScan.Content = "Просканировать сети"
     $btnScan.Style = $window.Resources["RoundedButton"]
     $btnScan.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
     )
     $btnScan.Padding = "12,6"
     $btnScan.Margin = "0,0,8,0"
@@ -616,7 +617,7 @@ function Show-WifiView {
                 $btnConnect.Content = "Открыть настройки"
                 $btnConnect.Style = $window.Resources["RoundedButton"]
                 $btnConnect.Background = New-Object System.Windows.Media.SolidColorBrush(
-                    [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+                    [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
                 )
                 $btnConnect.Padding = "10,5"
                 $btnConnect.FontSize = 11

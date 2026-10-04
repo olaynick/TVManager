@@ -46,11 +46,17 @@
     $profilesInfo = New-ViewLabel -Text "Сохранённые устройства. При подключении можно выбрать профиль вместо ввода IP вручную." -Light
     $profilesPanel.Children.Add($profilesInfo) | Out-Null
 
-    # Список профилей
+    # --- Список профилей (тёмный) ---
     $script:SettingsProfilesListBox = New-Object System.Windows.Controls.ListBox
     $script:SettingsProfilesListBox.FontSize = 13
     $script:SettingsProfilesListBox.BorderThickness = "1"
     $script:SettingsProfilesListBox.BorderBrush = "#3A3A3A"
+    $script:SettingsProfilesListBox.Background = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#1F1F1F")
+    )
+    $script:SettingsProfilesListBox.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#E0E0E0")
+    )
     $script:SettingsProfilesListBox.MinHeight = 200
     $script:SettingsProfilesListBox.Padding = "5"
     $script:SettingsProfilesListBox.Margin = "0,10,0,10"
@@ -64,22 +70,26 @@
         $item.Content = "$($p.Name)  —  $($p.Ip)"
         $item.Tag = $p
         $item.Padding = "5"
+        $item.Foreground = [System.Windows.Media.SolidColorBrush](
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#E0E0E0")
+        )
         [void]$script:SettingsProfilesListBox.Items.Add($item)
     }
     if ($script:SettingsProfilesListBox.Items.Count -gt 0) { $script:SettingsProfilesListBox.SelectedIndex = 0 }
 
     $profilesPanel.Children.Add($script:SettingsProfilesListBox) | Out-Null
 
-    # Кнопки управления профилями
+    # --- Кнопки управления профилями ---
     $profilesBtnPanel = New-Object System.Windows.Controls.StackPanel
     $profilesBtnPanel.Orientation = "Horizontal"
 
-    $btnAddProfile = New-ViewButton -Text "Добавить профиль" -ColorType "Primary" -OnClick {
+    $btnAddProfile = New-ViewButton -Text "Добавить профиль" -ColorType "Success" -Compact -OnClick {
         Show-AddProfileDialog
     }
+    $btnAddProfile.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
     $profilesBtnPanel.Children.Add($btnAddProfile) | Out-Null
 
-    $btnConnectProfile = New-ViewButton -Text "Подключиться" -ColorType "Primary" -OnClick {
+    $btnConnectProfile = New-ViewButton -Text "Подключиться" -ColorType "Primary" -Compact -OnClick {
         if ($script:SettingsProfilesListBox.SelectedItem) {
             $profile = $script:SettingsProfilesListBox.SelectedItem.Tag
             Write-Log -Message "Подключение к профилю '$($profile.Name)' ($($profile.Ip))..." -Level "Info"
@@ -96,9 +106,10 @@
             Write-Log -Message "Профиль не выбран" -Level "Warning"
         }
     }
+    $btnConnectProfile.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
     $profilesBtnPanel.Children.Add($btnConnectProfile) | Out-Null
 
-    $btnDeleteProfile = New-ViewButton -Text "Удалить" -ColorType "Danger" -OnClick {
+    $btnDeleteProfile = New-ViewButton -Text "Удалить" -ColorType "Danger" -Compact -OnClick {
         if ($script:SettingsProfilesListBox.SelectedItem) {
             $profile = $script:SettingsProfilesListBox.SelectedItem.Tag
             $confirm = [System.Windows.MessageBox]::Show(
@@ -137,7 +148,9 @@
     $configPathLabel.Text = $script:ConfigPath
     $configPathLabel.FontFamily = "Consolas"
     $configPathLabel.FontSize = 11
-    $configPathLabel.Foreground = "#FFFFFF"
+    $configPathLabel.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#E0E0E0")
+    )
     $configPathLabel.TextWrapping = "Wrap"
     $configPathLabel.Margin = "0,5,0,15"
     $configPanel.Children.Add($configPathLabel) | Out-Null
@@ -153,16 +166,19 @@
     $logsPathLabel.Text = $logDirPath
     $logsPathLabel.FontFamily = "Consolas"
     $logsPathLabel.FontSize = 11
-    $logsPathLabel.Foreground = "#FFFFFF"
+    $logsPathLabel.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#E0E0E0")
+    )
     $logsPathLabel.TextWrapping = "Wrap"
     $logsPathLabel.Margin = "0,0,0,15"
     $configPanel.Children.Add($logsPathLabel) | Out-Null
 
-    $configBtnPanel = New-Object System.Windows.Controls.StackPanel
-    $configBtnPanel.Orientation = "Horizontal"
+    # --- Кнопки конфига (в 2 ряда) ---
+    $configBtnRow1 = New-Object System.Windows.Controls.StackPanel
+    $configBtnRow1.Orientation = "Horizontal"
+    $configBtnRow1.Margin = "0,0,0,8"
 
-    # --- Открыть папку конфига ---
-    $btnOpenConfig = New-ViewButton -Text "Открыть папку" -ColorType "Primary" -OnClick {
+    $btnOpenConfig = New-ViewButton -Text "Открыть папку" -ColorType "Primary" -Compact -OnClick {
         try {
             if (-not $script:ConfigPath) {
                 Write-Log -Message "Путь к конфигу не определён" -Level "Warning"
@@ -178,10 +194,10 @@
             Write-Log -Message "Не удалось открыть папку конфига: $_" -Level "Error"
         }
     }
-    $configBtnPanel.Children.Add($btnOpenConfig) | Out-Null
+    $btnOpenConfig.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
+    $configBtnRow1.Children.Add($btnOpenConfig) | Out-Null
 
-    # --- Открыть логи ---
-    $btnOpenLogs = New-ViewButton -Text "Открыть логи" -ColorType "Primary" -OnClick {
+    $btnOpenLogs = New-ViewButton -Text "Открыть логи" -ColorType "Primary" -Compact -OnClick {
         try {
             $appRoot = $script:AppRoot
             if (-not $appRoot) { $appRoot = $PWD.Path }
@@ -195,10 +211,10 @@
             Write-Log -Message "Не удалось открыть логи: $_" -Level "Error"
         }
     }
-    $configBtnPanel.Children.Add($btnOpenLogs) | Out-Null
+    $btnOpenLogs.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
+    $configBtnRow1.Children.Add($btnOpenLogs) | Out-Null
 
-    # --- Скопировать лог за сегодня ---
-    $btnCopyLogs = New-ViewButton -Text "Скопировать лог" -ColorType "Neutral" -OnClick {
+    $btnCopyLogs = New-ViewButton -Text "Скопировать лог" -ColorType "Neutral" -Compact -OnClick {
         $today = Get-Date -Format 'yyyy-MM-dd'
         $logFile = Join-Path (Join-Path $script:AppRoot "Logs") "$today.log"
         if (Test-Path $logFile) {
@@ -212,10 +228,15 @@
             Write-Log -Message "Файл лога за сегодня не найден: $logFile" -Level "Warning"
         }
     }
-    $configBtnPanel.Children.Add($btnCopyLogs) | Out-Null
+    $configBtnRow1.Children.Add($btnCopyLogs) | Out-Null
 
-    # --- Сбросить настройки ---
-    $btnResetConfig = New-ViewButton -Text "Сбросить настройки" -ColorType "Danger" -OnClick {
+    $configPanel.Children.Add($configBtnRow1) | Out-Null
+
+    # --- Сбросить настройки (отдельная строка) ---
+    $configBtnRow2 = New-Object System.Windows.Controls.StackPanel
+    $configBtnRow2.Orientation = "Horizontal"
+
+    $btnResetConfig = New-ViewButton -Text "Сбросить настройки" -ColorType "Danger" -Compact -OnClick {
         $confirm = [System.Windows.MessageBox]::Show(
             "Сбросить все настройки приложения?`n`nПрофили устройств тоже будут удалены.",
             "Подтверждение",
@@ -228,9 +249,9 @@
             Switch-View -ViewName "Settings"
         }
     }
-    $configBtnPanel.Children.Add($btnResetConfig) | Out-Null
+    $configBtnRow2.Children.Add($btnResetConfig) | Out-Null
 
-    $configPanel.Children.Add($configBtnPanel) | Out-Null
+    $configPanel.Children.Add($configBtnRow2) | Out-Null
 
     $tabConfig.Content = $configPanel
     $tabControl.Items.Add($tabConfig) | Out-Null
@@ -281,7 +302,7 @@ function Show-AddProfileDialog {
     $btnPanel.Orientation = "Horizontal"
     $btnPanel.HorizontalAlignment = "Right"
 
-    $btnSave = New-ViewButton -Text "Сохранить" -ColorType "Primary" -OnClick {
+    $btnSave = New-ViewButton -Text "Сохранить" -ColorType "Success" -Compact -OnClick {
         $name = $txtName.Text.Trim()
         $ip = $txtIp.Text.Trim()
         if ([string]::IsNullOrWhiteSpace($name) -or [string]::IsNullOrWhiteSpace($ip)) {
@@ -297,9 +318,10 @@ function Show-AddProfileDialog {
         $dialog.Close()
         Switch-View -ViewName "Settings"
     }
+    $btnSave.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
     $btnPanel.Children.Add($btnSave) | Out-Null
 
-    $btnCancel = New-ViewButton -Text "Отмена" -ColorType "Neutral" -OnClick {
+    $btnCancel = New-ViewButton -Text "Отмена" -ColorType "Neutral" -Compact -OnClick {
         $dialog.Close()
     }
     $btnPanel.Children.Add($btnCancel) | Out-Null

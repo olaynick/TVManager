@@ -1,6 +1,6 @@
 ﻿function Show-PowerView {
     $mainStack = New-Object System.Windows.Controls.StackPanel
-    $mainStack.Margin = "30,25,30,25"
+    $mainStack.Margin = "25,20,25,20"
 
     $header = New-ViewHeader -Text "Питание и перезагрузка"
     $mainStack.Children.Add($header) | Out-Null
@@ -12,20 +12,22 @@
         return
     }
 
-    # Предупреждение
+    # --- Предупреждение ---
     $warn = New-Object System.Windows.Controls.Border
-    $warn.Background = "#3D3520"
-    $warn.BorderBrush = "#C8C8C8"
+    $warn.Background = "#2E2A1A"
+    $warn.BorderBrush = "#9c8e6a"
     $warn.BorderThickness = "1"
     $warn.CornerRadius = "8"
     $warn.Padding = "12"
-    $warn.Margin = "0,0,0,20"
+    $warn.Margin = "0,0,0,15"
 
     $warnText = New-Object System.Windows.Controls.TextBlock
     $warnText.Text = "Внимание: действия на этом экране прерывают работу телевизора. После перезагрузки или выключения соединение по ADB будет разорвано, и его потребуется установить заново."
     $warnText.TextWrapping = "Wrap"
     $warnText.FontSize = 12
-    $warnText.Foreground = "#856404"
+    $warnText.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#FFC83D")
+    )
     $warn.Child = $warnText
     $mainStack.Children.Add($warn) | Out-Null
 
@@ -33,52 +35,32 @@
     $mainStack.Children.Add((New-StepTitle -Text "Сон")) | Out-Null
 
     $sleepGrid = New-Object System.Windows.Controls.Grid
-    $sg1 = New-Object System.Windows.Controls.ColumnDefinition
-    $sg1.Width = "*"
-    $sg2 = New-Object System.Windows.Controls.ColumnDefinition
-    $sg2.Width = "*"
+    $sg1 = New-Object System.Windows.Controls.ColumnDefinition; $sg1.Width = "*"
+    $sg2 = New-Object System.Windows.Controls.ColumnDefinition; $sg2.Width = "8"
+    $sg3 = New-Object System.Windows.Controls.ColumnDefinition; $sg3.Width = "*"
     $sleepGrid.ColumnDefinitions.Add($sg1)
     $sleepGrid.ColumnDefinitions.Add($sg2)
+    $sleepGrid.ColumnDefinitions.Add($sg3)
 
-    $btnSleep = New-Object System.Windows.Controls.Button
-    $btnSleep.Content = "Спящий режим"
-    $btnSleep.Style = $window.Resources["RoundedButton"]
-    $btnSleep.Background = "#4A4A4A"
-    $btnSleep.Height = 50
-    $btnSleep.Margin = "0,0,10,0"
-    $btnSleep.Add_Click({
+    $btnSleep = New-ViewButton -Text "Спящий режим" -ColorType "Neutral" -Compact -Stretch -OnClick {
         Invoke-Sleep
-    })
+    }
     [System.Windows.Controls.Grid]::SetColumn($btnSleep, 0)
     $sleepGrid.Children.Add($btnSleep) | Out-Null
 
-    $btnWake = New-Object System.Windows.Controls.Button
-    $btnWake.Content = "Пробуждение"
-    $btnWake.Style = $window.Resources["RoundedButton"]
-    $btnWake.Background = "#4A4A4A"
-    $btnWake.Height = 50
-    $btnWake.Margin = "10,0,0,0"
-    $btnWake.Add_Click({
+    $btnWake = New-ViewButton -Text "Пробуждение" -ColorType "Success" -Compact -Stretch -OnClick {
         Invoke-WakeUp
-    })
-    [System.Windows.Controls.Grid]::SetColumn($btnWake, 1)
+    }
+    [System.Windows.Controls.Grid]::SetColumn($btnWake, 2)
     $sleepGrid.Children.Add($btnWake) | Out-Null
 
+    $sleepGrid.Margin = "0,0,0,10"
     $mainStack.Children.Add($sleepGrid) | Out-Null
 
     # ===== ПЕРЕЗАГРУЗКА =====
     $mainStack.Children.Add((New-StepTitle -Text "Перезагрузка")) | Out-Null
 
-    $btnReboot = New-Object System.Windows.Controls.Button
-    $btnReboot.Content = "Перезагрузить телевизор"
-    $btnReboot.Style = $window.Resources["RoundedButton"]
-    $btnReboot.Background = "#4A4A4A"
-    $btnReboot.Height = 50
-    $btnReboot.FontSize = 15
-    $btnReboot.HorizontalAlignment = "Left"
-    $btnReboot.Padding = "20,10"
-    $btnReboot.Margin = "0,0,0,10"
-    $btnReboot.Add_Click({
+    $btnReboot = New-ViewButton -Text "Перезагрузить телевизор" -ColorType "Warning" -Compact -Stretch -OnClick {
         $confirm = [System.Windows.MessageBox]::Show(
             "Перезагрузить телевизор?`n`nСоединение по ADB будет разорвано. После включения потребуется подключиться заново.",
             "Подтверждение",
@@ -89,22 +71,14 @@
             Update-StatusBar
             Switch-View -ViewName "Setup"
         }
-    })
+    }
+    $btnReboot.Margin = New-Object System.Windows.Thickness(0, 0, 0, 10)
     $mainStack.Children.Add($btnReboot) | Out-Null
 
     # ===== ВЫКЛЮЧЕНИЕ =====
     $mainStack.Children.Add((New-StepTitle -Text "Выключение")) | Out-Null
 
-    $btnShutdown = New-Object System.Windows.Controls.Button
-    $btnShutdown.Content = "Выключить телевизор"
-    $btnShutdown.Style = $window.Resources["RoundedButton"]
-    $btnShutdown.Background = "#4A4A4A"
-    $btnShutdown.Height = 50
-    $btnShutdown.FontSize = 15
-    $btnShutdown.HorizontalAlignment = "Left"
-    $btnShutdown.Padding = "20,10"
-    $btnShutdown.Margin = "0,0,0,10"
-    $btnShutdown.Add_Click({
+    $btnShutdown = New-ViewButton -Text "Выключить телевизор" -ColorType "Danger" -Compact -Stretch -OnClick {
         $confirm = [System.Windows.MessageBox]::Show(
             "Выключить телевизор?`n`nСоединение по ADB будет разорвано. Включить телевизор можно будет только с пульта или кнопкой на корпусе.",
             "Подтверждение",
@@ -115,22 +89,22 @@
             Update-StatusBar
             Switch-View -ViewName "Setup"
         }
-    })
+    }
+    $btnShutdown.Margin = New-Object System.Windows.Thickness(0, 0, 0, 10)
     $mainStack.Children.Add($btnShutdown) | Out-Null
 
     # ===== РАСШИРЕННОЕ =====
     $mainStack.Children.Add((New-StepTitle -Text "Расширенное")) | Out-Null
 
-    $advPanel = New-Object System.Windows.Controls.StackPanel
-    $advPanel.Orientation = "Horizontal"
+    $advGrid = New-Object System.Windows.Controls.Grid
+    $ag1 = New-Object System.Windows.Controls.ColumnDefinition; $ag1.Width = "*"
+    $ag2 = New-Object System.Windows.Controls.ColumnDefinition; $ag2.Width = "8"
+    $ag3 = New-Object System.Windows.Controls.ColumnDefinition; $ag3.Width = "*"
+    $advGrid.ColumnDefinitions.Add($ag1)
+    $advGrid.ColumnDefinitions.Add($ag2)
+    $advGrid.ColumnDefinitions.Add($ag3)
 
-    $btnRecovery = New-Object System.Windows.Controls.Button
-    $btnRecovery.Content = "Recovery"
-    $btnRecovery.Style = $window.Resources["RoundedButton"]
-    $btnRecovery.Background = "#9E9E9E"
-    $btnRecovery.Padding = "15,8"
-    $btnRecovery.Margin = "0,0,10,0"
-    $btnRecovery.Add_Click({
+    $btnRecovery = New-ViewButton -Text "Recovery" -ColorType "Neutral" -Compact -Stretch -OnClick {
         $confirm = [System.Windows.MessageBox]::Show(
             "Перезагрузить в режим Recovery?`n`nЭто режим восстановления. Обычное использование ТВ будет недоступно.",
             "Подтверждение",
@@ -141,17 +115,13 @@
             Update-StatusBar
             Switch-View -ViewName "Setup"
         }
-    })
-    $advPanel.Children.Add($btnRecovery) | Out-Null
+    }
+    [System.Windows.Controls.Grid]::SetColumn($btnRecovery, 0)
+    $advGrid.Children.Add($btnRecovery) | Out-Null
 
-    $btnBootloader = New-Object System.Windows.Controls.Button
-    $btnBootloader.Content = "Bootloader"
-    $btnBootloader.Style = $window.Resources["RoundedButton"]
-    $btnBootloader.Background = "#9E9E9E"
-    $btnBootloader.Padding = "15,8"
-    $btnBootloader.Add_Click({
+    $btnBootloader = New-ViewButton -Text "Bootloader" -ColorType "Neutral" -Compact -Stretch -OnClick {
         $confirm = [System.Windows.MessageBox]::Show(
-            "Перезагрузить в Bootloader?`n`nЭто низкоуровневый режим. Используйте, только если знаете, что делаете.`n`nВНИМАНИЕ: выход из Bootloader может потребовать переподключения по USB.",
+            "Перезагрузить в Bootloader?`n`nЭто низкоуровневый режим. Используйте, только если знаете, что делаете.",
             "Подтверждение",
             [System.Windows.MessageBoxButton]::YesNo,
             [System.Windows.MessageBoxImage]::Warning)
@@ -160,10 +130,11 @@
             Update-StatusBar
             Switch-View -ViewName "Setup"
         }
-    })
-    $advPanel.Children.Add($btnBootloader) | Out-Null
+    }
+    [System.Windows.Controls.Grid]::SetColumn($btnBootloader, 2)
+    $advGrid.Children.Add($btnBootloader) | Out-Null
 
-    $mainStack.Children.Add($advPanel) | Out-Null
+    $mainStack.Children.Add($advGrid) | Out-Null
 
     $rootGrid = New-ViewRoot -Stack $mainStack -OnBack { Switch-View -ViewName "Setup" }
     $contentGrid.Children.Add($rootGrid) | Out-Null

@@ -21,6 +21,12 @@
         $script:ProfilesViewListBox.FontSize = 13
         $script:ProfilesViewListBox.BorderThickness = "1"
         $script:ProfilesViewListBox.BorderBrush = "#3A3A3A"
+        $script:ProfilesViewListBox.Background = New-Object System.Windows.Media.SolidColorBrush(
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#1F1F1F")
+        )
+        $script:ProfilesViewListBox.Foreground = New-Object System.Windows.Media.SolidColorBrush(
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#E0E0E0")
+        )
         $script:ProfilesViewListBox.MinHeight = 200
         $script:ProfilesViewListBox.Padding = "5"
         $script:ProfilesViewListBox.Margin = "0,0,0,15"
@@ -112,7 +118,7 @@
     $mainStack.Children.Add($saveInfo) | Out-Null
 
     # Кнопка "Сохранить"
-    $mainStack.Children.Add((New-ViewButton -Text "Сохранить текущее состояние" -ColorType "Primary" -Margin "0,8,0,0" -OnClick {
+    $mainStack.Children.Add((New-ViewButton -Text "Сохранить текущее состояние" -ColorType "Success" -Margin "0,8,0,0" -OnClick {
         $name = $script:ProfileNameBox.Text.Trim()
         $ip = $script:ProfileIpBox.Text.Trim()
 
@@ -186,7 +192,7 @@
     $btnImport.Content = "Импорт"
     $btnImport.Style = $window.Resources["RoundedButton"]
     $btnImport.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
     )
     $btnImport.Padding = "12,6"
     $btnImport.Margin = "0,0,8,0"
@@ -218,7 +224,7 @@
         $btnApply.Content = "Применить профиль"
         $btnApply.Style = $window.Resources["RoundedButton"]
         $btnApply.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
         )
         $btnApply.Padding = "12,6"
         $btnApply.Margin = "0,0,8,0"
@@ -246,7 +252,7 @@
         $btnView.Content = "Просмотр"
         $btnView.Style = $window.Resources["RoundedButton"]
         $btnView.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
         )
         $btnView.Padding = "12,6"
         $btnView.Margin = "0,0,8,0"
@@ -262,7 +268,7 @@
         $btnExport.Content = "Экспорт"
         $btnExport.Style = $window.Resources["RoundedButton"]
         $btnExport.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
         )
         $btnExport.Padding = "12,6"
         $btnExport.Margin = "0,0,8,0"
@@ -282,7 +288,7 @@
         $btnDelete.Content = "Удалить"
         $btnDelete.Style = $window.Resources["RoundedButton"]
         $btnDelete.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
         )
         $btnDelete.Padding = "12,6"
         $btnDelete.Add_Click({
@@ -479,7 +485,7 @@ function Show-ProfileDetails {
     $btnClose.Content = "Закрыть"
     $btnClose.Style = $window.Resources["RoundedButton"]
     $btnClose.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
     )
     $btnClose.Padding = "15,8"
     $btnClose.HorizontalAlignment = "Right"

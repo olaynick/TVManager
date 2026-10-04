@@ -1,9 +1,11 @@
-﻿# ===== ОБЩЕЕ СОСТОЯНИЕ ПРИЛОЖЕНИЯ =====
+﻿# ============================================================================
+#  ОБЩЕЕ СОСТОЯНИЕ ПРИЛОЖЕНИЯ
+# ============================================================================
 
-$script:connected = $false
-$script:deviceIp = ""
-$script:allChanges = @()
-$script:FoundDevices = @()
+$script:connected     = $false
+$script:deviceIp      = ""
+$script:allChanges    = @()
+$script:FoundDevices  = @()
 
 # ===== СОСТОЯНИЕ ЭКРАНА ОЧИСТКИ =====
 $script:SelectedPackages = @()
@@ -18,7 +20,7 @@ $script:ApkListContainer = $null
 $script:ApkInstallInProgress = $false
 $script:ApkInstalledFiles = @()
 
-# Ссылки на Runspace/Timer для APK (глобальные, чтобы таймер их видел)
+# Ссылки на Runspace/Timer для APK
 $script:ApkRunspace = $null
 $script:ApkPS = $null
 $script:ApkHandle = $null
@@ -38,9 +40,8 @@ $script:OtaBtn = $null
 
 # ===== СОСТОЯНИЕ ОЧИСТКИ =====
 $script:PackageCheckboxes = @()
-$script:RemovedPackages = @()      # Удалённые в этой сессии
-$script:InstalledPackagesSet = @{} # Кэш установленных
-
+$script:RemovedPackages = @()
+$script:InstalledPackagesSet = @{}
 $script:DisabledPackagesSet = @{}
 $script:TabCheckboxesMap = @{}
 
@@ -65,19 +66,19 @@ $script:LogcatProcess = $null
 # ===== ТАЙМЕР СТАТУСА =====
 $script:StatusTimer = $null
 
-# ===== Wi-Fi =====
+# ===== WI-FI =====
 $script:WifiNetworksContainer = $null
 
 # ===== DISPLAY =====
 $script:DisplayViewInfo = $null
 
 # ===== REMOTE HOTKEYS =====
-$script:RemoteKeyHandler    = $null
+$script:RemoteKeyHandler     = $null
 $script:RemoteHotkeysEnabled = $true
 
 # ===== АВТО-СКАНИРОВАНИЕ =====
 $script:AutoConnectFailed = $false
-$script:NeedAutoScan = $false
+$script:NeedAutoScan      = $false
 
 # ===== ПРОЦЕССЫ =====
 $script:ProcessesSortBy = "cpu"
@@ -86,7 +87,7 @@ $script:ProcessesSortBy = "cpu"
 $script:IntegrityReference = $null
 
 # ===== ADBKEYBOARD =====
-# Ппеременные определены в Modules\AdbKeyboard.ps1
+# Переменные определены в Modules\AdbKeyboard.ps1
 
 # ===== APK BUNDLES =====
 $script:ApkExtraFiles = @()
@@ -94,3 +95,8 @@ $script:ApkExtraFiles = @()
 # ===== PERMISSIONS =====
 $script:PermLoadTimer = $null
 
+# ===== SETUP — последняя активная вкладка =====
+$script:SetupLastTab = 0
+
+# ===== ТЕКУЩИЙ ЭКРАН =====
+$script:CurrentView = "Main"

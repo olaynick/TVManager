@@ -1,4 +1,6 @@
-﻿# ===== ИНЛАЙН-СПИСОК УСТРОЙСТВ =====
+﻿# ============================================================================
+#  ИНЛАЙН-СПИСОК УСТРОЙСТВ
+# ============================================================================
 function Show-DeviceListInline {
     param([array]$Devices)
 
@@ -9,17 +11,28 @@ function Show-DeviceListInline {
         return
     }
 
+    # --- Заголовок (светло-серый) ---
     $listHeader = New-Object System.Windows.Controls.TextBlock
     $listHeader.Text = "Найденные устройства:"
     $listHeader.FontSize = 14
     $listHeader.FontWeight = "SemiBold"
+    $listHeader.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+    )
     $listHeader.Margin = "0,0,0,8"
     $script:DeviceListContainer.Children.Add($listHeader) | Out-Null
 
+    # --- ListBox с тёмным фоном ---
     $script:DeviceListBox = New-Object System.Windows.Controls.ListBox
     $script:DeviceListBox.FontSize = 13
     $script:DeviceListBox.BorderThickness = "1"
     $script:DeviceListBox.BorderBrush = "#3A3A3A"
+    $script:DeviceListBox.Background = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#1F1F1F")
+    )
+    $script:DeviceListBox.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#E0E0E0")
+    )
     $script:DeviceListBox.MaxHeight = 180
     $script:DeviceListBox.Padding = "5"
 
@@ -33,16 +46,24 @@ function Show-DeviceListInline {
         $label = ""
         if ($d.Source -eq "ADB") {
             $label = "  ★ ВЕРОЯТНО ЭТО ТЕЛЕВИЗОР"
-            $item.Foreground = [System.Windows.Media.Brushes]::SeaGreen
+            $item.Foreground = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#6CCB5F")
+            )
             $item.FontWeight = "Bold"
         } elseif ($d.IP -eq $myIp) {
             $label = "  (ПК)"
-            $item.Foreground = [System.Windows.Media.Brushes]::SteelBlue
+            $item.Foreground = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#60CDFF")
+            )
         } elseif ($d.IP -match '\.1$') {
             $label = "  (Роутер)"
-            $item.Foreground = [System.Windows.Media.Brushes]::DarkOrange
+            $item.Foreground = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#FFC83D")
+            )
         } else {
-            $item.Foreground = [System.Windows.Media.Brushes]::Gray
+            $item.Foreground = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#A0A0A0")
+            )
         }
 
         $item.Content = "$($d.IP)$label"
@@ -57,7 +78,8 @@ function Show-DeviceListInline {
     $hint = New-ViewLabel -Text "Выберите устройство и нажмите «Подключиться»." -Light
     $script:DeviceListContainer.Children.Add($hint) | Out-Null
 
-    $btnConnectSelected = New-ViewButton -Text "Подключиться к выбранному" -Color "#C8C8C8" -OnClick {
+    # --- Подключиться к выбранному (Success) ---
+    $btnConnectSelected = New-ViewButton -Text "Подключиться к выбранному" -ColorType "Success" -Stretch -OnClick {
         if ($script:DeviceListBox.SelectedItem) {
             $ip = $script:DeviceListBox.SelectedItem.Tag
             if ($ip) {
@@ -76,7 +98,9 @@ function Show-DeviceListInline {
     $script:DeviceListContainer.Children.Add($btnConnectSelected) | Out-Null
 }
 
-# ===== ФОНОВОЕ СКАНИРОВАНИЕ =====
+# ============================================================================
+#  ФОНОВОЕ СКАНИРОВАНИЕ
+# ============================================================================
 function Start-NetworkScan {
     Write-Log -Message "=== Запуск сканирования сети ===" -Level "Info"
 
@@ -142,7 +166,8 @@ function Start-NetworkScan {
             param($Subnet)
             $devices = @()
 
-            Write-BgLog "Шаг 1/3: Чтение ARP-таблицы..."
+            # ===== ШАГ 1: ARP =====
+            Write-BgLog "Шаг 1/3: Чтение ARP-таблицы..." "Info"
             $arpOutput = arp -a
             foreach ($line in $arpOutput) {
                 if ($line -match '(\d+\.\d+\.\d+\.\d+)\s+([0-9a-fA-F-]{17})\s+(\S+)') {
@@ -153,12 +178,13 @@ function Start-NetworkScan {
                     if ($firstOctet -ge 224 -or $firstOctet -eq 0) { continue }
                     if ($arpIp -notlike "$Subnet.*") { continue }
                     $devices += [PSCustomObject]@{ IP = $arpIp; Source = "ARP" }
-                    Write-BgLog "  ARP: $arpIp"
+                    Write-BgLog "  ARP: $arpIp" "Info"
                 }
             }
-            Write-BgLog "  Итого из ARP: $($devices.Count)" "Success"
+            Write-BgLog "  Итого из ARP: $($devices.Count)" "Info"
 
-            Write-BgLog "Шаг 2/3: Асинхронный ping 254 адресов..."
+            # ===== ШАГ 2: ping =====
+            Write-BgLog "Шаг 2/3: Асинхронный ping 254 адресов..." "Info"
             $pingTasks = @()
             foreach ($i in 1..254) {
                 $ip = "$Subnet.$i"
@@ -172,15 +198,16 @@ function Start-NetworkScan {
                     if ($t.Task.IsCompleted -and $t.Task.Result.Status -eq "Success") {
                         if (-not ($devices | Where-Object { $_.IP -eq $t.IP })) {
                             $devices += [PSCustomObject]@{ IP = $t.IP; Source = "ping" }
-                            Write-BgLog "  ping: $($t.IP)"
+                            Write-BgLog "  ping: $($t.IP)" "Info"
                         }
                     }
                 } catch { }
                 $t.Ping.Dispose()
             }
-            Write-BgLog "  Итого после ping: $($devices.Count)" "Success"
+            Write-BgLog "  Итого после ping: $($devices.Count)" "Info"
 
-            Write-BgLog "Шаг 3/3: Проверка порта 5555..."
+            # ===== ШАГ 3: проверка порта 5555 =====
+            Write-BgLog "Шаг 3/3: Проверка порта 5555..." "Info"
 
             $portTasks = @()
             foreach ($d in $devices) {
@@ -195,7 +222,7 @@ function Start-NetworkScan {
                 try {
                     if ($t.Tcp.Connected) {
                         $t.Device.Source = "ADB"
-                        Write-BgLog "  ★ ADB на $($t.Device.IP)" "Success"
+                        Write-BgLog "  ★ ADB на $($t.Device.IP)" "Info"
                     }
                 } catch { }
                 $t.Tcp.Dispose()
@@ -208,7 +235,7 @@ function Start-NetworkScan {
                 if ($ip -notin $knownIps) { $silentIps += $ip }
             }
 
-            Write-BgLog "  Проверка оставшихся $($silentIps.Count) адресов..."
+            Write-BgLog "  Проверка оставшихся $($silentIps.Count) адресов..." "Info"
             $silentTasks = @()
             foreach ($ip in $silentIps) {
                 $tcp = New-Object System.Net.Sockets.TcpClient
@@ -222,7 +249,7 @@ function Start-NetworkScan {
                 try {
                     if ($t.Tcp.Connected) {
                         $devices += [PSCustomObject]@{ IP = $t.IP; Source = "ADB" }
-                        Write-BgLog "  ★ ADB (молчащий): $($t.IP)" "Success"
+                        Write-BgLog "  ★ ADB (молчащий): $($t.IP)" "Info"
                     }
                 } catch { }
                 $t.Tcp.Dispose()

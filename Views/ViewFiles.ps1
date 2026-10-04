@@ -24,7 +24,7 @@
     $btnRefresh = New-Object System.Windows.Controls.Button
     $btnRefresh.Content = "Обновить"
     $btnRefresh.Style = $window.Resources["RoundedButton"]
-    $btnRefresh.Background = "#4A4A4A"
+    $btnRefresh.Background = "#588653"
     $btnRefresh.Padding = "12,6"
     $btnRefresh.Margin = "0,0,8,0"
     $btnRefresh.Add_Click({ Switch-View -ViewName "Files" })

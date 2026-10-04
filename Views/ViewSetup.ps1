@@ -29,7 +29,9 @@
         return
     }
 
-    # ===== ПОДКЛЮЧЕНО — ВКЛАДКИ =====
+    # =========================================================================
+    #  ПОДКЛЮЧЕНО — ВКЛАДКИ
+    # =========================================================================
     $tabControl = New-Object System.Windows.Controls.TabControl
     $tabControl.Style = $window.Resources["MiuiTabControlTemplate"]
     $tabControl.Margin = "0,8,0,0"
@@ -115,7 +117,7 @@
     # ========================================================================
     function New-ButtonRow {
         param(
-            [array]$Buttons,       # массив hashtable: @{ Text=; ColorType=; OnClick= }
+            [array]$Buttons,
             [string]$Margin = "0,0,0,6"
         )
 
@@ -124,7 +126,6 @@
 
         $count = $Buttons.Count
 
-        # Колонки: кнопка / отступ / кнопка / отступ / ...
         for ($i = 0; $i -lt $count; $i++) {
             $c = New-Object System.Windows.Controls.ColumnDefinition
             $c.Width = "*"
@@ -143,7 +144,7 @@
             [System.Windows.Controls.Grid]::SetColumn($btn, $gridCol)
             $grid.Children.Add($btn) | Out-Null
 
-            $gridCol += 2   # пропускаем колонку-отступ
+            $gridCol += 2
         }
 
         return $grid
@@ -158,13 +159,11 @@
     $diagHeader.Margin = "0,0,0,6"
     $systemPanel.Children.Add($diagHeader) | Out-Null
 
-    # Строка 1: 2 кнопки
     $systemPanel.Children.Add((New-ButtonRow -Buttons @(
         @{ Text = "Сведения об устройстве"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Info" } }
         @{ Text = "Процессы ТВ"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Processes" } }
     ))) | Out-Null
 
-    # Строка 2: 3 кнопки
     $systemPanel.Children.Add((New-ButtonRow -Buttons @(
         @{ Text = "Экспорт дампа"; ColorType = "Primary"; OnClick = { Show-ExportDeviceDumpDialog } }
         @{ Text = "Проверка целостности"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Integrity" } }
@@ -180,14 +179,12 @@
     $settingsHeader.Margin = "0,0,0,6"
     $systemPanel.Children.Add($settingsHeader) | Out-Null
 
-    # Строка 1: 3 кнопки
     $systemPanel.Children.Add((New-ButtonRow -Buttons @(
         @{ Text = "Разрешение и DPI"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Display" } }
         @{ Text = "Пресеты"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Presets" } }
         @{ Text = "Анимация"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Animation" } }
     ))) | Out-Null
 
-    # Строка 2: 1 кнопка
     $systemPanel.Children.Add((New-ButtonRow -Buttons @(
         @{ Text = "Wi-Fi"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Wifi" } }
     ) -Margin "0,0,0,10")) | Out-Null
@@ -332,7 +329,32 @@
     $tabSystem.Content = $systemPanel
     $tabControl.Items.Add($tabSystem) | Out-Null
 
+    # =========================================================================
+    #  ВОССТАНОВЛЕНИЕ АКТИВНОЙ ВКЛАДКИ
+    # =========================================================================
+
+    # 1. Читаем сохранённое значение
+    $savedTab = $script:SetupLastTab
+    Write-Log -Message "Setup: сохранённое = $savedTab" -Level "Info"
+
+    if ($savedTab -eq $null -or $savedTab -lt 0 -or $savedTab -ge $tabControl.Items.Count) {
+        $savedTab = 0
+    }
+
+    # 2. Восстанавливаем ДО добавления в UI
+    $tabControl.SelectedIndex = $savedTab
+    $script:SetupLastTab = $savedTab
+
+    # 3. Добавляем в UI
     $mainStack.Children.Add($tabControl) | Out-Null
+
+    # 4. Подписка — через $sender, чтобы работало вне scope функции
+    $tabControl.Add_SelectionChanged({
+        param($sender, $e)
+        $idx = $sender.SelectedIndex
+        $script:SetupLastTab = $idx
+        Write-Log -Message "Setup: переключение на вкладку $idx" -Level "Info"
+    })
 
     # ===== BOTTOM BAR: ОТКЛЮЧИТЬСЯ =====
     $script:BottomBarContent.Children.Clear()

@@ -1,6 +1,6 @@
 ﻿function Show-AnimationView {
     $mainStack = New-Object System.Windows.Controls.StackPanel
-    $mainStack.Margin = "40,30,40,30"
+    $mainStack.Margin = "25,20,25,20"
 
     $header = New-ViewHeader -Text "Масштаб анимации"
     $mainStack.Children.Add($header) | Out-Null
@@ -12,23 +12,21 @@
     $mainStack.Children.Add($desc) | Out-Null
 
     # ===== ТЕКУЩИЕ ЗНАЧЕНИЯ =====
-    $currentHeader = New-StepTitle -Text "Текущие значения"
-    $mainStack.Children.Add($currentHeader) | Out-Null
+    $mainStack.Children.Add((New-StepTitle -Text "Текущие значения")) | Out-Null
 
-    # Получаем текущие значения с ТВ
     $windowVal = "—"
     $transitionVal = "—"
     $animatorVal = "—"
     if ($script:connected) {
         try {
-            $windowVal = (& $script:adbPath shell settings get global window_animation_scale 2>&1).Trim()
-            $transitionVal = (& $script:adbPath shell settings get global transition_animation_scale 2>&1).Trim()
-            $animatorVal = (& $script:adbPath shell settings get global animator_duration_scale 2>&1).Trim()
+            $windowVal = (& $script:adbPath shell settings get global window_animation_scale 2>&1 | Out-String).Trim()
+            $transitionVal = (& $script:adbPath shell settings get global transition_animation_scale 2>&1 | Out-String).Trim()
+            $animatorVal = (& $script:adbPath shell settings get global animator_duration_scale 2>&1 | Out-String).Trim()
         } catch { }
     }
 
     $valuesBox = New-Object System.Windows.Controls.Border
-    $valuesBox.Background = "#FFFFFF"
+    $valuesBox.Background = "#2B2B2B"
     $valuesBox.BorderBrush = "#3A3A3A"
     $valuesBox.BorderThickness = "1"
     $valuesBox.CornerRadius = "8"
@@ -37,60 +35,56 @@
 
     $valuesStack = New-Object System.Windows.Controls.StackPanel
 
-    $l1 = New-Object System.Windows.Controls.TextBlock
-    $l1.Text = "Окна:              $windowVal"
-    $l1.FontFamily = "Consolas"
-    $l1.FontSize = 13
-    $l1.Foreground = "#FFFFFF"
-    $l1.Margin = "0,2,0,2"
-    $valuesStack.Children.Add($l1) | Out-Null
+    $valuesList = @(
+        @{ Label = "Окна";        Value = $windowVal }
+        @{ Label = "Переходы";    Value = $transitionVal }
+        @{ Label = "Аниматор";    Value = $animatorVal }
+    )
 
-    $l2 = New-Object System.Windows.Controls.TextBlock
-    $l2.Text = "Переходы:          $transitionVal"
-    $l2.FontFamily = "Consolas"
-    $l2.FontSize = 13
-    $l2.Foreground = "#FFFFFF"
-    $l2.Margin = "0,2,0,2"
-    $valuesStack.Children.Add($l2) | Out-Null
-
-    $l3 = New-Object System.Windows.Controls.TextBlock
-    $l3.Text = "Аниматор:          $animatorVal"
-    $l3.FontFamily = "Consolas"
-    $l3.FontSize = 13
-    $l3.Foreground = "#FFFFFF"
-    $l3.Margin = "0,2,0,2"
-    $valuesStack.Children.Add($l3) | Out-Null
+    foreach ($row in $valuesList) {
+        $line = New-Object System.Windows.Controls.TextBlock
+        $line.Text = "$($row.Label):  $($row.Value)"
+        $line.FontFamily = "Consolas"
+        $line.FontSize = 13
+        $line.Foreground = [System.Windows.Media.SolidColorBrush](
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#E0E0E0")
+        )
+        $line.Margin = "0,2,0,2"
+        $valuesStack.Children.Add($line) | Out-Null
+    }
 
     $valuesBox.Child = $valuesStack
     $mainStack.Children.Add($valuesBox) | Out-Null
 
     # ===== ВАРИАНТЫ =====
-    $variantsHeader = New-StepTitle -Text "Выберите масштаб"
-    $mainStack.Children.Add($variantsHeader) | Out-Null
+    $mainStack.Children.Add((New-StepTitle -Text "Выберите масштаб")) | Out-Null
 
-    # 1x
+    # --- 1x ---
     $desc1 = New-ViewLabel -Text "1x — стандартная плавность, но интерфейс ощущается медленнее" -Light
     $mainStack.Children.Add($desc1) | Out-Null
-    $mainStack.Children.Add((New-ViewButton -Text "1x  (стандарт)" -Color "#C8C8C8" -Margin "0,0,0,15" -Padding "20,10" -OnClick {
+    $btn1x = New-ViewButton -Text "1x  (стандарт)" -ColorType "Primary" -Margin "0,0,0,15" -Stretch -OnClick {
         Set-Animation -Value "1.0"
         Switch-View -ViewName "Animation"
-    })) | Out-Null
+    }
+    $mainStack.Children.Add($btn1x) | Out-Null
 
-    # 0.5x
+    # --- 0.5x ---
     $desc2 = New-ViewLabel -Text "0.5x — анимации в 2 раза короче, интерфейс заметно шустрее (рекомендуется)" -Light
     $mainStack.Children.Add($desc2) | Out-Null
-    $mainStack.Children.Add((New-ViewButton -Text "0.5x  (быстрее, рекомендуется)" -Color "#C8C8C8" -Margin "0,0,0,15" -Padding "20,10" -OnClick {
+    $btn05x = New-ViewButton -Text "0.5x  (быстрее, рекомендуется)" -ColorType "Success" -Margin "0,0,0,15" -Stretch -OnClick {
         Set-Animation -Value "0.5"
         Switch-View -ViewName "Animation"
-    })) | Out-Null
+    }
+    $mainStack.Children.Add($btn05x) | Out-Null
 
-    # 0x
+    # --- 0x ---
     $desc3 = New-ViewLabel -Text "0x — анимации отключены, окна открываются мгновенно, но переходы выглядят резко" -Light
     $mainStack.Children.Add($desc3) | Out-Null
-    $mainStack.Children.Add((New-ViewButton -Text "0x  (мгновенно, максимальная скорость)" -Color "#C8C8C8" -Padding "20,10" -OnClick {
+    $btn0x = New-ViewButton -Text "0x  (мгновенно, максимальная скорость)" -ColorType "Warning" -Stretch -OnClick {
         Set-Animation -Value "0.0"
         Switch-View -ViewName "Animation"
-    })) | Out-Null
+    }
+    $mainStack.Children.Add($btn0x) | Out-Null
 
     $rootGrid = New-ViewRoot -Stack $mainStack -OnBack { Switch-View -ViewName "Setup" }
     $contentGrid.Children.Add($rootGrid) | Out-Null
@@ -103,13 +97,13 @@ function Set-Animation {
 
     Write-Log -Message "Меняю масштаб анимации на $Value..." -Level "Info"
 
-    $prevWindow = (& $script:adbPath shell settings get global window_animation_scale 2>&1).Trim()
-    $prevTransition = (& $script:adbPath shell settings get global transition_animation_scale 2>&1).Trim()
-    $prevAnimator = (& $script:adbPath shell settings get global animator_duration_scale 2>&1).Trim()
+    $prevWindow = (& $script:adbPath shell settings get global window_animation_scale 2>&1 | Out-String).Trim()
+    $prevTransition = (& $script:adbPath shell settings get global transition_animation_scale 2>&1 | Out-String).Trim()
+    $prevAnimator = (& $script:adbPath shell settings get global animator_duration_scale 2>&1 | Out-String).Trim()
 
-    & $script:adbPath shell settings put global window_animation_scale $Value
-    & $script:adbPath shell settings put global transition_animation_scale $Value
-    & $script:adbPath shell settings put global animator_duration_scale $Value
+    & $script:adbPath shell settings put global window_animation_scale $Value | Out-Null
+    & $script:adbPath shell settings put global transition_animation_scale $Value | Out-Null
+    & $script:adbPath shell settings put global animator_duration_scale $Value | Out-Null
 
     Write-Log -Message "Установлено: $Value" -Level "Success"
 

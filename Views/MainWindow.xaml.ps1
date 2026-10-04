@@ -1,6 +1,10 @@
 ﻿# ==== ПЕРЕКЛЮЧЕНИЕ ЭКРАНОВ ====
 function Switch-View {
     param([string]$ViewName)
+
+    # Сохраняем текущий экран
+    $script:CurrentView = $ViewName
+
     $contentGrid.Children.Clear()
 
     Hide-BottomBar
@@ -28,8 +32,8 @@ function Switch-View {
         "Processes"    { Show-ProcessesView }
         "Integrity"    { Show-IntegrityView }
         "Scenarios"    { Show-ScenariosView }
-        "Autostart"    { Show-AutostartView }
         "Thermal"      { Show-ThermalView }
+        "Autostart"    { Show-AutostartView }
         "Permissions"  { Show-PermissionsView }
         default        { Write-Log -Message "Неизвестный экран: $ViewName" -Level "Warning" }
     }
@@ -51,7 +55,6 @@ function Update-StatusBar {
     }
 
     if ($isConnected) {
-        # Если deviceIp не сохранён — попробуем определить из adb devices
         if (-not $script:deviceIp) {
             $devices = & $script:adbPath devices 2>&1
             foreach ($line in $devices) {
@@ -77,9 +80,7 @@ function Update-StatusBar {
         $statusText.Foreground = [System.Windows.Media.Brushes]::LightCoral
     }
 
-    # --- Логируем ТОЛЬКО при реальной смене состояния ---
-    # -Silent больше не блокирует логирование смены статуса:
-    # он означает "не шуми, если ничего не поменялось".
+    # --- Логируем смену состояния ---
     $stateChanged = ($previousState -ne $script:connected) -or ($previousIp -ne $script:deviceIp)
 
     if ($stateChanged) {
@@ -88,6 +89,17 @@ function Update-StatusBar {
         } else {
             $ipInfo = if ($previousIp) { " (был $previousIp)" } else { "" }
             Write-Log -Message "Связь с ТВ потеряна$ipInfo" -Level "Warning"
+        }
+
+        # ===== ПЕРЕРИСОВКА ЭКРАНА ПРИ СМЕНЕ СОСТОЯНИЯ =====
+        # Не перерисовываем Main — он не зависит от подключения
+        # Не перерисовываем Logcat — он может быть запущен
+        if ($script:CurrentView -and $script:CurrentView -ne "Main" -and $script:CurrentView -ne "Logcat") {
+            try {
+                Switch-View -ViewName $script:CurrentView
+            } catch {
+                Write-Log -Message "Не удалось перерисовать экран $($script:CurrentView): $_" -Level "Warning"
+            }
         }
     }
 }

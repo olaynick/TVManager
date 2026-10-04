@@ -974,13 +974,10 @@ function Start-Logcat {
     elseif ($Level -eq "I") { $adbArgs += "*:I" }
     elseif ($Level -eq "D") { $adbArgs += "*:D" }
 
-    $adbPath = $script:adbPath
+    $adbPath   = $script:adbPath
     $filterRef = $Filter
     $logBoxRef = $LogBox
-
-    # Файл для хранения PID процесса adb
-    $pidFile = Join-Path $env:TEMP "tvmanager_logcat_pid.txt"
-    if (Test-Path $pidFile) { Remove-Item $pidFile -Force -ErrorAction SilentlyContinue }
+    $dispatcherRef = $window.Dispatcher
 
     $runspace = [runspacefactory]::CreateRunspace()
     $runspace.ApartmentState = "STA"
@@ -991,56 +988,96 @@ function Start-Logcat {
     $ps.Runspace = $runspace
 
     $ps.AddScript({
-        param($adbPath, $adbArgs, $filterRef, $logBoxRef, $pidFile)
+        param($adbPath, $adbArgs, $filterRef, $logBoxRef, $dispatcherRef)
 
         $proc = New-Object System.Diagnostics.Process
-        $proc.StartInfo.FileName = $adbPath
-        $proc.StartInfo.Arguments = ($adbArgs -join " ")
-        $proc.StartInfo.UseShellExecute = $false
+        $proc.StartInfo.FileName               = $adbPath
+        $proc.StartInfo.Arguments              = ($adbArgs -join " ")
+        $proc.StartInfo.UseShellExecute        = $false
         $proc.StartInfo.RedirectStandardOutput = $true
-        $proc.StartInfo.RedirectStandardError = $true
-        $proc.StartInfo.CreateNoWindow = $true
+        $proc.StartInfo.RedirectStandardError  = $true
+        $proc.StartInfo.CreateNoWindow         = $true
 
         try {
-            $proc.Start()
-            # Сохраняем PID — пригодится для остановки
-            $proc.Id | Out-File -FilePath $pidFile -Encoding UTF8
+            $proc.Start() | Out-Null
         } catch {
             return
         }
 
         $reader = $proc.StandardOutput
 
+        # Буфер для пакетной вставки
+        $buffer = New-Object System.Collections.ArrayList
+        $lastFlush = Get-Date
+
         while (-not $proc.HasExited) {
             $line = $null
             try { $line = $reader.ReadLine() } catch { break }
-            if ($line -eq $null) { break }
+            if ($null -eq $line) { break }
             if ($filterRef -and $line -notmatch $filterRef) { continue }
 
-            $lineCopy = $line
+            [void]$buffer.Add($line)
+
+            $now = Get-Date
+            # Отправляем буфер каждые 50 строк или каждые 200 мс
+            if ($buffer.Count -ge 50 -or (($now - $lastFlush).TotalMilliseconds -gt 200)) {
+                $linesToSend = @($buffer)
+                $buffer.Clear()
+                $lastFlush = $now
+
+                # Захватываем через отдельную переменную для замыкания
+                $capturedLines = $linesToSend
+                $capturedBox = $logBoxRef
+
+                try {
+                    $dispatcherRef.Invoke([action]{
+                        try {
+                            foreach ($l in $capturedLines) {
+                                $para = New-Object System.Windows.Documents.Paragraph
+                                $para.Margin = New-Object System.Windows.Thickness(0)
+                                $run = New-Object System.Windows.Documents.Run
+                                $run.Text = "$l`r`n"
+
+                                $color = [System.Windows.Media.Brushes]::LightGray
+                                if     ($l -match '\sE\s') { $color = [System.Windows.Media.Brushes]::LightCoral }
+                                elseif ($l -match '\sW\s') { $color = [System.Windows.Media.Brushes]::Khaki }
+                                elseif ($l -match '\sI\s') { $color = [System.Windows.Media.Brushes]::LightGreen }
+                                elseif ($l -match '\sD\s') { $color = [System.Windows.Media.Brushes]::LightBlue }
+
+                                $run.Foreground = $color
+                                $para.Inlines.Add($run)
+                                $capturedBox.Document.Blocks.Add($para)
+                            }
+
+                            # Чистим старые
+                            while ($capturedBox.Document.Blocks.Count -gt 2000) {
+                                $capturedBox.Document.Blocks.Remove($capturedBox.Document.Blocks.FirstBlock)
+                            }
+
+                            $capturedBox.ScrollToEnd()
+                        } catch { }
+                    })
+                } catch { }
+            }
+        }
+
+        # Финальный сброс буфера
+        if ($buffer.Count -gt 0) {
+            $capturedLines = @($buffer)
+            $capturedBox = $logBoxRef
             try {
-                $logBoxRef.Dispatcher.BeginInvoke([action]{
+                $dispatcherRef.Invoke([action]{
                     try {
-                        $para = New-Object System.Windows.Documents.Paragraph
-                        $para.Margin = New-Object System.Windows.Thickness(0)
-                        $run = New-Object System.Windows.Documents.Run
-                        $run.Text = "$lineCopy`r`n"
-
-                        $color = [System.Windows.Media.Brushes]::LightGray
-                        if ($lineCopy -match '\sE\s') { $color = [System.Windows.Media.Brushes]::LightCoral }
-                        elseif ($lineCopy -match '\sW\s') { $color = [System.Windows.Media.Brushes]::Khaki }
-                        elseif ($lineCopy -match '\sI\s') { $color = [System.Windows.Media.Brushes]::LightGreen }
-                        elseif ($lineCopy -match '\sD\s') { $color = [System.Windows.Media.Brushes]::LightBlue }
-
-                        $run.Foreground = $color
-                        $para.Inlines.Add($run)
-                        $logBoxRef.Document.Blocks.Add($para)
-
-                        if ($logBoxRef.Document.Blocks.Count -gt 3000) {
-                            $logBoxRef.Document.Blocks.Remove($logBoxRef.Document.Blocks.FirstBlock)
+                        foreach ($l in $capturedLines) {
+                            $para = New-Object System.Windows.Documents.Paragraph
+                            $para.Margin = New-Object System.Windows.Thickness(0)
+                            $run = New-Object System.Windows.Documents.Run
+                            $run.Text = "$l`r`n"
+                            $run.Foreground = [System.Windows.Media.Brushes]::LightGray
+                            $para.Inlines.Add($run)
+                            $capturedBox.Document.Blocks.Add($para)
                         }
-
-                        $logBoxRef.ScrollToEnd()
+                        $capturedBox.ScrollToEnd()
                     } catch { }
                 })
             } catch { }
@@ -1054,7 +1091,7 @@ function Start-Logcat {
     $ps.AddArgument($adbArgs)
     $ps.AddArgument($filterRef)
     $ps.AddArgument($logBoxRef)
-    $ps.AddArgument($pidFile)
+    $ps.AddArgument($dispatcherRef)
 
     $handle = $ps.BeginInvoke()
 
@@ -1062,7 +1099,6 @@ function Start-Logcat {
         PowerShell = $ps
         Handle     = $handle
         Runspace   = $runspace
-        PidFile    = $pidFile
     }
 }
 
@@ -1071,41 +1107,43 @@ function Stop-Logcat {
     param($Proc)
     if (-not $Proc) { return }
 
-    # 1. Убиваем все adb.exe, запущенные с аргументом logcat
-    try {
-        $adbProcesses = Get-CimInstance Win32_Process -Filter "Name = 'adb.exe'" -ErrorAction SilentlyContinue
-        foreach ($p in $adbProcesses) {
-            if ($p.CommandLine -match "logcat") {
-                try {
-                    Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
-                } catch { }
-            }
-        }
-    } catch {
-        # Get-CimInstance может быть недоступен — фолбэк на taskkill
-        try {
-            & taskkill /F /IM adb.exe /FI "WINDOWTITLE eq *logcat*" 2>&1 | Out-Null
-        } catch { }
-    }
+    Write-Log -Message "Останавливаю logcat..." -Level "Info"
 
-    # 2. Останавливаем Runspace
+    # 1. Убиваем все adb.exe, запущенные с аргументом logcat (fire & forget)
+    try {
+        $adbProcesses = @(Get-CimInstance Win32_Process -Filter "Name = 'adb.exe'" -ErrorAction SilentlyContinue)
+        foreach ($p in $adbProcesses) {
+            try {
+                if ($p.CommandLine -match 'logcat') {
+                    Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
+                }
+            } catch { }
+        }
+    } catch { }
+
+    # 2. Останавливаем Runspace АСИНХРОННО — чтобы не блокировать UI
     $psRef = $Proc.PowerShell
     $rsRef = $Proc.Runspace
 
     [System.Threading.Tasks.Task]::Run([action]{
         try {
             if ($psRef) {
-                try { $psRef.Stop() }    catch { }
+                try { $psRef.Stop() } catch { }
+                Start-Sleep -Milliseconds 100
                 try { $psRef.Dispose() } catch { }
             }
+        } catch { }
+
+        try {
             if ($rsRef) {
-                try { $rsRef.Close() }   catch { }
+                try { $rsRef.Close() } catch { }
+                Start-Sleep -Milliseconds 100
                 try { $rsRef.Dispose() } catch { }
             }
         } catch { }
     }) | Out-Null
 
-    Write-Log -Message "Logcat остановлен" -Level "Info"
+    Write-Log -Message "Logcat остановлен" -Level "Success"
 }
 
 # ===== ЭКСПОРТ / ИМПОРТ ПРОФИЛЕЙ =====

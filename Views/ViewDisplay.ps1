@@ -398,7 +398,7 @@ function Show-DisplayView {
         $btnSizeOnly.Content = "Только размер"
         $btnSizeOnly.Style = $window.Resources["RoundedButton"]
         $btnSizeOnly.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
         )
         $btnSizeOnly.Padding = "10,5"
         $btnSizeOnly.FontSize = 11
@@ -418,7 +418,7 @@ function Show-DisplayView {
         $btnBoth.Content = "Размер + DPI"
         $btnBoth.Style = $window.Resources["RoundedButton"]
         $btnBoth.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#588653")
         )
         $btnBoth.Padding = "10,5"
         $btnBoth.FontSize = 11
@@ -455,7 +455,7 @@ function Show-DisplayView {
         $btn.Content = $preset.Name
         $btn.Style = $window.Resources["RoundedButton"]
         $btn.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
         )
         $btn.Padding = "12,6"
         $btn.Margin = "0,0,8,8"
@@ -482,7 +482,7 @@ function Show-DisplayView {
     $btnCustom.Content = "Кастомные значения"
     $btnCustom.Style = $window.Resources["RoundedButton"]
     $btnCustom.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
     )
     $btnCustom.Padding = "12,6"
     $btnCustom.Margin = "0,0,8,0"
@@ -495,7 +495,7 @@ function Show-DisplayView {
     $btnRefresh.Content = "Обновить"
     $btnRefresh.Style = $window.Resources["RoundedButton"]
     $btnRefresh.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
     )
     $btnRefresh.Padding = "12,6"
     $btnRefresh.Margin = "0,0,8,0"

@@ -347,7 +347,7 @@ function Show-PresetsView {
             $btnApply.Content = "Применить"
             $btnApply.Style = $window.Resources["RoundedButton"]
             $btnApply.Background = New-Object System.Windows.Media.SolidColorBrush(
-                [System.Windows.Media.ColorConverter]::ConvertFromString($preset.Color)
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#588653")
             )
             $btnApply.Padding = "12,6"
             $btnApply.FontSize = 12

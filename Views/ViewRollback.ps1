@@ -147,7 +147,7 @@
     $btnSelectAll.Content = "Выбрать всё"
     $btnSelectAll.Style = $window.Resources["RoundedButton"]
     $btnSelectAll.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#4e7891")
     )
     $btnSelectAll.Padding = "12,6"
     $btnSelectAll.Margin = "0,0,8,0"
@@ -161,7 +161,7 @@
     $btnDeselect.Content = "Снять всё"
     $btnDeselect.Style = $window.Resources["RoundedButton"]
     $btnDeselect.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#9c8e6a")
     )
     $btnDeselect.Padding = "12,6"
     $btnDeselect.Margin = "0,0,8,0"
@@ -175,7 +175,7 @@
     $btnRollback.Content = "Откатить выбранные"
     $btnRollback.Style = $window.Resources["RoundedButton"]
     $btnRollback.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#724c4c")
     )
     $btnRollback.Padding = "12,6"
     $btnRollback.Margin = "0,0,8,0"
@@ -273,7 +273,7 @@
     $btnRefresh.Content = "Обновить"
     $btnRefresh.Style = $window.Resources["RoundedButton"]
     $btnRefresh.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
     )
     $btnRefresh.Padding = "12,6"
     $btnRefresh.Margin = "0,0,8,0"
@@ -287,7 +287,7 @@
     $btnClear.Content = "Очистить историю"
     $btnClear.Style = $window.Resources["RoundedButton"]
     $btnClear.Background = New-Object System.Windows.Media.SolidColorBrush(
-        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#724c4c")
     )
     $btnClear.Padding = "12,6"
     $btnClear.Add_Click({

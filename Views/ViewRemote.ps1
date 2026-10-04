@@ -1,6 +1,6 @@
 ﻿function Show-RemoteView {
     $mainStack = New-Object System.Windows.Controls.StackPanel
-    $mainStack.Margin = "25,15,25,15"
+    $mainStack.Margin = "25,55,25,15"
 
     $header = New-ViewHeader -Text "Пульт управления"
     $mainStack.Children.Add($header) | Out-Null
@@ -12,7 +12,7 @@
         return
     }
 
-    # ===== ОБЪЕДИНЁННАЯ ИНФО-КАРТОЧКА (хоткеи + ADBKeyboard) =====
+    # ===== ИНФО-КАРТОЧКА =====
     $hasAdbKb = Test-AdbKeyboardInstalled
 
     $infoCard = New-Object System.Windows.Controls.Border
@@ -23,14 +23,15 @@
 
     $infoStack = New-Object System.Windows.Controls.StackPanel
 
-    # Строка 1: хоткеи
     $hotkeyTb = New-Object System.Windows.Controls.TextBlock
     $hotkeyTb.FontSize = 10
     $hotkeyTb.TextWrapping = "Wrap"
+    $hotkeyTb.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#E0E0E0")
+    )
     $hotkeyTb.Text = "Хоткеи: ↑↓←→ стрелки · Enter OK · Backspace Назад · Esc Домой · Space Play/Pause · +/− громкость · M mute · P питание"
     $infoStack.Children.Add($hotkeyTb) | Out-Null
 
-    # Строка 2: статус ADBKeyboard
     $kbTb = New-Object System.Windows.Controls.TextBlock
     $kbTb.FontSize = 10
     $kbTb.TextWrapping = "Wrap"
@@ -38,30 +39,43 @@
 
     if ($hasAdbKb) {
         $kbTb.Text = "✓ ADBKeyboard установлен. Кириллица и эмодзи — через него. Может не работать на некоторых ТВ."
-        $kbTb.Foreground = "#2E7D32"
+        $kbTb.Foreground = [System.Windows.Media.SolidColorBrush](
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#6CCB5F")
+        )
     } else {
         $kbTb.Text = "Для кириллицы/эмодзи нужен ADBKeyboard (кнопка ниже). На некоторых TCL не работает."
-        $kbTb.Foreground = "#856404"
+        $kbTb.Foreground = [System.Windows.Media.SolidColorBrush](
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#FFC83D")
+        )
     }
     $infoStack.Children.Add($kbTb) | Out-Null
 
     if ($hasAdbKb) {
         $infoCard.Background = "#1F3A1F"
-        $infoCard.BorderBrush = "#C8C8C8"
+        $infoCard.BorderBrush = "#3A5A3A"
     } else {
         $infoCard.Background = "#2E2A1A"
-        $infoCard.BorderBrush = "#C8C8C8"
+        $infoCard.BorderBrush = "#5A4A2A"
     }
     $infoCard.Child = $infoStack
     $mainStack.Children.Add($infoCard) | Out-Null
 
+    # ===== ХЕЛПЕР: ЗАГОЛОВОК СЕКЦИИ =====
+    function New-RemoteSectionTitle {
+        param([string]$Text)
+        $tb = New-Object System.Windows.Controls.TextBlock
+        $tb.Text = $Text
+        $tb.FontSize = 13
+        $tb.FontWeight = "SemiBold"
+        $tb.Foreground = [System.Windows.Media.SolidColorBrush](
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+        )
+        $tb.Margin = "0,10,0,5"
+        return $tb
+    }
+
     # ===== НАВИГАЦИЯ =====
-    $navTitle = New-Object System.Windows.Controls.TextBlock
-    $navTitle.Text = "Навигация"
-    $navTitle.FontSize = 13
-    $navTitle.FontWeight = "SemiBold"
-    $navTitle.Margin = "0,5,0,5"
-    $mainStack.Children.Add($navTitle) | Out-Null
+    $mainStack.Children.Add((New-RemoteSectionTitle -Text "Навигация")) | Out-Null
 
     $topGrid = New-Object System.Windows.Controls.Grid
     $tc1 = New-Object System.Windows.Controls.ColumnDefinition; $tc1.Width = "*"
@@ -71,47 +85,30 @@
     $topGrid.ColumnDefinitions.Add($tc2)
     $topGrid.ColumnDefinitions.Add($tc3)
 
-    $btnBack = New-Object System.Windows.Controls.Button
-    $btnBack.Content = "◄  Назад"
-    $btnBack.Style = $window.Resources["RoundedButton"]
-    $btnBack.Background = "#4A4A4A"
-    $btnBack.Height = 48
-    $btnBack.FontSize = 14
-    $btnBack.Margin = "0,0,8,0"
-    $btnBack.Add_Click({ Send-KeyEvent -KeyCode "KEYCODE_BACK" -Description "Назад" })
+    $btnBack = New-ViewButton -Text "◄  Назад" -ColorType "Primary" -Compact -Stretch -OnClick {
+        Send-KeyEvent -KeyCode "KEYCODE_BACK" -Description "Назад"
+    }
+    $btnBack.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
     [System.Windows.Controls.Grid]::SetColumn($btnBack, 0)
     $topGrid.Children.Add($btnBack) | Out-Null
 
-    $btnHome = New-Object System.Windows.Controls.Button
-    $btnHome.Content = "⌂  Домой"
-    $btnHome.Style = $window.Resources["RoundedButton"]
-    $btnHome.Background = "#4A4A4A"
-    $btnHome.Height = 48
-    $btnHome.FontSize = 14
-    $btnHome.Margin = "0,0,8,0"
-    $btnHome.Add_Click({ Send-KeyEvent -KeyCode "KEYCODE_HOME" -Description "Домой" })
+    $btnHome = New-ViewButton -Text "⌂  Домой" -ColorType "Success" -Compact -Stretch -OnClick {
+        Send-KeyEvent -KeyCode "KEYCODE_HOME" -Description "Домой"
+    }
+    $btnHome.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
     [System.Windows.Controls.Grid]::SetColumn($btnHome, 1)
     $topGrid.Children.Add($btnHome) | Out-Null
 
-    $btnMenu = New-Object System.Windows.Controls.Button
-    $btnMenu.Content = "☰  Меню"
-    $btnMenu.Style = $window.Resources["RoundedButton"]
-    $btnMenu.Background = "#4A4A4A"
-    $btnMenu.Height = 48
-    $btnMenu.FontSize = 14
-    $btnMenu.Add_Click({ Send-MenuKey })
+    $btnMenu = New-ViewButton -Text "☰  Меню" -ColorType "Warning" -Compact -Stretch -OnClick {
+        Send-MenuKey
+    }
     [System.Windows.Controls.Grid]::SetColumn($btnMenu, 2)
     $topGrid.Children.Add($btnMenu) | Out-Null
 
     $mainStack.Children.Add($topGrid) | Out-Null
 
     # ===== КРЕСТОВИНА =====
-    $dpadTitle = New-Object System.Windows.Controls.TextBlock
-    $dpadTitle.Text = "Стрелки"
-    $dpadTitle.FontSize = 13
-    $dpadTitle.FontWeight = "SemiBold"
-    $dpadTitle.Margin = "0,10,0,5"
-    $mainStack.Children.Add($dpadTitle) | Out-Null
+    $mainStack.Children.Add((New-RemoteSectionTitle -Text "Стрелки")) | Out-Null
 
     $dpadGrid = New-Object System.Windows.Controls.Grid
     $dpadGrid.HorizontalAlignment = "Center"
@@ -131,7 +128,9 @@
     $btnUp = New-Object System.Windows.Controls.Button
     $btnUp.Content = "▲"
     $btnUp.Style = $window.Resources["RoundedButton"]
-    $btnUp.Background = "#4A4A4A"
+    $btnUp.Background = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
+    )
     $btnUp.FontSize = 18
     $btnUp.Margin = "2"
     $btnUp.Add_Click({ Send-KeyEvent -KeyCode "KEYCODE_DPAD_UP" -Description "Вверх" })
@@ -142,7 +141,9 @@
     $btnLeft = New-Object System.Windows.Controls.Button
     $btnLeft.Content = "◄"
     $btnLeft.Style = $window.Resources["RoundedButton"]
-    $btnLeft.Background = "#4A4A4A"
+    $btnLeft.Background = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
+    )
     $btnLeft.FontSize = 18
     $btnLeft.Margin = "2"
     $btnLeft.Add_Click({ Send-KeyEvent -KeyCode "KEYCODE_DPAD_LEFT" -Description "Влево" })
@@ -153,7 +154,9 @@
     $btnOk = New-Object System.Windows.Controls.Button
     $btnOk.Content = "OK"
     $btnOk.Style = $window.Resources["RoundedButton"]
-    $btnOk.Background = "#4A4A4A"
+    $btnOk.Background = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#588653")
+    )
     $btnOk.FontSize = 15
     $btnOk.FontWeight = "Bold"
     $btnOk.Margin = "2"
@@ -165,7 +168,9 @@
     $btnRight = New-Object System.Windows.Controls.Button
     $btnRight.Content = "►"
     $btnRight.Style = $window.Resources["RoundedButton"]
-    $btnRight.Background = "#4A4A4A"
+    $btnRight.Background = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
+    )
     $btnRight.FontSize = 18
     $btnRight.Margin = "2"
     $btnRight.Add_Click({ Send-KeyEvent -KeyCode "KEYCODE_DPAD_RIGHT" -Description "Вправо" })
@@ -176,7 +181,9 @@
     $btnDown = New-Object System.Windows.Controls.Button
     $btnDown.Content = "▼"
     $btnDown.Style = $window.Resources["RoundedButton"]
-    $btnDown.Background = "#4A4A4A"
+    $btnDown.Background = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
+    )
     $btnDown.FontSize = 18
     $btnDown.Margin = "2"
     $btnDown.Add_Click({ Send-KeyEvent -KeyCode "KEYCODE_DPAD_DOWN" -Description "Вниз" })
@@ -187,199 +194,149 @@
     $mainStack.Children.Add($dpadGrid) | Out-Null
 
     # ===== ГРОМКОСТЬ =====
-    $volTitle = New-Object System.Windows.Controls.TextBlock
-    $volTitle.Text = "Громкость"
-    $volTitle.FontSize = 13
-    $volTitle.FontWeight = "SemiBold"
-    $volTitle.Margin = "0,10,0,5"
-    $mainStack.Children.Add($volTitle) | Out-Null
+    $mainStack.Children.Add((New-RemoteSectionTitle -Text "Громкость")) | Out-Null
 
     $volGrid = New-Object System.Windows.Controls.Grid
     $vc1 = New-Object System.Windows.Controls.ColumnDefinition; $vc1.Width = "*"
-    $vc2 = New-Object System.Windows.Controls.ColumnDefinition; $vc2.Width = "*"
+    $vc2 = New-Object System.Windows.Controls.ColumnDefinition; $vc2.Width = "6"
     $vc3 = New-Object System.Windows.Controls.ColumnDefinition; $vc3.Width = "*"
+    $vc4 = New-Object System.Windows.Controls.ColumnDefinition; $vc4.Width = "6"
+    $vc5 = New-Object System.Windows.Controls.ColumnDefinition; $vc5.Width = "*"
     $volGrid.ColumnDefinitions.Add($vc1)
     $volGrid.ColumnDefinitions.Add($vc2)
     $volGrid.ColumnDefinitions.Add($vc3)
+    $volGrid.ColumnDefinitions.Add($vc4)
+    $volGrid.ColumnDefinitions.Add($vc5)
 
-    $btnVolDown = New-Object System.Windows.Controls.Button
-    $btnVolDown.Content = "−  Тише"
-    $btnVolDown.Style = $window.Resources["RoundedButton"]
-    $btnVolDown.Background = "#4A4A4A"
-    $btnVolDown.Height = 46
-    $btnVolDown.FontSize = 14
-    $btnVolDown.Margin = "0,0,8,0"
-    $btnVolDown.Add_Click({ Send-KeyEvent -KeyCode "KEYCODE_VOLUME_DOWN" -Description "Тише" })
+    $btnVolDown = New-ViewButton -Text "−  Тише" -ColorType "Warning" -Compact -Stretch -OnClick {
+        Send-KeyEvent -KeyCode "KEYCODE_VOLUME_DOWN" -Description "Тише"
+    }
     [System.Windows.Controls.Grid]::SetColumn($btnVolDown, 0)
     $volGrid.Children.Add($btnVolDown) | Out-Null
 
     $muteText = if ($script:RemoteMuted) { "🔊  Вкл. звук" } else { "🔇  Mute" }
-    $muteColor = if ($script:RemoteMuted) { "#C8C8C8" } else { "#9E9E9E" }
+    $muteColor = if ($script:RemoteMuted) { "#588653" } else { "#4A4A4A" }
 
     $script:RemoteMuteBtn = New-Object System.Windows.Controls.Button
     $script:RemoteMuteBtn.Content = $muteText
     $script:RemoteMuteBtn.Style = $window.Resources["RoundedButton"]
-    $script:RemoteMuteBtn.Background = $muteColor
-    $script:RemoteMuteBtn.Height = 46
-    $script:RemoteMuteBtn.FontSize = 14
-    $script:RemoteMuteBtn.Margin = "0,0,8,0"
+    $script:RemoteMuteBtn.Background = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString($muteColor)
+    )
+    $script:RemoteMuteBtn.Height = 30
+    $script:RemoteMuteBtn.FontSize = 11
+    $script:RemoteMuteBtn.Padding = "8,4"
     $script:RemoteMuteBtn.Add_Click({
         Send-KeyEvent -KeyCode "KEYCODE_VOLUME_MUTE" -Description "Без звука"
         $script:RemoteMuted = -not $script:RemoteMuted
         if ($script:RemoteMuted) {
             $script:RemoteMuteBtn.Content = "🔊  Вкл. звук"
-            $script:RemoteMuteBtn.Background = "#4A4A4A"
+            $script:RemoteMuteBtn.Background = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#588653")
+            )
         } else {
             $script:RemoteMuteBtn.Content = "🔇  Mute"
-            $script:RemoteMuteBtn.Background = "#9E9E9E"
+            $script:RemoteMuteBtn.Background = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#4A4A4A")
+            )
         }
     })
-    [System.Windows.Controls.Grid]::SetColumn($script:RemoteMuteBtn, 1)
+    [System.Windows.Controls.Grid]::SetColumn($script:RemoteMuteBtn, 2)
     $volGrid.Children.Add($script:RemoteMuteBtn) | Out-Null
 
-    $btnVolUp = New-Object System.Windows.Controls.Button
-    $btnVolUp.Content = "+  Громче"
-    $btnVolUp.Style = $window.Resources["RoundedButton"]
-    $btnVolUp.Background = "#4A4A4A"
-    $btnVolUp.Height = 46
-    $btnVolUp.FontSize = 14
-    $btnVolUp.Add_Click({ Send-KeyEvent -KeyCode "KEYCODE_VOLUME_UP" -Description "Громче" })
-    [System.Windows.Controls.Grid]::SetColumn($btnVolUp, 2)
+    $btnVolUp = New-ViewButton -Text "+  Громче" -ColorType "Warning" -Compact -Stretch -OnClick {
+        Send-KeyEvent -KeyCode "KEYCODE_VOLUME_UP" -Description "Громче"
+    }
+    [System.Windows.Controls.Grid]::SetColumn($btnVolUp, 4)
     $volGrid.Children.Add($btnVolUp) | Out-Null
 
     $mainStack.Children.Add($volGrid) | Out-Null
 
     # ===== МЕДИА =====
-    $mediaTitle = New-Object System.Windows.Controls.TextBlock
-    $mediaTitle.Text = "Медиа"
-    $mediaTitle.FontSize = 13
-    $mediaTitle.FontWeight = "SemiBold"
-    $mediaTitle.Margin = "0,10,0,5"
-    $mainStack.Children.Add($mediaTitle) | Out-Null
+    $mainStack.Children.Add((New-RemoteSectionTitle -Text "Медиа")) | Out-Null
 
     $mediaGrid = New-Object System.Windows.Controls.Grid
     $mc1 = New-Object System.Windows.Controls.ColumnDefinition; $mc1.Width = "*"
-    $mc2 = New-Object System.Windows.Controls.ColumnDefinition; $mc2.Width = "*"
+    $mc2 = New-Object System.Windows.Controls.ColumnDefinition; $mc2.Width = "6"
     $mc3 = New-Object System.Windows.Controls.ColumnDefinition; $mc3.Width = "*"
+    $mc4 = New-Object System.Windows.Controls.ColumnDefinition; $mc4.Width = "6"
+    $mc5 = New-Object System.Windows.Controls.ColumnDefinition; $mc5.Width = "*"
     $mediaGrid.ColumnDefinitions.Add($mc1)
     $mediaGrid.ColumnDefinitions.Add($mc2)
     $mediaGrid.ColumnDefinitions.Add($mc3)
+    $mediaGrid.ColumnDefinitions.Add($mc4)
+    $mediaGrid.ColumnDefinitions.Add($mc5)
 
-    $btnPrev = New-Object System.Windows.Controls.Button
-    $btnPrev.Content = "⏮  Назад"
-    $btnPrev.Style = $window.Resources["RoundedButton"]
-    $btnPrev.Background = "#4A4A4A"
-    $btnPrev.Height = 46
-    $btnPrev.FontSize = 13
-    $btnPrev.Margin = "0,0,8,0"
-    $btnPrev.Add_Click({ Send-KeyEvent -KeyCode "KEYCODE_MEDIA_PREVIOUS" -Description "Предыдущий" })
+    $btnPrev = New-ViewButton -Text "⏮  Назад" -ColorType "Purple" -Compact -Stretch -OnClick {
+        Send-KeyEvent -KeyCode "KEYCODE_MEDIA_PREVIOUS" -Description "Предыдущий"
+    }
     [System.Windows.Controls.Grid]::SetColumn($btnPrev, 0)
     $mediaGrid.Children.Add($btnPrev) | Out-Null
 
-    $btnPlay = New-Object System.Windows.Controls.Button
-    $btnPlay.Content = "⏯  Пауза"
-    $btnPlay.Style = $window.Resources["RoundedButton"]
-    $btnPlay.Background = "#4A4A4A"
-    $btnPlay.Height = 46
-    $btnPlay.FontSize = 13
-    $btnPlay.Margin = "0,0,8,0"
-    $btnPlay.Add_Click({ Send-KeyEvent -KeyCode "KEYCODE_MEDIA_PLAY_PAUSE" -Description "Пауза/Играть" })
-    [System.Windows.Controls.Grid]::SetColumn($btnPlay, 1)
+    $btnPlay = New-ViewButton -Text "⏯  Пауза" -ColorType "Purple" -Compact -Stretch -OnClick {
+        Send-KeyEvent -KeyCode "KEYCODE_MEDIA_PLAY_PAUSE" -Description "Пауза/Играть"
+    }
+    [System.Windows.Controls.Grid]::SetColumn($btnPlay, 2)
     $mediaGrid.Children.Add($btnPlay) | Out-Null
 
-    $btnNext = New-Object System.Windows.Controls.Button
-    $btnNext.Content = "⏭  Вперёд"
-    $btnNext.Style = $window.Resources["RoundedButton"]
-    $btnNext.Background = "#4A4A4A"
-    $btnNext.Height = 46
-    $btnNext.FontSize = 13
-    $btnNext.Add_Click({ Send-KeyEvent -KeyCode "KEYCODE_MEDIA_NEXT" -Description "Следующий" })
-    [System.Windows.Controls.Grid]::SetColumn($btnNext, 2)
+    $btnNext = New-ViewButton -Text "⏭  Вперёд" -ColorType "Purple" -Compact -Stretch -OnClick {
+        Send-KeyEvent -KeyCode "KEYCODE_MEDIA_NEXT" -Description "Следующий"
+    }
+    [System.Windows.Controls.Grid]::SetColumn($btnNext, 4)
     $mediaGrid.Children.Add($btnNext) | Out-Null
 
     $mainStack.Children.Add($mediaGrid) | Out-Null
 
-     # ===== ВВОД ТЕКСТА =====
-    $textTitle = New-Object System.Windows.Controls.TextBlock
-    $textTitle.Text = "Ввод текста"
-    $textTitle.FontSize = 13
-    $textTitle.FontWeight = "SemiBold"
-    $textTitle.Margin = "0,10,0,5"
-    $mainStack.Children.Add($textTitle) | Out-Null
+    # ===== ВВОД ТЕКСТА =====
+    $mainStack.Children.Add((New-RemoteSectionTitle -Text "Ввод текста")) | Out-Null
 
     $textPanel = New-Object System.Windows.Controls.StackPanel
     $textPanel.Orientation = "Horizontal"
 
     $script:RemoteTxtInput = New-Object System.Windows.Controls.TextBox
     $script:RemoteTxtInput.Style = $window.Resources["RoundedTextBox"]
-    $script:RemoteTxtInput.Width = 380
+    $script:RemoteTxtInput.Width = 350
     $script:RemoteTxtInput.FontSize = 13
     $script:RemoteTxtInput.MinHeight = 34
     $script:RemoteTxtInput.VerticalContentAlignment = "Center"
 
-    # Клик по TextBox — снимаем фокус с кнопок и переводим в поле
-    $script:RemoteTxtInput.Add_GotFocus({
-        $script:RemoteHotkeysEnabled = $false
-    })
-    $script:RemoteTxtInput.Add_LostFocus({
-        $script:RemoteHotkeysEnabled = $true
-    })
+    $script:RemoteTxtInput.Add_GotFocus({ $script:RemoteHotkeysEnabled = $false })
+    $script:RemoteTxtInput.Add_LostFocus({ $script:RemoteHotkeysEnabled = $true })
 
     $textPanel.Children.Add($script:RemoteTxtInput) | Out-Null
 
-    $btnSendText = New-Object System.Windows.Controls.Button
-    $btnSendText.Content = "Отправить"
-    $btnSendText.Style = $window.Resources["RoundedButton"]
-    $btnSendText.Background = "#4A4A4A"
-    $btnSendText.Height = 34
-    $btnSendText.Margin = "8,0,0,0"
-    $btnSendText.Padding = "14,4"
-    $btnSendText.FontSize = 13
-    $btnSendText.Add_Click({
+    $btnSendText = New-ViewButton -Text "Отправить" -ColorType "Success" -Compact -OnClick {
         $text = $script:RemoteTxtInput.Text
         if (-not [string]::IsNullOrWhiteSpace($text)) {
             $script:RemoteTxtInput.Text = ""
             Send-Text -Text $text
         }
-    })
+    }
+    $btnSendText.Margin = New-Object System.Windows.Thickness(8, 0, 0, 0)
+    $btnSendText.Height = 30
     $textPanel.Children.Add($btnSendText) | Out-Null
 
-    # Кнопка ADBKeyboard в той же строке
     if ($hasAdbKb) {
-        $btnKb = New-Object System.Windows.Controls.Button
-        $btnKb.Content = "ADB KB"
-        $btnKb.Style = $window.Resources["RoundedButton"]
-        $btnKb.Background = "#4A4A4A"
-        $btnKb.Height = 34
-        $btnKb.Margin = "8,0,0,0"
-        $btnKb.Padding = "12,4"
-        $btnKb.FontSize = 12
-        $btnKb.Add_Click({
+        $btnKb = New-ViewButton -Text "ADB KB" -ColorType "Gray" -Compact -OnClick {
             Show-AdbKeyboardDialog
             Switch-View -ViewName "Remote"
-        })
+        }
+        $btnKb.Margin = New-Object System.Windows.Thickness(8, 0, 0, 0)
+        $btnKb.Height = 30
         $textPanel.Children.Add($btnKb) | Out-Null
     } else {
-        $btnKb = New-Object System.Windows.Controls.Button
-        $btnKb.Content = "Открыть APK ADB Keyboard"
-        $btnKb.Style = $window.Resources["RoundedButton"]
-        $btnKb.Background = "#4A4A4A"
-        $btnKb.Height = 34
-        $btnKb.Margin = "8,0,0,0"
-        $btnKb.Padding = "12,4"
-        $btnKb.FontSize = 12
-        $btnKb.Add_Click({
+        $btnKb = New-ViewButton -Text "Открыть APK ADB Keyboard" -ColorType "Purple" -Compact -OnClick {
             Show-AdbKeyboardDialog
             Switch-View -ViewName "Remote"
-        })
+        }
+        $btnKb.Margin = New-Object System.Windows.Thickness(8, 0, 0, 0)
+        $btnKb.Height = 30
         $textPanel.Children.Add($btnKb) | Out-Null
     }
 
     $mainStack.Children.Add($textPanel) | Out-Null
 
-        # ========================================================================
-    #  РЕГИСТРАЦИЯ ХОТКЕЕВ
-    # ========================================================================
+    # ===== РЕГИСТРАЦИЯ ХОТКЕЕВ =====
     $script:RemoteHotkeysEnabled = $true
 
     $script:RemoteKeyHandler = {
@@ -388,10 +345,8 @@
         if (-not $script:RemoteHotkeysEnabled) { return }
         if (-not $script:connected) { return }
 
-        # ВАЖНО: если фокус в TextBox — не перехватываем клавиши!
         $focused = [System.Windows.Input.Keyboard]::FocusedElement
         if ($focused -is [System.Windows.Controls.TextBox]) {
-            # Enter — отправляем текст
             if ($e.Key -eq [System.Windows.Input.Key]::Enter) {
                 $text = $focused.Text
                 if (-not [string]::IsNullOrWhiteSpace($text)) {
@@ -400,14 +355,11 @@
                 }
                 $e.Handled = $true
             }
-            # Остальные клавиши — пусть обрабатывает TextBox
             return
         }
 
-        $key = $e.Key
         $handled = $true
-
-        switch ($key) {
+        switch ($e.Key) {
             "Up"        { Send-KeyEvent -KeyCode "KEYCODE_DPAD_UP" -Description "Вверх (хоткей)" }
             "Down"      { Send-KeyEvent -KeyCode "KEYCODE_DPAD_DOWN" -Description "Вниз (хоткей)" }
             "Left"      { Send-KeyEvent -KeyCode "KEYCODE_DPAD_LEFT" -Description "Влево (хоткей)" }
@@ -431,9 +383,6 @@
 
     $window.Add_KeyDown($script:RemoteKeyHandler)
 
-    # ========================================================================
-    #  ROOT
-    # ========================================================================
     $rootGrid = New-ViewRoot -Stack $mainStack -OnBack {
         if ($script:RemoteKeyHandler) {
             try { $window.Remove_KeyDown($script:RemoteKeyHandler) } catch { }
