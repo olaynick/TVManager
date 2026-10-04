@@ -9,7 +9,7 @@ function Get-FullDeviceDump {
     $dump = [ordered]@{
         ExportedAt = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
         App        = "TVManagerTCL"
-        AppVersion = "0.0.5"
+        AppVersion = "0.0.6"
         DeviceIP   = $script:deviceIp
     }
 

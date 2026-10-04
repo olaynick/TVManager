@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TCL TV Manager</title>
+<link rel="stylesheet" href="/mobile.css">
+</head>
+<body>
+
+<div class="header">
+    <h1>TCL TV Manager</h1>
+    <div>
+        <span class="status-dot off" id="statusDot"></span>
+        <span id="statusText" style="font-size:11px;color:#a0a0a0;">Offline</span>
+    </div>
+</div>
+
+<div class="tabs" id="tabs">
+    <div class="tab active" data-tab="remote">Пульт</div>
+    <div class="tab" data-tab="apps">Запуск</div>
+    <div class="tab" data-tab="packages">Пакеты</div>
+    <div class="tab" data-tab="power">Питание</div>
+    <div class="tab" data-tab="timer">Таймер</div>
+    <div class="tab" data-tab="windows">Окна</div>
+    <div class="tab" data-tab="files">Файлы</div>
+    <div class="tab" data-tab="shots">Скриншоты</div>
+    <div class="tab" data-tab="metrics">Метрики</div>
+    <div class="tab" data-tab="presets">Пресеты</div>
+    <div class="tab" data-tab="bt">Bluetooth</div>
+    <div class="tab" data-tab="wifi">Wi-Fi</div>
+    <div class="tab" data-tab="apk">APK</div>
+    <div class="tab" data-tab="log">Лог</div>
+    <div class="tab" data-tab="info">Инфо</div>
+</div>
+
+<div class="content">
+
+    <!-- ================= ПУЛЬТ ================= -->
+    <div class="panel active" id="panel-remote">
+        <div class="dpad">
+            <button class="up"    onclick="sendKey('UP')">▲</button>
+            <button class="left"  onclick="sendKey('LEFT')">◄</button>
+            <button class="ok"    onclick="sendKey('OK')">OK</button>
+            <button class="right" onclick="sendKey('RIGHT')">►</button>
+            <button class="down"  onclick="sendKey('DOWN')">▼</button>
+        </div>
+
+        <div class="section-title">Основное</div>
+        <div class="hotrow">
+            <button class="btn success" onclick="sendKey('HOME')">Home</button>
+            <button class="btn neutral" onclick="sendKey('BACK')">Back</button>
+            <button class="btn neutral" onclick="sendKey('MENU')">Меню</button>
+        </div>
+        <div class="hotrow">
+            <button class="btn neutral" onclick="sendKey('SEARCH')">Поиск</button>
+            <button class="btn neutral" onclick="sendKey('SETTINGS')">Настройки</button>
+            <button class="btn neutral" onclick="sendKey('INPUT')">Источник</button>
+        </div>
+
+        <div class="section-title">Громкость</div>
+        <div class="hotrow">
+            <button class="btn" data-hold="VOLDN" onclick="sendKey('VOLDN')">−</button>
+            <button class="btn" onclick="sendKey('MUTE')">Mute</button>
+            <button class="btn" data-hold="VOLUP" onclick="sendKey('VOLUP')">+</button>
+        </div>
+
+        <div class="section-title">Каналы</div>
+        <div class="hotrow">
+            <button class="btn neutral" data-hold="CHDN" onclick="sendKey('CHDN')">CH −</button>
+            <button class="btn neutral" data-hold="CHUP" onclick="sendKey('CHUP')">CH +</button>
+            <button class="btn neutral" onclick="sendKey('GUIDE')">Гид</button>
+            <button class="btn neutral" onclick="sendKey('INFO')">Инфо</button>
+        </div>
+
+        <div class="section-title">Медиа</div>
+        <div class="hotrow">
+            <button class="btn neutral" data-hold="REWIND" onclick="sendKey('REWIND')">⏪</button>
+            <button class="btn neutral" onclick="sendKey('PREV')">⏮</button>
+            <button class="btn neutral" onclick="sendKey('PLAY')">⏯</button>
+            <button class="btn neutral" onclick="sendKey('NEXT')">⏭</button>
+            <button class="btn neutral" data-hold="FFWD" onclick="sendKey('FFWD')">⏩</button>
+        </div>
+
+        <div class="section-title">Цветные кнопки</div>
+        <div class="colorrow">
+            <button class="red"    onclick="sendKey('RED')">RED</button>
+            <button class="green"  onclick="sendKey('GREEN')">GREEN</button>
+            <button class="yellow" onclick="sendKey('YELLOW')">YELLOW</button>
+            <button class="blue"   onclick="sendKey('BLUE')">BLUE</button>
+        </div>
+
+        <div class="section-title">Цифры</div>
+        <div class="numgrid">
+            <button onclick="sendKey('1')">1</button>
+            <button onclick="sendKey('2')">2</button>
+            <button onclick="sendKey('3')">3</button>
+            <button onclick="sendKey('4')">4</button>
+            <button onclick="sendKey('5')">5</button>
+            <button onclick="sendKey('6')">6</button>
+            <button onclick="sendKey('7')">7</button>
+            <button onclick="sendKey('8')">8</button>
+            <button onclick="sendKey('9')">9</button>
+            <button onclick="sendKey('SUBTITLE')">SUB</button>
+            <button onclick="sendKey('0')">0</button>
+            <button onclick="sendKey('TEXT')">TXT</button>
+        </div>
+
+        <div class="section-title">Ввод текста</div>
+        <input type="text" class="search-box" id="textInput" placeholder="Текст для отправки...">
+        <button class="btn success block" onclick="sendText()">Отправить</button>
+    </div>
+
+    <!-- ================= ЗАПУСК ================= -->
+    <div class="panel" id="panel-apps">
+        <input type="text" class="search-box" id="appsSearch" placeholder="Поиск..." oninput="renderApps()">
+        <div class="filter-row">
+            <div class="filter-btn active" data-filter="all" onclick="setAppsFilter('all')">Все</div>
+            <div class="filter-btn" data-filter="user" onclick="setAppsFilter('user')">Пользовательские</div>
+            <div class="filter-btn" data-filter="system" onclick="setAppsFilter('system')">Системные</div>
+        </div>
+        <button class="btn block" onclick="loadApps()">Обновить</button>
+        <div id="appsList"></div>
+    </div>
+
+    <!-- ================= ПАКЕТЫ ================= -->
+    <div class="panel" id="panel-packages">
+        <input type="text" class="search-box" id="pkgsSearch" placeholder="Поиск по имени пакета..." oninput="renderPkgs()">
+        <div class="filter-row">
+            <div class="filter-btn active" data-pfilter="all" onclick="setPkgsFilter('all')">Все</div>
+            <div class="filter-btn" data-pfilter="user" onclick="setPkgsFilter('user')">Сторонние</div>
+            <div class="filter-btn" data-pfilter="system" onclick="setPkgsFilter('system')">Системные</div>
+            <div class="filter-btn" data-pfilter="disabled" onclick="setPkgsFilter('disabled')">Отключённые</div>
+        </div>
+        <button class="btn block" onclick="loadPackages()">Обновить список</button>
+        <div id="pkgsList"></div>
+    </div>
+
+    <!-- ================= ПИТАНИЕ ================= -->
+    <div class="panel" id="panel-power">
+        <div class="section-title">Сон / пробуждение</div>
+        <div class="hotrow">
+            <button class="btn neutral" onclick="powerAction('sleep')">Спящий режим</button>
+            <button class="btn success" onclick="powerAction('wakeup')">Пробуждение</button>
+        </div>
+
+        <div class="section-title">Перезагрузка</div>
+        <button class="btn warn block" onclick="powerAction('reboot')">Перезагрузить ТВ</button>
+
+        <div class="section-title">Выключение</div>
+        <button class="btn danger block" onclick="powerAction('shutdown')">Выключить ТВ</button>
+
+        <div class="section-title">Клавиша питания</div>
+        <button class="btn gray block" onclick="sendKey('POWER')">Нажать Power</button>
+    </div>
+
+    <!-- ================= ТАЙМЕР ================= -->
+    <div class="panel" id="panel-timer">
+        <div class="info-card">
+            <b>Таймер сна</b><br>
+            <span style="font-size:11px;color:#a0a0a0;">
+                Через указанное время ТВ перейдёт в спящий режим.
+                Таймер работает на стороне телевизора.
+            </span>
+        </div>
+
+        <div class="section-title">Быстрый выбор</div>
+        <div class="hotrow">
+            <button class="btn" onclick="setTimer(15)">15 мин</button>
+            <button class="btn" onclick="setTimer(30)">30 мин</button>
+            <button class="btn" onclick="setTimer(45)">45 мин</button>
+        </div>
+        <div class="hotrow">
+            <button class="btn" onclick="setTimer(60)">1 час</button>
+            <button class="btn" onclick="setTimer(90)">1.5 часа</button>
+            <button class="btn" onclick="setTimer(120)">2 часа</button>
+        </div>
+
+        <div class="section-title">Своё значение</div>
+        <input type="number" class="search-box" id="timerInput" placeholder="Минуты (1-240)" min="1" max="240">
+        <button class="btn success block" onclick="setTimerFromInput()">Запустить таймер</button>
+
+        <div class="section-title">Управление</div>
+        <button class="btn danger block" onclick="cancelTimer()">Отменить таймер</button>
+
+        <div class="info-card" id="timerStatus" style="text-align:center;color:#a0a0a0;">
+            Таймер не активен
+        </div>
+    </div>
+
+    <!-- ================= ОКНА ================= -->
+    <div class="panel" id="panel-windows">
+        <div class="info-card" id="currentActivity">
+            <b>Сейчас открыто:</b><br>
+            <span style="color:#6ccb5f;" id="curActText">—</span>
+        </div>
+        <button class="btn block" onclick="loadCurrentActivity(); loadWindows()">Обновить список</button>
+        <div id="windowsList"></div>
+    </div>
+
+    <!-- ================= ФАЙЛЫ ================= -->
+    <div class="panel" id="panel-files">
+        <div class="path-bar" id="currentPath">/sdcard/</div>
+        <div class="hotrow">
+            <button class="btn small" onclick="navigateUp()">Вверх</button>
+            <button class="btn small" onclick="navigateTo('/sdcard/')">sdcard</button>
+            <button class="btn small" onclick="navigateTo('/sdcard/Download/')">Download</button>
+            <button class="btn small" onclick="navigateTo('/data/local/tmp/')">tmp</button>
+            <button class="btn small" onclick="navigateTo('/')">/</button>
+        </div>
+        <button class="btn block" onclick="loadFiles()">Обновить</button>
+        <div id="filesList"></div>
+    </div>
+
+    <!-- ================= СКРИНШОТЫ ================= -->
+    <div class="panel" id="panel-shots">
+        <div class="hotrow">
+            <button class="btn success" onclick="takeShotAndShow()">Снять и показать</button>
+            <button class="btn" onclick="takeShotAndSave()">Снять и сохранить</button>
+        </div>
+        <div class="section-title">Последние снимки</div>
+        <button class="btn block" onclick="loadShots()">Обновить</button>
+        <div class="shot-grid" id="shotsGrid"></div>
+    </div>
+
+    <!-- ================= МЕТРИКИ ================= -->
+    <div class="panel" id="panel-metrics">
+        <div class="section-title">Система</div>
+
+        <div class="info-card">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                <b>CPU</b><span id="mCpuVal" style="color:#6ccb5f;">—</span>
+            </div>
+            <div class="progress"><div class="progress-fill" id="mCpuBar" style="width:0%"></div></div>
+            <div style="font-size:10px;color:#808080;margin-top:6px;">
+                Ядер: <span id="mCpuCores">—</span> · Макс: <span id="mCpuMax">—</span> · Тек: <span id="mCpuCur">—</span>
+            </div>
+        </div>
+
+        <div class="info-card">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                <b>RAM</b><span id="mRamVal" style="color:#60cdff;">—</span>
+            </div>
+            <div class="progress"><div class="progress-fill" id="mRamBar" style="width:0%;background:#60cdff;"></div></div>
+            <div style="font-size:10px;color:#808080;margin-top:6px;">
+                Всего: <span id="mRamTotal">—</span> · Свободно: <span id="mRamFree">—</span>
+            </div>
+        </div>
+
+        <div class="info-card">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                <b>Storage</b><span id="mStorVal" style="color:#ffc83d;">—</span>
+            </div>
+            <div class="progress"><div class="progress-fill" id="mStorBar" style="width:0%;background:#ffc83d;"></div></div>
+            <div style="font-size:10px;color:#808080;margin-top:6px;">
+                Всего: <span id="mStorTotal">—</span> · Свободно: <span id="mStorFree">—</span>
+            </div>
+        </div>
+
+        <div class="info-card">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                <b>Температура</b><span id="mTemp" style="color:#6ccb5f;">—</span>
+            </div>
+            <div class="progress"><div class="progress-fill" id="mTempBar" style="width:0%;background:#6ccb5f;"></div></div>
+        </div>
+
+        <div class="info-card">
+            <b>Uptime:</b> <span id="mUptime">—</span><br>
+            <b>Load avg:</b> <span id="mLoadAvg" style="font-family:Consolas,monospace;">—</span>
+        </div>
+
+        <div class="hotrow">
+            <button class="btn" onclick="loadMetrics()">Обновить</button>
+            <button class="btn neutral" id="metricsAutoBtn" onclick="toggleMetricsAuto()">Авто</button>
+        </div>
+
+        <div class="section-title">Топ процессов</div>
+        <button class="btn block" onclick="loadMetricsTop()">Загрузить топ-15</button>
+        <div id="metricsTopList"></div>
+    </div>
+
+    <!-- ================= ПРЕСЕТЫ ================= -->
+    <div class="panel" id="panel-presets">
+        <div class="section-title">Тайм-аут экрана</div>
+        <div class="hotrow">
+            <button class="btn" onclick="applyPreset('screen_5min')">5 мин</button>
+            <button class="btn" onclick="applyPreset('screen_15min')">15 мин</button>
+            <button class="btn" onclick="applyPreset('screen_30min')">30 мин</button>
+        </div>
+        <div class="hotrow">
+            <button class="btn" onclick="applyPreset('screen_1hour')">1 час</button>
+            <button class="btn" onclick="applyPreset('screen_never')">Никогда</button>
+        </div>
+
+        <div class="section-title">Анимация</div>
+        <div class="hotrow">
+            <button class="btn neutral" onclick="applyPreset('anim_1x')">1x</button>
+            <button class="btn success" onclick="applyPreset('anim_05x')">0.5x (быстрее)</button>
+            <button class="btn warn" onclick="applyPreset('anim_0x')">0x (мгновенно)</button>
+        </div>
+
+        <div class="section-title">OTA-обновления</div>
+        <div class="hotrow">
+            <button class="btn danger" onclick="applyPreset('ota_disable')">Отключить OTA</button>
+            <button class="btn success" onclick="applyPreset('ota_enable')">Включить OTA</button>
+        </div>
+
+        <div class="section-title">Текущие значения</div>
+        <button class="btn block" onclick="loadPresetsState()">Показать текущие</button>
+        <div class="info-card" id="presetsState" style="font-family:Consolas,monospace;font-size:11px;">—</div>
+    </div>
+
+    <!-- ================= BLUETOOTH ================= -->
+    <div class="panel" id="panel-bt">
+        <div class="info-card" id="btStatus">
+            <b>Bluetooth</b><br>
+            <span style="color:#a0a0a0;">Загрузка...</span>
+        </div>
+
+        <div class="hotrow">
+            <button class="btn" onclick="loadBluetooth()">Обновить</button>
+            <button class="btn success" id="btEnableBtn" onclick="btEnable()">Включить</button>
+            <button class="btn danger" id="btDisableBtn" onclick="btDisable()">Выключить</button>
+        </div>
+
+        <div class="section-title">Сопряжённые устройства</div>
+        <div id="btBondedList">
+            <div style="text-align:center;padding:20px;color:#a0a0a0;">Нажмите «Обновить»</div>
+        </div>
+
+        <div class="info-card" style="background:#3d3520;border-color:#5a4a2a;color:#ffc83d;font-size:11px;">
+            Внимание: если к ТВ подключён BT-пульт или звуковая система, выключение BT разорвёт связь. Используйте с осторожностью.
+        </div>
+    </div>
+
+    <!-- ================= WI-FI ================= -->
+    <div class="panel" id="panel-wifi">
+        <div class="info-card" id="wifiStatus">
+            <b>Wi-Fi</b><br>
+            <span style="color:#a0a0a0;">Загрузка...</span>
+        </div>
+
+        <div class="hotrow">
+            <button class="btn" onclick="loadWifi()">Обновить</button>
+            <button class="btn neutral" onclick="openWifiSettings()">Настройки Wi-Fi на ТВ</button>
+        </div>
+
+        <div id="wifiDetails"></div>
+    </div>
+
+    <!-- ================= APK ================= -->
+    <div class="panel" id="panel-apk">
+        <div class="info-card" style="background:#1a2a3a;border-color:#3a5a7a;color:#a0c8e8;">
+            Поддерживаются <b>.apk</b>, <b>.apks</b>, <b>.xapk</b>, <b>.apkm</b>.<br>
+            Файл загружается на ПК и устанавливается через ADB.
+        </div>
+
+        <div id="apkDropZone" class="apk-drop">
+            <div style="font-size:40px;margin-bottom:10px;">📦</div>
+            <div style="font-size:14px;color:#a0c8e8;margin-bottom:6px;">Выберите APK-файл</div>
+            <div style="font-size:11px;color:#808080;">до 500 МБ</div>
+            <input type="file" id="apkFileInput" accept=".apk,.apks,.xapk,.apkm" style="display:none;">
+        </div>
+
+        <div id="apkProgress" style="display:none;margin:10px 0;">
+            <div class="progress"><div class="progress-fill" id="apkProgressBar" style="width:0%;background:#588653;"></div></div>
+            <div id="apkProgressText" style="font-size:12px;color:#a0a0a0;text-align:center;margin-top:6px;">—</div>
+        </div>
+
+        <div id="apkResult" style="display:none;"></div>
+    </div>
+
+    <!-- ================= ЛОГ ================= -->
+    <div class="panel" id="panel-log">
+        <div class="hotrow">
+            <button class="btn" onclick="loadLog()">Обновить</button>
+            <button class="btn neutral" id="logAutoBtn" onclick="toggleAutoLog()">Авто</button>
+        </div>
+        <div class="log-view" id="logView">Нажмите «Обновить»</div>
+    </div>
+
+    <!-- ================= ИНФО ================= -->
+    <div class="panel" id="panel-info">
+        <div class="info-card" id="infoContent"></div>
+        <div class="info-card" id="tokenInfo" style="color:#ffc83d;font-size:11px;word-break:break-all;"></div>
+    </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="modal-overlay" id="modal" onclick="closeModal()">
+    <img id="modalImg" src="" alt="">
+</div>
+
+<script src="/mobile.js"></script>
+</body>
+</html>

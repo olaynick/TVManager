@@ -100,3 +100,32 @@ $script:SetupLastTab = 0
 
 # ===== ТЕКУЩИЙ ЭКРАН =====
 $script:CurrentView = "Main"
+
+# ===== BLUETOOTH =====
+$script:BtScanResults = @()
+
+# ===== TRAFFIC =====
+$script:TrafficHistory = @()
+$script:TrafficPrevCounters = $null
+$script:TrafficLastSampleTime = $null
+$script:TrafficActiveIface = $null
+$script:TrafficRefreshTimer = $null
+$script:TrafficWatcherRunning = $false
+$script:TrafficBtnToggle = $null
+$script:TrafficChartCanvas = $null
+$script:TrafficChartMaxLabel = $null
+$script:TrafficAppsContainer = $null
+$script:TrafficRxLine = $null
+$script:TrafficTxLine = $null
+$script:TrafficTotalRxLine = $null
+$script:TrafficTotalTxLine = $null
+
+# ===== HTTP SERVER =====
+$script:HttpListener      = $null
+$script:HttpPS            = $null
+$script:HttpRunspace      = $null
+$script:HttpHandle        = $null
+$script:HttpToken         = ""
+$script:HttpPort          = 8080
+$script:HttpServerRunning = $false
+$script:HttpLocalOnly = $false

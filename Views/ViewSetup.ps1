@@ -168,6 +168,10 @@
         @{ Text = "Экспорт дампа"; ColorType = "Primary"; OnClick = { Show-ExportDeviceDumpDialog } }
         @{ Text = "Проверка целостности"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Integrity" } }
         @{ Text = "Температура"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Thermal" } }
+    ))) | Out-Null
+
+    $systemPanel.Children.Add((New-ButtonRow -Buttons @(
+        @{ Text = "Трафик"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Traffic" } }
     ) -Margin "0,0,0,10")) | Out-Null
 
     # ---------- НАСТРОЙКИ ----------
@@ -187,6 +191,7 @@
 
     $systemPanel.Children.Add((New-ButtonRow -Buttons @(
         @{ Text = "Wi-Fi"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Wifi" } }
+        @{ Text = "Bluetooth"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Bluetooth" } }
     ) -Margin "0,0,0,10")) | Out-Null
 
     # ---------- СЕРВИС ----------
@@ -201,6 +206,7 @@
     $systemPanel.Children.Add((New-ButtonRow -Buttons @(
         @{ Text = "ADB-команды"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Service" } }
         @{ Text = "Logcat"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Logcat" } }
+        @{ Text = "HTTP-сервер"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "HttpServer" } }
     ) -Margin "0,0,0,10")) | Out-Null
 
     # ---------- ДЕЙСТВИЯ ----------
@@ -217,6 +223,9 @@
         @{ Text = "Автозапуск"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Autostart" } }
         @{ Text = "Разрешения"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Permissions" } }
     ))) | Out-Null
+    $systemPanel.Children.Add((New-ButtonRow -Buttons @(
+        @{ Text = "Приложения и лаунчеры"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Apps" } }
+    ) -Margin "0,0,0,10")) | Out-Null
 
     $systemPanel.Children.Add((New-ButtonRow -Buttons @(
         @{ Text = "Профили устройств"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Profiles" } }

@@ -40,7 +40,11 @@ if ($MyInvocation.MyCommand.Path -and (Test-Path $MyInvocation.MyCommand.Path)) 
 . "$script:AppRoot\Modules\ScenarioEngine.ps1"   # пакетный режим (сценарии)
 . "$script:AppRoot\Modules\AppOpsHelper.ps1"
 . "$script:AppRoot\Modules\ThermalHelper.ps1"
+. "$script:AppRoot\Modules\BluetoothHelper.ps1"
+. "$script:AppRoot\Modules\TrafficHelper.ps1"
+. "$script:AppRoot\Modules\HttpServer.ps1"
 . "$script:AppRoot\Modules\PermissionsHelper.ps1"
+. "$script:AppRoot\Modules\AppsHelper.ps1"
 
 # ---------------------------------------------------------------------------
 #  4. Состояние
@@ -80,9 +84,13 @@ $script:BottomBarContent = $window.FindName("BottomBarContent")
 $script:BottomBarProgress     = $window.FindName("BottomBarProgress")
 $script:BottomBarProgressText = $window.FindName("BottomBarProgressText")
 
-# Делаем contentGrid и statusText доступными из вьюх
-$global:contentGrid = $contentGrid
-$global:statusText  = $statusText
+# HTTP-статус в статус-баре (справа)
+$script:HttpStatusText = $window.FindName("HttpStatusText")
+
+# Делаем contentGrid, statusText и HttpStatusText доступными из вьюх
+$global:contentGrid    = $contentGrid
+$global:statusText     = $statusText
+$global:HttpStatusText = $script:HttpStatusText
 
 Set-LogBox -Box $logBox
 
@@ -124,6 +132,8 @@ Load-Scenarios
 . "$script:AppRoot\Views\ViewLogcat.ps1"
 . "$script:AppRoot\Views\ViewService.ps1"
 . "$script:AppRoot\Views\ViewWifi.ps1"
+. "$script:AppRoot\Views\ViewBluetooth.ps1"
+. "$script:AppRoot\Views\ViewTraffic.ps1"
 . "$script:AppRoot\Views\ViewDisplay.ps1"
 . "$script:AppRoot\Views\ViewPresets.ps1"
 . "$script:AppRoot\Views\ViewProcesses.ps1"
@@ -132,6 +142,9 @@ Load-Scenarios
 . "$script:AppRoot\Views\ViewAutostart.ps1"
 . "$script:AppRoot\Views\ViewThermal.ps1"
 . "$script:AppRoot\Views\ViewPermissions.ps1"
+. "$script:AppRoot\Views\ViewApps.ps1"
+. "$script:AppRoot\Views\ViewHttpServer.ps1"
+
 # ---------------------------------------------------------------------------
 #  10. Проверка ADB в PATH
 # ---------------------------------------------------------------------------
@@ -167,12 +180,48 @@ if ($autoConnect -and $lastIp) {
 }
 
 # ---------------------------------------------------------------------------
-#  12. Точка входа (переключение на главный экран)
+#  12. Функция обновления статуса HTTP в статус-баре
+# ---------------------------------------------------------------------------
+function Update-HttpStatusBar {
+    if (-not $script:HttpStatusText) { return }
+
+    try {
+        if ($script:HttpServerRunning) {
+            $localIp = Get-LocalIpAddress
+            $port    = $script:HttpPort
+            $token   = $script:HttpToken
+
+            if ($script:HttpLocalOnly) {
+                $script:HttpStatusText.Text = "HTTP: localhost:$Port (только локально)"
+                $script:HttpStatusText.Foreground = [System.Windows.Media.SolidColorBrush](
+                    [System.Windows.Media.ColorConverter]::ConvertFromString("#FFC83D")
+                )
+                $script:HttpStatusText.ToolTip = "Сервер слушает только localhost. С телефона подключиться нельзя."
+            } else {
+                $url = "http://$($localIp):$Port/?token=$token"
+                $script:HttpStatusText.Text = "HTTP: $url"
+                $script:HttpStatusText.Foreground = [System.Windows.Media.SolidColorBrush](
+                    [System.Windows.Media.ColorConverter]::ConvertFromString("#6CCB5F")
+                )
+                $script:HttpStatusText.ToolTip = "HTTP-сервер запущен. Откройте этот URL на телефоне."
+            }
+        } else {
+            $script:HttpStatusText.Text = ""
+            $script:HttpStatusText.ToolTip = $null
+        }
+    } catch { }
+}
+
+# Делаем доступной глобально
+$global:UpdateHttpStatusBar = ${function:Update-HttpStatusBar}
+
+# ---------------------------------------------------------------------------
+#  13. Точка входа (переключение на главный экран)
 # ---------------------------------------------------------------------------
 . "$script:AppRoot\Views\MainWindow.xaml.ps1"
 
 # ---------------------------------------------------------------------------
-#  13. Запуск окна
+#  14. Запуск окна
 # ---------------------------------------------------------------------------
 $window.WindowState = "Maximized"
 
@@ -180,15 +229,27 @@ try {
     $window.ShowDialog() | Out-Null
 } finally {
     # -----------------------------------------------------------------
-    #  Корректное завершение фоновых Runspace'ов
+    #  Корректное завершение фоновых Runspace'ов и таймеров
     # -----------------------------------------------------------------
+
+    # --- HTTP-сервер (первым, чтобы не висел accept-loop) ---
+    try { if ($script:HttpServerRunning) { Stop-HttpServer } } catch { }
+
+    # --- Logcat ---
     try { if ($script:LogcatProcess) { Stop-Logcat -Proc $script:LogcatProcess } } catch { }
+
+    # --- Runspace'ы сканирования и установки APK ---
     try { if ($script:ScanPS)        { $script:ScanPS.Stop();  $script:ScanPS.Dispose() } } catch { }
     try { if ($script:ApkPS)         { $script:ApkPS.Stop();   $script:ApkPS.Dispose() } } catch { }
     try { if ($script:ApkRunspace)   { $script:ApkRunspace.Close() } } catch { }
 
+    # --- Таймеры ---
     try { if ($script:ScanTimer) { $script:ScanTimer.Stop() } } catch { }
     try { if ($script:ApkTimer)  { $script:ApkTimer.Stop()  } } catch { }
+    try { if ($script:StatusTimer) { $script:StatusTimer.Stop() } } catch { }
+    try { if ($script:ThermalRefreshTimer) { $script:ThermalRefreshTimer.Stop() } } catch { }
+    try { if ($script:TrafficRefreshTimer) { $script:TrafficRefreshTimer.Stop() } } catch { }
+    try { if ($script:RecordProgressTimer) { $script:RecordProgressTimer.Stop() } } catch { }
 
     Write-Host "Приложение закрыто." -ForegroundColor Cyan
 }

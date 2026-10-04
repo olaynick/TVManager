@@ -35,6 +35,10 @@ function Switch-View {
         "Thermal"      { Show-ThermalView }
         "Autostart"    { Show-AutostartView }
         "Permissions"  { Show-PermissionsView }
+        "Apps"         { Show-AppsView }
+        "Bluetooth"    { Show-BluetoothView }
+        "Traffic"      { Show-TrafficView }
+        "HttpServer"   { Show-HttpServerView }
         default        { Write-Log -Message "Неизвестный экран: $ViewName" -Level "Warning" }
     }
     Update-StatusBar

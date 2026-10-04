@@ -157,6 +157,16 @@ $script:launcherList = @(
     @{Name="Monet Launcher";        Package="com.klevico.monet";          Activity="com.klevico.monet/.MainActivity"}
 )
 
+# ----------------------------------------------------------------------------
+#  BLUETOOTH-ПАКЕТЫ
+#  Справочно, для отката. TVManager их не трогает по умолчанию.
+# ----------------------------------------------------------------------------
+$script:bluetoothPackages = @(
+    @{Package="com.android.bluetooth";        Desc="Основной стек Bluetooth (не трогать)"; Risk="high"}
+    @{Package="com.android.bluetoothmidiservice"; Desc="MIDI over Bluetooth";              Risk="low"}
+    @{Package="com.android.btservices";       Desc="Сервисы Bluetooth (Android TV)";       Risk="high"}
+)
+
 # ===== СОСТОЯНИЕ =====
 $script:deviceIp = ""
 $script:allChanges = @()

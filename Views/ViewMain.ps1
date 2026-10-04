@@ -280,7 +280,7 @@ function Show-HelpDialog {
     $aboutStack.Children.Add($aboutTitle) | Out-Null
 
     $aboutVersion = New-Object System.Windows.Controls.TextBlock
-    $aboutVersion.Text = "Версия 0.0.5"
+    $aboutVersion.Text = "Версия 0.0.6"
     $aboutVersion.FontSize = 12
     $aboutVersion.Foreground = [System.Windows.Media.SolidColorBrush](
         [System.Windows.Media.ColorConverter]::ConvertFromString("#A0A0A0")

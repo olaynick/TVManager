@@ -335,10 +335,34 @@
                 Background="{StaticResource BgCard}"
                 BorderBrush="{StaticResource BorderSubtle}" BorderThickness="0,1,0,0"
                 Padding="15,6">
-            <TextBlock x:Name="StatusText"
-                       Text="● Не подключено"
-                       Foreground="{StaticResource Danger}"
-                       FontSize="13"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Слева: статус подключения к ТВ -->
+                <TextBlock x:Name="StatusText"
+                           Grid.Column="0"
+                           Text="● Не подключено"
+                           Foreground="{StaticResource Danger}"
+                           FontSize="13"
+                           VerticalAlignment="Center"/>
+
+                <!-- По центру пусто (растяжка) -->
+                <Border Grid.Column="1"/>
+
+                <!-- Справа: адрес HTTP-сервера -->
+                <TextBlock x:Name="HttpStatusText"
+                           Grid.Column="2"
+                           Text=""
+                           FontSize="11"
+                           Foreground="{StaticResource Success}"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"
+                           ToolTip=""/>
+            </Grid>
         </Border>
 
         <!-- Лог -->
