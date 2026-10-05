@@ -361,6 +361,7 @@ function Start-BackgroundApkInstall {
 
     $logBoxRef  = $script:LogBox
     $adbPathRef = $script:adbPath
+    $deviceIpRef = $script:deviceIp
 
     if ($script:ApkBtnInstall) {
         $script:ApkBtnInstall.IsEnabled = $false
@@ -376,7 +377,7 @@ function Start-BackgroundApkInstall {
     $script:ApkPS.Runspace = $script:ApkRunspace
 
     $script:ApkPS.AddScript({
-        param($dispatcher, $logBox, $adbPath, $files)
+        param($dispatcher, $logBox, $adbPath, $deviceIp, $files)
 
         function Write-BgLog {
             param($msg, $lvl = "Info")
@@ -433,7 +434,7 @@ function Start-BackgroundApkInstall {
             return $clean
         }
 
-                # ===== Проверка свободного места =====
+        # ===== Проверка свободного места =====
         function Get-FreeSpaceBytes {
             try {
                 $out = & $adbPath shell df /data 2>&1
@@ -447,21 +448,33 @@ function Start-BackgroundApkInstall {
             return -1
         }
 
+        # ===== ИНЛАЙН-ПРОВЕРКА СВЯЗИ =====
+        function Test-ConnectionInline {
+            try {
+                if ($deviceIp) {
+                    $stateOut = & $adbPath -s "$deviceIp`:5555" get-state 2>&1
+                    return (($stateOut | Out-String).Trim() -eq "device")
+                } else {
+                    $devs = & $adbPath devices 2>&1
+                    foreach ($l in $devs) {
+                        if ($l -match '^\S+\s+device$') { return $true }
+                    }
+                }
+            } catch { }
+            return $false
+        }
+
         $freeBytes = Get-FreeSpaceBytes
         if ($freeBytes -gt 0) {
             $freeMb = [math]::Round($freeBytes / 1MB, 0)
             Write-BgLog "Свободно на /data: $freeMb МБ" "Info"
         }
 
-        # Считаем суммарный размер всех файлов для установки
         $totalSize = 0
         foreach ($f in $files) {
             try { $totalSize += $f.Length } catch { }
         }
         $totalSizeMb = [math]::Round($totalSize / 1MB, 0)
-
-        # APK-файлы при установке занимают примерно в 1.5–2 раза больше места,
-        # чем сам файл (распаковка dex, кэш, оптимизация)
         $requiredMb = [math]::Round($totalSizeMb * 2, 0)
 
         Write-BgLog "Размер APK: $totalSizeMb МБ, ожидается ~$requiredMb МБ свободного места" "Info"
@@ -469,17 +482,26 @@ function Start-BackgroundApkInstall {
         if ($freeBytes -gt 0 -and $freeBytes -lt ($requiredMb * 1MB)) {
             Write-BgLog "ВНИМАНИЕ: свободного места может не хватить!" "Warning"
             Write-BgLog "  Свободно: $freeMb МБ, требуется: ~$requiredMb МБ" "Warning"
-            Write-BgLog "  Рекомендуется очистить место на ТВ" "Warning"
         }
 
         $success        = 0
         $failed         = 0
         $installedPaths = @()
         $total          = $files.Count
+        $connectionLost = $false
 
         for ($i = 0; $i -lt $total; $i++) {
             $f = $files[$i]
             $num = $i + 1
+
+            # ===== ПРОВЕРКА СВЯЗИ ПЕРЕД КАЖДЫМ ФАЙЛОМ =====
+            if (-not (Test-ConnectionInline)) {
+                Write-BgLog "СВЯЗЬ С ТВ ПОТЕРЯНА на файле $num из $total" "Error"
+                Write-BgLog "  Установлено успешно: $success" "Info"
+                Write-BgLog "  Не установлено: $($total - $success - $failed)" "Info"
+                $connectionLost = $true
+                break
+            }
 
             $ext = [System.IO.Path]::GetExtension($f.FullName).ToLower()
             $isBundle = ($ext -in @(".apks", ".xapk", ".apkm"))
@@ -548,16 +570,12 @@ function Start-BackgroundApkInstall {
                 if ($outText -match 'INSTALL_FAILED_VERSION_DOWNGRADE') {
                     Write-BgLog "  ──────────────────────────────────────────────" "Info"
                     Write-BgLog "  ПОДСКАЗКА: Android блокирует старую версию поверх новой." "Warning"
-                    Write-BgLog "  Решение — удалить старую версию и установить заново:" "Info"
-                    Write-BgLog "    1. Setup → Управление пакетами" "Info"
-                    Write-BgLog "    2. Найти пакет и удалить" "Info"
-                    Write-BgLog "    3. Вернуться сюда и установить заново" "Info"
+                    Write-BgLog "  Решение — удалить старую версию и установить заново." "Info"
                     Write-BgLog "  ──────────────────────────────────────────────" "Info"
                 }
                 elseif ($outText -match 'INSTALL_FAILED_MISSING_SPLIT') {
                     Write-BgLog "  ──────────────────────────────────────────────" "Info"
                     Write-BgLog "  ПОДСКАЗКА: bundle повреждён — не хватает split-APK." "Warning"
-                    Write-BgLog "  Скачайте .apks / .xapk заново из надёжного источника." "Info"
                     Write-BgLog "  ──────────────────────────────────────────────" "Info"
                 }
 
@@ -566,13 +584,26 @@ function Start-BackgroundApkInstall {
             Start-Sleep -Milliseconds 200
         }
 
-        Write-BgLog "=== Готово: успешно $success, ошибок $failed из $total ===" "Success"
-        return @{ Success = $success; Failed = $failed; Total = $total; InstalledPaths = $installedPaths }
+        if ($connectionLost) {
+            Write-BgLog "=== УСТАНОВКА ПРЕРВАНА: связь с ТВ потеряна ===" "Warning"
+            Write-BgLog "  Установлено: $success, ошибок: $failed из $total" "Info"
+        } else {
+            Write-BgLog "=== Готово: успешно $success, ошибок $failed из $total ===" "Success"
+        }
+
+        return @{
+            Success        = $success
+            Failed         = $failed
+            Total          = $total
+            InstalledPaths = $installedPaths
+            ConnectionLost = $connectionLost
+        }
     })
 
     $script:ApkPS.AddArgument($window.Dispatcher)
     $script:ApkPS.AddArgument($logBoxRef)
     $script:ApkPS.AddArgument($adbPathRef)
+    $script:ApkPS.AddArgument($deviceIpRef)
     $script:ApkPS.AddArgument($Files)
 
     $script:ApkHandle = $script:ApkPS.BeginInvoke()
@@ -599,12 +630,18 @@ function Start-BackgroundApkInstall {
 
             $script:ApkPS.Dispose()
 
+            # ===== СНЯТИЕ С РЕГИСТРАЦИИ =====
+            Unregister-ScreenRunspace -Name "apk_install"
+
             $script:ApkInstallInProgress = $false
 
             Switch-View -ViewName "Apk"
         }
     })
     $script:ApkTimer.Start()
+
+    # ===== РЕГИСТРАЦИЯ RUNSPACE =====
+    Register-ScreenRunspace -Name "apk_install" -PS $script:ApkPS -RS $script:ApkRunspace -Handle $script:ApkHandle -Timer $script:ApkTimer
 }
 
 # ===== СПИСКИ ПАКЕТОВ =====

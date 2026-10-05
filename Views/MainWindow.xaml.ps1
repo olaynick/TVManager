@@ -2,6 +2,27 @@
 function Switch-View {
     param([string]$ViewName)
 
+    # ============================================================
+    #  СБРОС ЛОГКАТ-ОБРАБОТЧИКОВ
+    # ============================================================
+    if ($script:LogcatClosingHandler) {
+        try { $window.Remove_Closing($script:LogcatClosingHandler) } catch { }
+        $script:LogcatClosingHandler = $null
+    }
+    $script:LogcatBackBtn = $null
+
+    # ============================================================
+    #  АВТООЧИСТКА RUNSPACE ПРИ ПЕРЕКЛЮЧЕНИИ ЭКРАНОВ
+    #  HTTP-сервер и Monitoring продолжают работать в фоне.
+    # ============================================================
+    try {
+        if (Get-Command Stop-AllScreenRunspaces -ErrorAction SilentlyContinue) {
+            Stop-AllScreenRunspaces -Except @("http", "monitoring")
+        }
+    } catch {
+        Write-Log -Message "Ошибка автоочистки Runspace: $_" -Level "Warning"
+    }
+
     $script:CurrentView = $ViewName
 
     $contentGrid.Children.Clear()
@@ -24,6 +45,7 @@ function Switch-View {
         "DisabledApps" { Show-DisabledAppsView }
         "Snapshots"    { Show-SnapshotsView }
         "Logcat"       { Show-LogcatView }
+        "Scrcpy"       { Show-ScrcpyView }
         "Service"      { Show-ServiceView }
         "Wifi"         { Show-WifiView }
         "Display"      { Show-DisplayView }
@@ -39,7 +61,6 @@ function Switch-View {
         "Traffic"      { Show-TrafficView }
         "HttpServer"   { Show-HttpServerView }
         "Monitoring"   { Show-MonitoringView }
-        "Scrcpy"       { Show-ScrcpyView }
         default        { Write-Log -Message "Неизвестный экран: $ViewName" -Level "Warning" }
     }
     Update-StatusBar

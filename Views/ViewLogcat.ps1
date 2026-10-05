@@ -22,16 +22,11 @@ function Show-LogcatView {
 
     # ===== ФИЛЬТРЫ =====
     $filterGrid = New-Object System.Windows.Controls.Grid
-    $fc1 = New-Object System.Windows.Controls.ColumnDefinition
-    $fc1.Width = "80"
-    $fc2 = New-Object System.Windows.Controls.ColumnDefinition
-    $fc2.Width = "*"
-    $fc3 = New-Object System.Windows.Controls.ColumnDefinition
-    $fc3.Width = "120"
-    $fc4 = New-Object System.Windows.Controls.ColumnDefinition
-    $fc4.Width = "Auto"
-    $fc5 = New-Object System.Windows.Controls.ColumnDefinition
-    $fc5.Width = "Auto"
+    $fc1 = New-Object System.Windows.Controls.ColumnDefinition; $fc1.Width = "80"
+    $fc2 = New-Object System.Windows.Controls.ColumnDefinition; $fc2.Width = "*"
+    $fc3 = New-Object System.Windows.Controls.ColumnDefinition; $fc3.Width = "120"
+    $fc4 = New-Object System.Windows.Controls.ColumnDefinition; $fc4.Width = "Auto"
+    $fc5 = New-Object System.Windows.Controls.ColumnDefinition; $fc5.Width = "Auto"
     $filterGrid.ColumnDefinitions.Add($fc1)
     $filterGrid.ColumnDefinitions.Add($fc2)
     $filterGrid.ColumnDefinitions.Add($fc3)
@@ -39,7 +34,6 @@ function Show-LogcatView {
     $filterGrid.ColumnDefinitions.Add($fc5)
     $filterGrid.Margin = "0,0,0,10"
 
-    # --- Подпись "Фильтр" (светло-серая) ---
     $lblFilter = New-Object System.Windows.Controls.TextBlock
     $lblFilter.Text = "Фильтр:"
     $lblFilter.FontSize = 13
@@ -50,7 +44,6 @@ function Show-LogcatView {
     [System.Windows.Controls.Grid]::SetColumn($lblFilter, 0)
     $filterGrid.Children.Add($lblFilter) | Out-Null
 
-    # --- Поле фильтра ---
     $script:LogcatFilterBox = New-Object System.Windows.Controls.TextBox
     $script:LogcatFilterBox.Style = $window.Resources["RoundedTextBox"]
     $script:LogcatFilterBox.FontSize = 13
@@ -58,7 +51,6 @@ function Show-LogcatView {
     [System.Windows.Controls.Grid]::SetColumn($script:LogcatFilterBox, 1)
     $filterGrid.Children.Add($script:LogcatFilterBox) | Out-Null
 
-    # --- ComboBox уровня ---
     $script:LogcatLevelBox = New-Object System.Windows.Controls.ComboBox
     $script:LogcatLevelBox.FontSize = 13
     $script:LogcatLevelBox.Margin = "0,0,8,0"
@@ -71,14 +63,13 @@ function Show-LogcatView {
     [System.Windows.Controls.Grid]::SetColumn($script:LogcatLevelBox, 2)
     $filterGrid.Children.Add($script:LogcatLevelBox) | Out-Null
 
-    # --- Кнопка Запустить / Остановить (Success) ---
     $script:LogcatToggleBtn = New-Object System.Windows.Controls.Button
     $script:LogcatToggleBtn.Content = "Запустить"
     $script:LogcatToggleBtn.Style = $window.Resources["RoundedButton"]
     $script:LogcatToggleBtn.Background = New-Object System.Windows.Media.SolidColorBrush(
         [System.Windows.Media.ColorConverter]::ConvertFromString("#588653")
     )
-    $script:LogcatToggleBtn.Foreground = [System.Windows.Media.SolidColorBrush](
+    $script:LogcatToggleBtn.Foreground = New-Object System.Windows.Media.SolidColorBrush(
         [System.Windows.Media.ColorConverter]::ConvertFromString("#FFFFFF")
     )
     $script:LogcatToggleBtn.Padding = "15,6"
@@ -86,7 +77,6 @@ function Show-LogcatView {
     [System.Windows.Controls.Grid]::SetColumn($script:LogcatToggleBtn, 3)
     $filterGrid.Children.Add($script:LogcatToggleBtn) | Out-Null
 
-    # --- Кнопка Очистить (Warning) ---
     $btnClear = New-Object System.Windows.Controls.Button
     $btnClear.Content = "Очистить"
     $btnClear.Style = $window.Resources["RoundedButton"]
@@ -130,20 +120,54 @@ function Show-LogcatView {
     $script:LogcatStatus.Margin = "0,10,0,0"
     $mainStack.Children.Add($script:LogcatStatus) | Out-Null
 
-    # ===== ЛОГИКА КНОПКИ TOGGLE =====
+    # ========================================================================
+    #  ROOT + КНОПКА "НАЗАД" С БЛОКИРОВКОЙ ПРИ АКТИВНОМ LOGCAT
+    # ========================================================================
+    # Создаём rootGrid вручную, чтобы управлять кнопкой "Назад"
+    $rootGrid = New-Object System.Windows.Controls.Grid
+    $rootGrid.Children.Add($mainStack) | Out-Null
+
+    $backBtn = New-BackButton -OnClick {
+        # ============================================================
+        #  Если logcat работает — не даём уйти
+        # ============================================================
+        if ($script:LogcatProcess -and $script:LogcatProcess.PowerShell) {
+            [System.Windows.MessageBox]::Show(
+                "Сначала остановите Logcat кнопкой «Остановить».`n`nПока идёт запись логов, уходить с экрана нельзя — это защита от зависания.",
+                "Logcat работает",
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Information) | Out-Null
+            return
+        }
+
+        Switch-View -ViewName "Setup"
+    }
+
+    # ============================================================
+    #  Кнопка "Назад" СКРЫТА, пока Logcat активен.
+    #  Управляем через IsEnabled — серый цвет сразу виден пользователю.
+    # ============================================================
+    $script:LogcatBackBtn = $backBtn
+    $rootGrid.Children.Add($backBtn) | Out-Null
+
+    $contentGrid.Children.Add($rootGrid) | Out-Null
+
+    # ========================================================================
+    #  КНОПКА TOGGLE — ЗАПУСК / ОСТАНОВКА
+    # ========================================================================
     $script:LogcatToggleBtn.Add_Click({
         $btn = $script:LogcatToggleBtn
         $status = $script:LogcatStatus
         $filterBox = $script:LogcatFilterBox
         $levelBox = $script:LogcatLevelBox
         $logBox = $script:LogcatBox
+        $back = $script:LogcatBackBtn
 
         if ($script:LogcatProcess -and $script:LogcatProcess.PowerShell) {
             # ===== ОСТАНОВИТЬ =====
             $procToStop = $script:LogcatProcess
             $script:LogcatProcess = $null
 
-            # Меняем UI сразу
             $btn.Content = "Запустить"
             $btn.Background = New-Object System.Windows.Media.SolidColorBrush(
                 [System.Windows.Media.ColorConverter]::ConvertFromString("#588653")
@@ -153,7 +177,9 @@ function Show-LogcatView {
                 [System.Windows.Media.ColorConverter]::ConvertFromString("#A0A0A0")
             )
 
-            # Останавливаем в фоне — UI не блокируется
+            # ===== РАЗБЛОКИРОВАТЬ "НАЗАД" =====
+            if ($back) { $back.IsEnabled = $true }
+
             Stop-Logcat -Proc $procToStop
         } else {
             # ===== ЗАПУСТИТЬ =====
@@ -176,14 +202,22 @@ function Show-LogcatView {
                 $proc = Start-Logcat -LogBox $logBox -Filter $filter -Level $level
                 if ($proc) {
                     $script:LogcatProcess = $proc
+                    Register-ScreenRunspace -Name "logcat" `
+                        -PS $proc.PowerShell `
+                        -RS $proc.Runspace `
+                        -Handle $proc.Handle
+
                     $btn.Content = "Остановить"
                     $btn.Background = New-Object System.Windows.Media.SolidColorBrush(
                         [System.Windows.Media.ColorConverter]::ConvertFromString("#724c4c")
                     )
-                    $status.Text = "Logcat работает..."
+                    $status.Text = "Logcat работает... (остановите, чтобы вернуться назад)"
                     $status.Foreground = New-Object System.Windows.Media.SolidColorBrush(
                         [System.Windows.Media.ColorConverter]::ConvertFromString("#6CCB5F")
                     )
+
+                    # ===== ЗАБЛОКИРОВАТЬ "НАЗАД" =====
+                    if ($back) { $back.IsEnabled = $false }
                 } else {
                     $status.Text = "Не удалось запустить logcat"
                 }
@@ -200,29 +234,16 @@ function Show-LogcatView {
         Write-Log -Message "Лог очищен" -Level "Info"
     })
 
-    # ===== ROOT =====
-    $rootGrid = New-ViewRoot -Stack $mainStack -OnBack {
-        # Останавливаем logcat перед уходом с экрана
-        if ($script:LogcatProcess -and $script:LogcatProcess.PowerShell) {
-            $procToStop = $script:LogcatProcess
-            $script:LogcatProcess = $null
-            Stop-Logcat -Proc $procToStop
-        }
-        Switch-View -ViewName "Setup"
-    }
-    $contentGrid.Children.Add($rootGrid) | Out-Null
-
     # ===== BOTTOM BAR =====
     $buttons = @()
 
-    # --- Сохранить в файл (Success) ---
     $btnSave = New-Object System.Windows.Controls.Button
     $btnSave.Content = "Сохранить в файл"
     $btnSave.Style = $window.Resources["RoundedButton"]
     $btnSave.Background = New-Object System.Windows.Media.SolidColorBrush(
         [System.Windows.Media.ColorConverter]::ConvertFromString("#588653")
     )
-    $btnSave.Foreground = [System.Windows.Media.SolidColorBrush](
+    $btnSave.Foreground = New-Object System.Windows.Media.SolidColorBrush(
         [System.Windows.Media.ColorConverter]::ConvertFromString("#FFFFFF")
     )
     $btnSave.Padding = "12,6"

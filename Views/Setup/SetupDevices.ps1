@@ -101,7 +101,7 @@ function Show-DeviceListInline {
     $script:DeviceListContainer.Children.Add($btnConnectSelected) | Out-Null
 }
 # ============================================================================
-#  ФОНОВОЕ СКАНИРОВАНИЕ (без прогрессбара — вся информация в логе)
+#  ФОНОВОЕ СКАНИРОВАНИЕ СЕТИ
 # ============================================================================
 function Start-NetworkScan {
     Write-Log -Message "=== Запуск сканирования сети ===" -Level "Info"
@@ -273,6 +273,9 @@ function Start-NetworkScan {
     $script:ScanPS = $ps
     $script:ScanHandle = $ps.BeginInvoke()
 
+    # ===== РЕГИСТРАЦИЯ RUNSPACE =====
+    Register-ScreenRunspace -Name "scan" -PS $ps -RS $script:ScanRunspace -Handle $script:ScanHandle
+
     $script:ScanTimer = New-Object System.Windows.Threading.DispatcherTimer
     $script:ScanTimer.Interval = [TimeSpan]::FromMilliseconds(500)
     $script:ScanTimer.Add_Tick({
@@ -285,6 +288,9 @@ function Start-NetworkScan {
                 $result = @()
             }
             $script:ScanPS.Dispose()
+
+            # ===== СНЯТИЕ С РЕГИСТРАЦИИ =====
+            Unregister-ScreenRunspace -Name "scan"
 
             $script:SetupBtnScan.IsEnabled = $true
             $script:SetupBtnScan.Content = "Сканировать"

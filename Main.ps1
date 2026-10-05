@@ -60,6 +60,7 @@ if ($MyInvocation.MyCommand.Path -and (Test-Path $MyInvocation.MyCommand.Path)) 
 . "$script:AppRoot\Modules\PermissionsHelper.ps1"
 . "$script:AppRoot\Modules\AppsHelper.ps1"
 . "$script:AppRoot\Modules\MonitoringHelper.ps1"
+. "$script:AppRoot\Modules\RunspaceManager.ps1"
 
 # ---------------------------------------------------------------------------
 #  4. Состояние
@@ -275,13 +276,26 @@ try {
     $window.ShowDialog() | Out-Null
 } finally {
     # =====================================================================
-    #  1. ФЛАГ ЗАВЕРШЕНИЯ — все таймеры и обновляторы проверяют его
+    #  1. ФЛАГ ЗАВЕРШЕНИЯ
     # =====================================================================
     $global:AppClosing = $true
     Write-Host "Начато завершение работы..." -ForegroundColor Cyan
 
     # =====================================================================
-    #  2. ТАЙМЕРЫ (первыми, чтобы не дёргали UI)
+    #  2. ОСТАНОВКА ВСЕХ RUNSPACE ЧЕРЕЗ РЕЕСТР
+    # =====================================================================
+    try {
+        if (Get-Command Stop-AllScreenRunspaces -ErrorAction SilentlyContinue) {
+            # Асинхронно — не блокируем закрытие окна
+            [System.Threading.Tasks.Task]::Run([action]{
+                try { Stop-AllScreenRunspaces } catch { }
+            }) | Out-Null
+            Start-Sleep -Milliseconds 500
+        }
+    } catch { }
+
+    # =====================================================================
+    #  3. FALLBACK: старая логика (для того, что не попало в реестр)
     # =====================================================================
     try { if ($script:StatusTimer)              { $script:StatusTimer.Stop() } } catch { }
     try { if ($script:ScanTimer)                { $script:ScanTimer.Stop() } } catch { }
@@ -296,25 +310,24 @@ try {
     try { if ($script:ScenarioRun -and $script:ScenarioRun.Timer) { $script:ScenarioRun.Timer.Stop() } } catch { }
 
     # =====================================================================
-    #  3. HTTP-сервер (первым среди Runspace'ов, чтобы не висел accept-loop)
+    #  4. HTTP-СЕРВЕР (первым, чтобы не висел accept-loop)
     # =====================================================================
     try { if ($script:HttpServerRunning) { Stop-HttpServer } } catch { }
 
     # =====================================================================
-    #  4. Logcat
+    #  5. Logcat
     # =====================================================================
     try { if ($script:LogcatProcess) { Stop-Logcat -Proc $script:LogcatProcess } } catch { }
 
     # =====================================================================
-    #  5. Runspace'ы сканирования и установки APK
+    #  6. RUNSPACE'Ы (если что-то не закрылось через реестр)
     # =====================================================================
     try { if ($script:ScanPS)        { $script:ScanPS.Stop();  $script:ScanPS.Dispose() } } catch { }
     try { if ($script:ApkPS)         { $script:ApkPS.Stop();   $script:ApkPS.Dispose() } } catch { }
     try { if ($script:ApkRunspace)   { $script:ApkRunspace.Close() } } catch { }
 
     # =====================================================================
-    #  6. СБРАСЫВАЕМ ССЫЛКИ НА UI (в самом конце, чтобы поздние вызовы
-    #     не падали с "Не удается найти свойство 'Text'")
+    #  7. СБРОС ССЫЛОК НА UI
     # =====================================================================
     $global:statusText     = $null
     $global:contentGrid    = $null

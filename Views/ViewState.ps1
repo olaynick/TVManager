@@ -154,3 +154,12 @@ $script:MonitoringSlowBusy         = $false
 $script:DeviceModelName   = ""
 $script:DeviceModelName   = ""
 $script:DeviceModelNameIp = ""
+
+# ===== ЗАПИСЬ ВИДЕО =====
+$script:RecordPS       = $null
+$script:RecordRunspace = $null
+$script:RecordHandle   = $null
+$script:RecordProgressTimer = $null
+
+# ===== ЗАПИСЬ ВИДЕО =====
+$script:RecordDurationButtons = @()

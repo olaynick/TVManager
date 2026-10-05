@@ -1126,7 +1126,7 @@ function Stop-Logcat {
 
     Write-Log -Message "Останавливаю logcat..." -Level "Info"
 
-    # 1. Убиваем все adb.exe, запущенные с аргументом logcat (fire & forget)
+    # 1. Убиваем adb.exe с logcat (fire & forget)
     try {
         $adbProcesses = @(Get-CimInstance Win32_Process -Filter "Name = 'adb.exe'" -ErrorAction SilentlyContinue)
         foreach ($p in $adbProcesses) {
@@ -1138,27 +1138,15 @@ function Stop-Logcat {
         }
     } catch { }
 
-    # 2. Останавливаем Runspace АСИНХРОННО — чтобы не блокировать UI
+    # 2. Асинхронно останавливаем Runspace
+    #    НЕ делаем Dispose — это сделает Unregister-ScreenRunspace
     $psRef = $Proc.PowerShell
-    $rsRef = $Proc.Runspace
 
-    [System.Threading.Tasks.Task]::Run([action]{
-        try {
-            if ($psRef) {
-                try { $psRef.Stop() } catch { }
-                Start-Sleep -Milliseconds 100
-                try { $psRef.Dispose() } catch { }
-            }
-        } catch { }
-
-        try {
-            if ($rsRef) {
-                try { $rsRef.Close() } catch { }
-                Start-Sleep -Milliseconds 100
-                try { $rsRef.Dispose() } catch { }
-            }
-        } catch { }
-    }) | Out-Null
+    if ($psRef) {
+        [System.Threading.Tasks.Task]::Run([action]{
+            try { $psRef.Stop() } catch { }
+        }) | Out-Null
+    }
 
     Write-Log -Message "Logcat остановлен" -Level "Success"
 }
@@ -2083,4 +2071,46 @@ function Get-DeviceDisplayName {
     } catch { }
 
     return ""
+}
+
+# ============================================================================
+#  БЫСТРАЯ ПРОВЕРКА СВЯЗИ (для циклов)
+#  Кэширует результат на 1 секунду, чтобы не спамить ADB.
+# ============================================================================
+$script:LastConnectivityCheck = $null
+$script:LastConnectivityResult = $false
+
+function Test-ConnectionQuick {
+    param([switch]$Force)
+
+    $now = Get-Date
+    if (-not $Force -and $script:LastConnectivityCheck) {
+        $elapsed = ($now - $script:LastConnectivityCheck).TotalSeconds
+        if ($elapsed -lt 1.0) {
+            return $script:LastConnectivityResult
+        }
+    }
+
+    $result = $false
+    try {
+        if ($script:deviceIp) {
+            $stateOut = & $script:adbPath -s "$($script:deviceIp):5555" get-state 2>&1
+            $stateText = ($stateOut | Out-String).Trim()
+            $result = ($stateText -eq "device")
+        } else {
+            $devices = & $script:adbPath devices 2>&1
+            foreach ($line in $devices) {
+                if ($line -match '^\S+\s+device$') {
+                    $result = $true
+                    break
+                }
+            }
+        }
+    } catch {
+        $result = $false
+    }
+
+    $script:LastConnectivityCheck = $now
+    $script:LastConnectivityResult = $result
+    return $result
 }

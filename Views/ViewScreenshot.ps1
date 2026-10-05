@@ -238,7 +238,10 @@ function Show-ScreenshotView {
     $durationPanel = New-Object System.Windows.Controls.WrapPanel
     $durationPanel.Margin = "0,0,0,10"
 
-    $durations = @(15, 30, 60, 120, 300, 600)
+ # Android screenrecord ограничен 3 минутами (180 сек)
+    $durations = @(15, 30, 60, 120, 180)
+    $script:RecordDurationButtons = @()
+
     foreach ($sec in $durations) {
         $label = if ($sec -lt 60) { "$sec сек" } else { "$([int]($sec/60)) мин" }
 
@@ -250,9 +253,27 @@ function Show-ScreenshotView {
         $btn.Margin = "0,0,8,8"
         $secLocal = $sec
         $btn.Add_Click({
+            # Проверка: не идёт ли уже запись
+            if ($script:RecordHandle) {
+                [System.Windows.MessageBox]::Show(
+                    "Запись уже идёт. Дождитесь завершения или нажмите «Назад» для отмены.",
+                    "Запись активна",
+                    [System.Windows.MessageBoxButton]::OK,
+                    [System.Windows.MessageBoxImage]::Information) | Out-Null
+                return
+            }
+
+            # Блокируем все кнопки длительности
+            foreach ($b in $script:RecordDurationButtons) {
+                try { $b.IsEnabled = $false } catch { }
+            }
+
             Start-VideoRecording -DurationSeconds $secLocal
+
+            # Разблокировка произойдёт в finishTimer после завершения
         }.GetNewClosure())
         $durationPanel.Children.Add($btn) | Out-Null
+        $script:RecordDurationButtons += $btn
     }
 
     $mainStack.Children.Add($durationPanel) | Out-Null
@@ -314,13 +335,60 @@ function Show-ScreenshotView {
 function Start-VideoRecording {
     param([int]$DurationSeconds = 30)
 
+    # ========================================================================
+    #  ЗАЩИТА ОТ ПРЕВЫШЕНИЯ ЛИМИТА ANDROID (3 минуты = 180 сек)
+    # ========================================================================
+    if ($DurationSeconds -gt 180) {
+        Write-Log -Message "Запрошено $DurationSeconds сек — Android ограничен 180 сек. Ставлю 180." -Level "Warning"
+        $DurationSeconds = 180
+    }
+    if ($DurationSeconds -lt 5) {
+        $DurationSeconds = 5
+    }
+
+    # ========================================================================
+    #  ЗАЩИТА ОТ ДВОЙНОГО ЗАПУСКА
+    # ========================================================================
+    if ($script:RecordRunspace -or $script:RecordHandle) {
+        Write-Log -Message "Запись уже идёт — останавливаю предыдущую" -Level "Warning"
+
+        # Останавливаем старый Runspace
+        try {
+            if ($script:RecordPS) {
+                try { $script:RecordPS.Stop() } catch { }
+                Start-Sleep -Milliseconds 200
+                try { $script:RecordPS.Dispose() } catch { }
+            }
+        } catch { }
+        try {
+            if ($script:RecordRunspace) {
+                try { $script:RecordRunspace.Close() } catch { }
+                try { $script:RecordRunspace.Dispose() } catch { }
+            }
+        } catch { }
+
+        # Отправляем SIGINT screenrecord, чтобы старое видео сохранилось
+        try {
+            & $script:adbPath shell pkill -l SIGINT screenrecord 2>&1 | Out-Null
+        } catch { }
+
+        # Снимаем с регистрации
+        try { Unregister-ScreenRunspace -Name "video_record" } catch { }
+
+        $script:RecordPS       = $null
+        $script:RecordRunspace = $null
+        $script:RecordHandle   = $null
+
+        Start-Sleep -Milliseconds 300
+    }
+
     Write-Log -Message "=== Запись видео ($DurationSeconds сек) ===" -Level "Info"
 
     $folder = Get-ScreenshotFolder
     $logBoxRef = $script:LogBox
     $adbPathRef = $script:adbPath
 
-    # ---- Показываем статус-карточку и прогрессбар ----
+    # ---- Показываем статус-карточку ----
     if ($script:RecordStatusCard) {
         $script:RecordStatusCard.Visibility = "Visible"
         $script:RecordStatusText.Text = "Запись идёт... 0 / $DurationSeconds сек"
@@ -328,7 +396,7 @@ function Start-VideoRecording {
         $script:RecordProgressBar.Maximum = $DurationSeconds
     }
 
-    # ---- Таймер для обновления прогресса ----
+    # ---- Таймер прогресса ----
     $progressTimer = New-Object System.Windows.Threading.DispatcherTimer
     $progressTimer.Interval = [TimeSpan]::FromSeconds(1)
     $progressTimer.Add_Tick({
@@ -343,8 +411,9 @@ function Start-VideoRecording {
         } catch { }
     })
     $progressTimer.Start()
+    $script:RecordProgressTimer = $progressTimer
 
-    # ---- Фоновый Runspace ----
+    # ---- Создаём Runspace ----
     $script:RecordRunspace = [runspacefactory]::CreateRunspace()
     $script:RecordRunspace.ApartmentState = "STA"
     $script:RecordRunspace.ThreadOptions = "ReuseThread"
@@ -352,6 +421,7 @@ function Start-VideoRecording {
 
     $ps = [powershell]::Create()
     $ps.Runspace = $script:RecordRunspace
+    $script:RecordPS = $ps
 
     $ps.AddScript({
         param($dispatcher, $logBox, $adbPath, $folder, $duration)
@@ -391,14 +461,12 @@ function Start-VideoRecording {
 
         $remotePath = "/sdcard/tvmanager_record.mp4"
         Write-BgLog "Временный файл на ТВ: $remotePath" "Info"
-
         Write-BgLog "Запись идёт на телевизоре. Не отключайте ТВ." "Warning"
 
         $out = & $adbPath shell screenrecord --time-limit $duration $remotePath 2>&1
 
         Write-BgLog "Запись завершена" "Success"
 
-        # Проверяем, создан ли файл на ТВ
         $checkOut = & $adbPath shell ls -la $remotePath 2>&1
         Write-BgLog "Файл на ТВ: $checkOut" "Info"
 
@@ -438,12 +506,43 @@ function Start-VideoRecording {
     $ps.AddArgument($folder)
     $ps.AddArgument($DurationSeconds)
 
-    $handle = $ps.BeginInvoke()
+    # ========================================================================
+    #  ЗАЩИТА: если BeginInvoke падает — не роняем UI
+    # ========================================================================
+    try {
+        $handle = $ps.BeginInvoke()
+        $script:RecordHandle = $handle
+    } catch {
+        Write-Log -Message "Ошибка запуска записи: $_" -Level "Error"
 
-    # ---- Таймер завершения ----
-    #  ВАЖНО: используем $script: для progressTimer, чтобы он был виден
-    #  внутри обработчика DispatcherTimer (иначе локальная переменная не доступна).
-    $script:RecordProgressTimer = $progressTimer
+        # Чистим
+        try { $ps.Dispose() } catch { }
+        try { $script:RecordRunspace.Close() } catch { }
+        try { $progressTimer.Stop() } catch { }
+        if ($script:RecordStatusCard) {
+            $script:RecordStatusCard.Visibility = "Collapsed"
+        }
+
+        $script:RecordPS       = $null
+        $script:RecordRunspace = $null
+        $script:RecordHandle   = $null
+        return
+    }
+
+    # ========================================================================
+    #  РЕГИСТРАЦИЯ В RUNSPACE MANAGER
+    # ========================================================================
+    Register-ScreenRunspace -Name "video_record" `
+        -PS $ps `
+        -RS $script:RecordRunspace `
+        -Handle $handle `
+        -Timer $progressTimer `
+        -OnCleanup {
+            # При отмене записи (уход с экрана) — отправляем SIGINT screenrecord
+            try {
+                & $script:adbPath shell pkill -l SIGINT screenrecord 2>&1 | Out-Null
+            } catch { }
+        }
 
     $finishTimer = New-Object System.Windows.Threading.DispatcherTimer
     $finishTimer.Interval = [TimeSpan]::FromMilliseconds(500)
@@ -451,7 +550,6 @@ function Start-VideoRecording {
         if ($handle.IsCompleted) {
             $finishTimer.Stop()
 
-            # Останавливаем таймер прогресса через $script:
             try {
                 if ($script:RecordProgressTimer) {
                     $script:RecordProgressTimer.Stop()
@@ -470,9 +568,22 @@ function Start-VideoRecording {
             } catch {
                 Write-Log -Message "Ошибка записи: $_" -Level "Error"
             }
-            $ps.Dispose()
 
-            # ---- Скрываем жёлтую карточку и прогрессбар ----
+            try { $ps.Dispose() } catch { }
+            $script:RecordPS       = $null
+            $script:RecordRunspace = $null
+            $script:RecordHandle   = $null
+
+            # Снимаем с регистрации
+            try { Unregister-ScreenRunspace -Name "video_record" } catch { }
+
+            # ===== РАЗБЛОКИРОВКА КНОПОК ДЛИТЕЛЬНОСТИ =====
+            if ($script:RecordDurationButtons) {
+                foreach ($b in $script:RecordDurationButtons) {
+                    try { $b.IsEnabled = $true } catch { }
+                }
+            }
+
             try {
                 if ($script:RecordStatusCard) {
                     $script:RecordStatusCard.Visibility = "Collapsed"
@@ -487,4 +598,6 @@ function Start-VideoRecording {
         }
     })
     $finishTimer.Start()
+
+    Write-Log -Message "Запись запущена (регистрация 'video_record')" -Level "Info"
 }

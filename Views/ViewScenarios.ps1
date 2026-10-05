@@ -260,9 +260,6 @@ function Show-ScenariosView {
 # ============================================================================
 #  ЗАПУСК СЦЕНАРИЯ (асинхронно, UI не блокируется)
 # ============================================================================
-# ============================================================================
-#  ЗАПУСК СЦЕНАРИЯ (асинхронно, UI не блокируется)
-# ============================================================================
 function Invoke-Scenario {
     param([PSCustomObject]$Scenario)
 
@@ -282,7 +279,6 @@ function Invoke-Scenario {
     Write-Log -Message "=== Сценарий: $($Scenario.Name) ===" -Level "Info"
     Write-Log -Message "Шагов: $total" -Level "Info"
 
-    # ===== СОСТОЯНИЕ ВЫПОЛНЕНИЯ =====
     $script:ScenarioRun = @{
         Steps     = $steps
         Total     = $total
@@ -291,8 +287,7 @@ function Invoke-Scenario {
         Fail      = 0
         Scenario  = $Scenario
         Timer     = $null
-        WaitUntil = $null   # для шага wait — момент, когда продолжить
-        PendingWaitDone = $false   # флаг: wait завершён, нужно засчитать Ok
+        WaitUntil = $null
     }
 
     $timer = New-Object System.Windows.Threading.DispatcherTimer
@@ -302,23 +297,23 @@ function Invoke-Scenario {
         $r = $script:ScenarioRun
         if (-not $r) { return }
 
-        # ===== ЕСЛИ ЖДЁМ — проверяем время =====
+        # ===== ЖДЁМ =====
         if ($r.WaitUntil) {
             if ((Get-Date) -lt $r.WaitUntil) {
-                return   # ещё не время
+                return
             }
-
-            # Время вышло — засчитываем wait как успешный шаг
             $r.WaitUntil = $null
             $r.Ok++
             $r.Index++
         }
 
-        # ===== ВСЕ ШАГИ ВЫПОЛНЕНЫ? =====
+        # ===== ВСЁ ВЫПОЛНЕНО =====
         if ($r.Index -ge $r.Total) {
             $r.Timer.Stop()
             $r.Timer = $null
             $script:ScenarioRun = $null
+
+            Unregister-ScreenRunspace -Name "scenario"
 
             if ($r.Fail -eq 0) {
                 Write-Log -Message "=== Готово: успешно $($r.Ok) из $($r.Total) ===" -Level "Success"
@@ -328,12 +323,11 @@ function Invoke-Scenario {
             return
         }
 
-        # ===== БЕРЁМ СЛЕДУЮЩИЙ ШАГ =====
         $step = $r.Steps[$r.Index]
-        $num  = $r.Index + 1
+        $num = $r.Index + 1
         Write-Log -Message "[$num/$($r.Total)] $(Get-StepDisplayText -Step $step)" -Level "Info"
 
-        # ===== ШАГ WAIT — запускаем ожидание, НЕ блокируем UI =====
+        # ===== ШАГ WAIT =====
         if ($step.Type -eq "wait") {
             $secs = [int]$step.Seconds
             if ($secs -lt 1)   { $secs = 1 }
@@ -341,6 +335,20 @@ function Invoke-Scenario {
 
             Write-Log -Message "  Жду $secs сек..." -Level "Info"
             $r.WaitUntil = (Get-Date).AddSeconds($secs)
+            return
+        }
+
+        # ===== ПРОВЕРКА СВЯЗИ ПЕРЕД ШАГОМ =====
+        #  Пропускаем для reboot — он сам рвёт связь
+        if ($step.Type -ne "reboot" -and -not (Test-ConnectionQuick)) {
+            Write-Log -Message "СВЯЗЬ С ТВ ПОТЕРЯНА на шаге $num из $($r.Total)" -Level "Error"
+            Write-Log -Message "  Выполнено: $($r.Ok), ошибок: $($r.Fail)" -Level "Info"
+            Write-Log -Message "=== Сценарий прерван ===" -Level "Warning"
+
+            $r.Timer.Stop()
+            $r.Timer = $null
+            $script:ScenarioRun = $null
+            Unregister-ScreenRunspace -Name "scenario"
             return
         }
 
@@ -356,6 +364,15 @@ function Invoke-Scenario {
 
     $script:ScenarioRun.Timer = $timer
     $timer.Start()
+
+    # ===== РЕГИСТРАЦИЯ RUNSPACE =====
+    Register-ScreenRunspace -Name "scenario" -Timer $timer `
+        -OnCleanup {
+            if ($script:ScenarioRun) {
+                Write-Log -Message "Сценарий прерван" -Level "Warning"
+                $script:ScenarioRun = $null
+            }
+        }
 }
 
 # ===== ОБНОВИТЬ СПИСОК ШАГОВ =====

@@ -539,6 +539,22 @@ function Show-MonitoringView {
     })
     $script:MonitoringRefreshTimer.Start()
 
+    $script:MonitoringRefreshTimer.Start()
+
+    # ===== РЕГИСТРАЦИЯ RUNSPACE =====
+    #  Monitoring не останавливается при переключении экранов —
+    #  пользователь останавливает вручную через кнопку "Пауза".
+    Register-ScreenRunspace -Name "monitoring" `
+        -Timer $script:MonitoringTrafficTimer `
+        -OnCleanup {
+            try { if ($script:MonitoringRefreshTimer) { $script:MonitoringRefreshTimer.Stop() } } catch { }
+            try { if ($script:MonitoringTrafficTimer) { $script:MonitoringTrafficTimer.Stop() } } catch { }
+            try { if ($script:MonTrafTimer) { $script:MonTrafTimer.Stop() } } catch { }
+            try { if ($script:MonSlowTimer) { $script:MonSlowTimer.Stop() } } catch { }
+        }
+
+    # ===== КНОПКИ BOTTOM BAR =====
+
     # ===== КНОПКИ BOTTOM BAR =====
     $buttons = @()
 

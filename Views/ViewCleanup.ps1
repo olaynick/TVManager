@@ -349,7 +349,6 @@ function Show-CleanupView {
                 default  { "#FFFFFF" }
             }
 
-            # ===== Проверка на критичность =====
             $isCritical = $false
             $critReason = ""
             $critRisk = ""
@@ -358,16 +357,16 @@ function Show-CleanupView {
                 if ($critCheck.IsCritical) {
                     $isCritical = $true
                     $critReason = $critCheck.Reason
-                    $critRisk = $critCheck.Risk     # "block" или "warn"
+                    $critRisk = $critCheck.Risk
                 }
             }
 
             $baseText = "$riskIcon $($pkg.Desc)  ($($pkg.Package))"
             if ($isCritical) {
                 if ($critRisk -eq "block") {
-                    $baseText = "🛡 $baseText"     # полный запрет
+                    $baseText = "🛡 $baseText"
                 } else {
-                    $baseText = "⚠️ $baseText"     # warn — можно с подтверждением
+                    $baseText = "⚠️ $baseText"
                 }
             }
             $searchData = "$($pkg.Package) $($pkg.Desc)".ToLower()
@@ -388,12 +387,10 @@ function Show-CleanupView {
                 $chk.Content = $baseText
                 $chk.Tag = $pkg
                 if ($isCritical -and $critRisk -eq "block") {
-                    # Фиолетовый — полный запрет
                     $chk.Foreground = [System.Windows.Media.SolidColorBrush](
                         [System.Windows.Media.ColorConverter]::ConvertFromString("#9C27B0")
                     )
                 } elseif ($isCritical -and $critRisk -eq "warn") {
-                    # Оранжевый — предупреждение, но можно
                     $chk.Foreground = [System.Windows.Media.SolidColorBrush](
                         [System.Windows.Media.ColorConverter]::ConvertFromString("#F57C00")
                     )
@@ -426,7 +423,6 @@ function Show-CleanupView {
             $tabCheckboxes += $chk
         }
 
-        # Создаём виртуализированный список
         if ($tabCheckboxes.Count -gt 0) {
             $itemsList = New-VirtualizedCheckboxList -Checkboxes $tabCheckboxes -MaxHeight 500
             $tabPanel.Children.Add($itemsList) | Out-Null
@@ -544,7 +540,6 @@ function Show-CleanupView {
         $isRemoved = $script:RemovedPackages -contains $pkgName
         $isDisabled = $script:DisabledPackagesSet.ContainsKey($pkgName)
 
-        # Проверка на критичность
         $isCritical = $false
         $critReason = ""
         $critRisk = ""
@@ -635,14 +630,18 @@ function Show-CleanupView {
         Update-CleanupFilter
     })
 
-    # ===== КНОПКИ BOTTOM BAR =====
+    # ========================================================================
+    #  КНОПКИ BOTTOM BAR
+    # ========================================================================
     $buttons = @()
     $script:CleanupAllCheckboxes = @()
     foreach ($key in $script:CleanupTabCheckboxes.Keys) {
         $script:CleanupAllCheckboxes += $script:CleanupTabCheckboxes[$key]
     }
 
-    # "Выбрать всё"
+    # ========================================================================
+    #  "ВЫБРАТЬ ВСЁ"
+    # ========================================================================
     $btnSelectAll = New-Object System.Windows.Controls.Button
     $btnSelectAll.Content = "Выбрать всё"
     $btnSelectAll.Style = $window.Resources["RoundedButton"]
@@ -660,7 +659,9 @@ function Show-CleanupView {
     })
     $buttons += $btnSelectAll
 
-    # "Снять всё"
+    # ========================================================================
+    #  "СНЯТЬ ВСЁ"
+    # ========================================================================
     $btnDeselect = New-Object System.Windows.Controls.Button
     $btnDeselect.Content = "Снять всё"
     $btnDeselect.Style = $window.Resources["RoundedButton"]
@@ -748,14 +749,40 @@ function Show-CleanupView {
 
         Write-Log -Message "Отключаю $($finalList.Count) пакетов..." -Level "Info"
         $success = 0
-        foreach ($pkg in $finalList) {
+        $connectionLost = $false
+        $processedCount = 0
+
+        for ($i = 0; $i -lt $finalList.Count; $i++) {
+            $pkg = $finalList[$i]
+
+            # ===== ПРОВЕРКА СВЯЗИ ПЕРЕД КАЖДОЙ ОПЕРАЦИЕЙ =====
+            if (-not (Test-ConnectionQuick)) {
+                Write-Log -Message "СВЯЗЬ С ТВ ПОТЕРЯНА на пакете $($i+1) из $($finalList.Count)" -Level "Error"
+                Write-Log -Message "  Обработано успешно: $success" -Level "Info"
+                Write-Log -Message "  Не обработано: $($finalList.Count - $processedCount)" -Level "Info"
+                $connectionLost = $true
+                break
+            }
+
             if (Disable-Package -Package $pkg.Package) {
                 $success++
                 Save-Change -Type "package_disabled" -Target $pkg.Package -RestoreCommand "adb shell pm enable $($pkg.Package)"
             }
+            $processedCount++
         }
+
         Save-AllChanges
-        Write-Log -Message "Отключено: $success из $($finalList.Count)" -Level "Success"
+
+        if ($connectionLost) {
+            Write-Log -Message "=== Операция прервана: успешно $success из $($finalList.Count) ===" -Level "Warning"
+            [System.Windows.MessageBox]::Show(
+                "Связь с телевизором потеряна.`n`nОбработано: $success из $($finalList.Count) пакетов.`nНе обработано: $($finalList.Count - $processedCount).`n`nПодключитесь к ТВ заново и повторите операцию для оставшихся пакетов.",
+                "Потеря связи",
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Warning) | Out-Null
+        } else {
+            Write-Log -Message "Отключено: $success из $($finalList.Count)" -Level "Success"
+        }
         Switch-View -ViewName "Cleanup"
     })
     $buttons += $btnDisable
@@ -836,6 +863,7 @@ function Show-CleanupView {
             if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) { return }
         }
 
+        # ===== Диалог выбора метода =====
         $choiceDialog = New-Object System.Windows.Window
         $choiceDialog.Title = "Как удалить?"
         $choiceDialog.Width = 520
@@ -919,7 +947,19 @@ function Show-CleanupView {
             Write-Log -Message "Обрабатываю $($list.Count) пакетов (режим: $mode)..." -Level "Info"
             $success = 0
             $failed = 0
-            foreach ($pkg in $list) {
+            $connectionLost = $false
+            $processedCount = 0
+
+            for ($i = 0; $i -lt $list.Count; $i++) {
+                $pkg = $list[$i]
+
+                # ===== ПРОВЕРКА СВЯЗИ =====
+                if (-not (Test-ConnectionQuick)) {
+                    Write-Log -Message "СВЯЗЬ С ТВ ПОТЕРЯНА на пакете $($i+1) из $($list.Count)" -Level "Error"
+                    $connectionLost = $true
+                    break
+                }
+
                 $result = Remove-Package -Package $pkg.Package -Mode $mode
                 if ($result.Success) {
                     $success++
@@ -937,9 +977,20 @@ function Show-CleanupView {
                 } else {
                     $failed++
                 }
+                $processedCount++
             }
             Save-AllChanges
-            Write-Log -Message "Готово: успешно $success, не удалось $failed из $($list.Count)" -Level "Success"
+
+            if ($connectionLost) {
+                Write-Log -Message "=== Операция прервана: успешно $success, ошибок $failed из $($list.Count) ===" -Level "Warning"
+                [System.Windows.MessageBox]::Show(
+                    "Связь с телевизором потеряна.`n`nОбработано: $($success + $failed) из $($list.Count) пакетов.`nУспешно: $success, ошибок: $failed.`n`nПодключитесь к ТВ заново и повторите для оставшихся.",
+                    "Потеря связи",
+                    [System.Windows.MessageBoxButton]::OK,
+                    [System.Windows.MessageBoxImage]::Warning) | Out-Null
+            } else {
+                Write-Log -Message "Готово: успешно $success, не удалось $failed из $($list.Count)" -Level "Success"
+            }
             Switch-View -ViewName "Cleanup"
         })
         $cBtnPanel.Children.Add($btnOk) | Out-Null
@@ -1182,6 +1233,9 @@ function Show-CleanupView {
 
         $handle = $ps.BeginInvoke()
 
+        # ===== РЕГИСТРАЦИЯ RUNSPACE =====
+        Register-ScreenRunspace -Name "cleanup_download_apk" -PS $ps -RS $runspace -Handle $handle
+
         $timer = New-Object System.Windows.Threading.DispatcherTimer
         $timer.Interval = [TimeSpan]::FromMilliseconds(500)
         $timer.Add_Tick({
@@ -1203,6 +1257,10 @@ function Show-CleanupView {
                 }
 
                 $ps.Dispose()
+
+                # ===== СНЯТИЕ С РЕГИСТРАЦИИ =====
+                Unregister-ScreenRunspace -Name "cleanup_download_apk"
+
                 $btnRef.IsEnabled = $true
                 $btnRef.Content = "Скачать APK"
             }

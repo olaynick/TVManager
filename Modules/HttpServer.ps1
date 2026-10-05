@@ -487,6 +487,9 @@ function Start-HttpServer {
         $script:HttpPS     = $ps
         $script:HttpHandle = $ps.BeginInvoke()
 
+        # ===== РЕГИСТРАЦИЯ RUNSPACE =====
+        Register-ScreenRunspace -Name "http" -PS $ps -RS $script:HttpRunspace -Handle $script:HttpHandle
+
         $localIp = Get-LocalIpAddress
         Write-Log -Message "=== HTTP-сервер запущен ===" -Level "Success"
         Write-Log -Message "  Локальный URL: http://localhost:$Port/?token=$Token" -Level "Info"
@@ -518,6 +521,9 @@ function Stop-HttpServer {
     if (-not $script:HttpServerRunning) { return $false }
 
     Write-Log -Message "Останавливаю HTTP-сервер..." -Level "Info"
+
+    # ===== СНЯТИЕ С РЕГИСТРАЦИИ =====
+    try { Unregister-ScreenRunspace -Name "http" } catch { }
 
     try {
         if ($script:HttpListener) {

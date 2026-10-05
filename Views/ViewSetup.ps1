@@ -190,11 +190,6 @@
         @{ Text = "Разрешение и DPI"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Display" } }
         @{ Text = "Пресеты"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Presets" } }
         @{ Text = "Анимация"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Animation" } }
-    ))) | Out-Null
-
-    $systemPanel.Children.Add((New-ButtonRow -Buttons @(
-        @{ Text = "Wi-Fi"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Wifi" } }
-        @{ Text = "Bluetooth"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Bluetooth" } }
     ) -Margin "0,0,0,10")) | Out-Null
 
     # ---------- СЕРВИС ----------
