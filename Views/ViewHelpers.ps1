@@ -96,6 +96,9 @@ function New-ViewLabel {
 
 # ============================================================================
 #  КНОПКА
+#
+#  ВАЖНО: скриптблок $OnClick НИКОГДА не выполняется при создании кнопки.
+#  Он только передаётся в Add_Click и вызывается WPF при клике.
 # ============================================================================
 function New-ViewButton {
     param(
@@ -117,11 +120,9 @@ function New-ViewButton {
     if ($Compact) {
         $btn.Height = 30
         $btn.FontSize = 11
-        $pad = "8,0"
     } else {
         $btn.Height = 40
         $btn.FontSize = 13
-        $pad = "18,0"
     }
 
     $btn.Padding = New-Object System.Windows.Thickness(8, 0, 8, 0)
@@ -140,7 +141,7 @@ function New-ViewButton {
     } else {
         $btn.HorizontalAlignment = "Left"
     }
-    $btn.VerticalAlignment = "Top"   # ← ключевое: Top, а не Stretch/Center
+    $btn.VerticalAlignment = "Top"
     $btn.HorizontalContentAlignment = "Center"
     $btn.VerticalContentAlignment = "Center"
 
@@ -178,7 +179,16 @@ function New-ViewButton {
     # ВАЖНО: обнуляем Margin у кнопки — он передаётся через Padding
     $btn.Margin = New-Object System.Windows.Thickness(0)
 
-    if ($OnClick) { $btn.Add_Click($OnClick) }
+    # --- Обработчик клика ---
+    # ВАЖНО: $OnClick НЕ вызывается здесь. Только регистрируется через Add_Click.
+    # Вызов произойдёт при клике пользователя.
+    if ($OnClick) {
+        Write-Host "New-ViewButton: регистрирую click для '$Text' (тип: $($OnClick.GetType().Name))" -ForegroundColor Cyan
+        $btn.Add_Click($OnClick)
+    } else {
+        Write-Host "New-ViewButton: '$Text' — OnClick = null" -ForegroundColor Yellow
+    }
+
     return $btn
 }
 
@@ -195,7 +205,9 @@ function New-BackButton {
     $btn.VerticalAlignment = "Top"
     $btn.HorizontalAlignment = "Right"
     $btn.Margin = "0,30,40,0"
-    if ($OnClick) { $btn.Add_Click($OnClick) }
+    if ($OnClick) {
+        $btn.Add_Click($OnClick)
+    }
     return $btn
 }
 

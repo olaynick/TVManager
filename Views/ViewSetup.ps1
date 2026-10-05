@@ -150,28 +150,23 @@
         return $grid
     }
 
-    # ---------- ДИАГНОСТИКА ----------
+    # ---------- МОНИТОРИНГ ----------
     $diagHeader = New-Object System.Windows.Controls.TextBlock
-    $diagHeader.Text = "Диагностика"
+    $diagHeader.Text = "Мониторинг"
     $diagHeader.FontSize = 12
     $diagHeader.FontWeight = "Bold"
     $diagHeader.Foreground = "#C8C8C8"
     $diagHeader.Margin = "0,0,0,6"
     $systemPanel.Children.Add($diagHeader) | Out-Null
 
+    $btn = New-ViewButton -Text "Мониторинг ТВ" -ColorType "Primary" -Compact -Stretch -OnClick {
+        Switch-View -ViewName "Monitoring"
+    }
+    $btn.Margin = New-Object System.Windows.Thickness(0, 0, 0, 8)
+    $systemPanel.Children.Add($btn) | Out-Null
+
     $systemPanel.Children.Add((New-ButtonRow -Buttons @(
         @{ Text = "Сведения об устройстве"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Info" } }
-        @{ Text = "Процессы ТВ"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Processes" } }
-    ))) | Out-Null
-
-    $systemPanel.Children.Add((New-ButtonRow -Buttons @(
-        @{ Text = "Экспорт дампа"; ColorType = "Primary"; OnClick = { Show-ExportDeviceDumpDialog } }
-        @{ Text = "Проверка целостности"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Integrity" } }
-        @{ Text = "Температура"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Thermal" } }
-    ))) | Out-Null
-
-    $systemPanel.Children.Add((New-ButtonRow -Buttons @(
-        @{ Text = "Трафик"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Traffic" } }
     ) -Margin "0,0,0,10")) | Out-Null
 
     # ---------- НАСТРОЙКИ ----------
@@ -223,12 +218,13 @@
         @{ Text = "Автозапуск"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Autostart" } }
         @{ Text = "Разрешения"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Permissions" } }
     ))) | Out-Null
+
     $systemPanel.Children.Add((New-ButtonRow -Buttons @(
         @{ Text = "Приложения и лаунчеры"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Apps" } }
     ) -Margin "0,0,0,10")) | Out-Null
 
     $systemPanel.Children.Add((New-ButtonRow -Buttons @(
-        @{ Text = "Профили устройств"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Profiles" } }
+        @{ Text = "Резервные копии ТВ"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Snapshots" } }
         @{ Text = "Резервная копия APK"; ColorType = "Primary"; OnClick = {
             Add-Type -AssemblyName System.Windows.Forms
             $dlg = New-Object System.Windows.Forms.FolderBrowserDialog
@@ -342,7 +338,6 @@
     #  ВОССТАНОВЛЕНИЕ АКТИВНОЙ ВКЛАДКИ
     # =========================================================================
 
-    # 1. Читаем сохранённое значение
     $savedTab = $script:SetupLastTab
     Write-Log -Message "Setup: сохранённое = $savedTab" -Level "Info"
 
@@ -350,14 +345,11 @@
         $savedTab = 0
     }
 
-    # 2. Восстанавливаем ДО добавления в UI
     $tabControl.SelectedIndex = $savedTab
     $script:SetupLastTab = $savedTab
 
-    # 3. Добавляем в UI
     $mainStack.Children.Add($tabControl) | Out-Null
 
-    # 4. Подписка — через $sender, чтобы работало вне scope функции
     $tabControl.Add_SelectionChanged({
         param($sender, $e)
         $idx = $sender.SelectedIndex

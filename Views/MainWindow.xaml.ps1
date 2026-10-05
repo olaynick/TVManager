@@ -23,7 +23,7 @@ function Switch-View {
         "Power"        { Show-PowerView }
         "Rollback"     { Show-RollbackView }
         "DisabledApps" { Show-DisabledAppsView }
-        "Profiles"     { Show-ProfilesView }
+        "Snapshots"    { Show-SnapshotsView }
         "Logcat"       { Show-LogcatView }
         "Service"      { Show-ServiceView }
         "Wifi"         { Show-WifiView }
@@ -39,6 +39,7 @@ function Switch-View {
         "Bluetooth"    { Show-BluetoothView }
         "Traffic"      { Show-TrafficView }
         "HttpServer"   { Show-HttpServerView }
+        "Monitoring"   { Show-MonitoringView }
         default        { Write-Log -Message "Неизвестный экран: $ViewName" -Level "Warning" }
     }
     Update-StatusBar

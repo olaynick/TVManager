@@ -129,3 +129,22 @@ $script:HttpToken         = ""
 $script:HttpPort          = 8080
 $script:HttpServerRunning = $false
 $script:HttpLocalOnly = $false
+
+# ===== SNAPSHOTS =====
+$script:SnapshotsListBox   = $null
+
+# ===== MONITORING =====
+$script:MonitoringRefreshTimer     = $null
+$script:MonitoringRunning          = $false
+$script:MonitoringHistoryTemp      = @()
+$script:MonitoringHistoryTrafficRx = @()
+$script:MonitoringHistoryTrafficTx = @()
+$script:MonitoringMaxHistoryPoints = 60
+$script:MonitoringPrevCounters     = $null
+$script:MonitoringLastSampleTime   = $null
+$script:MonitoringActiveIface      = ""
+$script:MonitoringTabControl       = $null
+$script:MonitoringBusy = $false
+$script:MonitoringTrafficTimer     = $null
+$script:MonitoringTrafficBusy      = $false
+$script:MonitoringSlowBusy         = $false

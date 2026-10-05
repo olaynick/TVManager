@@ -36,6 +36,7 @@ if ($MyInvocation.MyCommand.Path -and (Test-Path $MyInvocation.MyCommand.Path)) 
 . "$script:AppRoot\Modules\ChangeLogger.ps1"     # откат изменений
 . "$script:AppRoot\Modules\GuiHelper.ps1"        # логгер + тема
 . "$script:AppRoot\Modules\AppConfig.ps1"        # config.json + профили
+. "$script:AppRoot\Modules\SnapshotHelper.ps1"
 . "$script:AppRoot\Modules\DeviceDump.ps1"       # экспорт дампа
 . "$script:AppRoot\Modules\ScenarioEngine.ps1"   # пакетный режим (сценарии)
 . "$script:AppRoot\Modules\AppOpsHelper.ps1"
@@ -45,6 +46,7 @@ if ($MyInvocation.MyCommand.Path -and (Test-Path $MyInvocation.MyCommand.Path)) 
 . "$script:AppRoot\Modules\HttpServer.ps1"
 . "$script:AppRoot\Modules\PermissionsHelper.ps1"
 . "$script:AppRoot\Modules\AppsHelper.ps1"
+. "$script:AppRoot\Modules\MonitoringHelper.ps1"
 
 # ---------------------------------------------------------------------------
 #  4. Состояние
@@ -100,6 +102,16 @@ Set-LogBox -Box $logBox
 Load-AppConfig
 Load-Scenarios
 
+# Однократная миграция старых профилей в снимки
+try {
+    $migrated = Migrate-LegacyProfiles
+    if ($migrated -gt 0) {
+        Write-Log -Message "Мигрировано старых профилей: $migrated" -Level "Success"
+    }
+} catch {
+    Write-Log -Message "Ошибка миграции профилей: $_" -Level "Warning"
+}
+
 # ---------------------------------------------------------------------------
 #  8. UI-хелперы (после Load-AppConfig, т.к. некоторые хелперы читают конфиг)
 # ---------------------------------------------------------------------------
@@ -128,7 +140,6 @@ Load-Scenarios
 . "$script:AppRoot\Views\ViewScreenshot.ps1"
 . "$script:AppRoot\Views\ViewInfo.ps1"
 . "$script:AppRoot\Views\ViewPower.ps1"
-. "$script:AppRoot\Views\ViewProfiles.ps1"
 . "$script:AppRoot\Views\ViewLogcat.ps1"
 . "$script:AppRoot\Views\ViewService.ps1"
 . "$script:AppRoot\Views\ViewWifi.ps1"
@@ -144,7 +155,8 @@ Load-Scenarios
 . "$script:AppRoot\Views\ViewPermissions.ps1"
 . "$script:AppRoot\Views\ViewApps.ps1"
 . "$script:AppRoot\Views\ViewHttpServer.ps1"
-
+. "$script:AppRoot\Views\ViewSnapshots.ps1"
+. "$script:AppRoot\Views\ViewMonitoring.ps1"
 # ---------------------------------------------------------------------------
 #  10. Проверка ADB в PATH
 # ---------------------------------------------------------------------------
@@ -220,6 +232,9 @@ $global:UpdateHttpStatusBar = ${function:Update-HttpStatusBar}
 # ---------------------------------------------------------------------------
 . "$script:AppRoot\Views\MainWindow.xaml.ps1"
 
+Write-Host "DIAG-2: до ShowDialog. window = $window" -ForegroundColor Cyan
+Write-Host "DIAG-2: window null? = $($null -eq $window)" -ForegroundColor Cyan
+
 # ---------------------------------------------------------------------------
 #  14. Запуск окна
 # ---------------------------------------------------------------------------
@@ -250,6 +265,8 @@ try {
     try { if ($script:ThermalRefreshTimer) { $script:ThermalRefreshTimer.Stop() } } catch { }
     try { if ($script:TrafficRefreshTimer) { $script:TrafficRefreshTimer.Stop() } } catch { }
     try { if ($script:RecordProgressTimer) { $script:RecordProgressTimer.Stop() } } catch { }
+    try { if ($script:MonitoringRefreshTimer) { $script:MonitoringRefreshTimer.Stop() } } catch { }
+    try { if ($script:MonitoringTrafficTimer) { $script:MonitoringTrafficTimer.Stop() } } catch { }
 
     Write-Host "Приложение закрыто." -ForegroundColor Cyan
 }

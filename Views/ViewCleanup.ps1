@@ -21,7 +21,6 @@ function Update-CleanupFilter {
 
     if (-not $script:CleanupTabCheckboxes) { return }
 
-    # ===== АКТИВНЫЙ ПОИСК: скрываем вкладки, показываем панель результатов =====
     if ($query) {
         $script:CleanupTabControl.Visibility = "Collapsed"
         $script:CleanupResultsPanel.Visibility = "Visible"
@@ -33,7 +32,6 @@ function Update-CleanupFilter {
             $checkboxes = $script:CleanupTabCheckboxes[$catName]
             $catHasResults = $false
 
-            # Заголовок категории (если есть совпадения)
             $catHeader = New-Object System.Windows.Controls.TextBlock
             $catHeader.Text = "📁 $catName"
             $catHeader.FontSize = 12
@@ -50,7 +48,6 @@ function Update-CleanupFilter {
                 }
 
                 if ($searchText -like "*$query*") {
-                    # Создаём КОПИЮ чекбокса, привязанную к оригиналу
                     $copy = New-Object System.Windows.Controls.CheckBox
                     $copy.Style = $window.Resources["MiuiCheckBox"]
                     $copy.Content = $chk.Content
@@ -61,7 +58,6 @@ function Update-CleanupFilter {
                     $copy.ToolTip = $chk.ToolTip
                     $copy | Add-Member -MemberType NoteProperty -Name "SearchText" -Value $searchText -Force
 
-                    # Синхронизация: при клике по копии — меняется оригинал
                     $original = $chk
                     $copy.Add_Click({
                         $original.IsChecked = $this.IsChecked
@@ -90,7 +86,6 @@ function Update-CleanupFilter {
 
         $script:CleanupSearchInfo.Text = "Найдено: $totalVisible"
     }
-    # ===== ПУСТОЙ ПОИСК: возвращаем вкладки, скрываем результаты =====
     else {
         $script:CleanupTabControl.Visibility = "Visible"
         $script:CleanupResultsPanel.Visibility = "Collapsed"
@@ -218,7 +213,6 @@ function Show-CleanupView {
         $tabPanel = New-Object System.Windows.Controls.StackPanel
         $tabPanel.Margin = "15"
 
-        # ===== ПРЕДУПРЕЖДЕНИЕ ДЛЯ ВКЛАДКИ "ЛАУНЧЕРЫ" =====
         if ($cat.Name -eq "Лаунчеры") {
             $warnCard = New-Object System.Windows.Controls.Border
             $warnCard.Background = "#3D3520"
@@ -245,7 +239,6 @@ function Show-CleanupView {
             $warnText.Text = "Отключайте стандартный лаунчер ТОЛЬКО если:`n`n  1. Вы уже установили сторонний лаунчер (Projectivy, FLauncher, ATV Launcher и т.п.)`n  2. Сторонний лаунчер работает и открывается`n  3. Кнопка «Домой» на пульте ТВ открывает именно его`n  4. Вы проверили, что после нажатия Home возврат на главный экран работает`n`n❌ Если сторонний лаунчер не работает — отключение стандартного оставит вас БЕЗ ГЛАВНОГО ЭКРАНА."
             $warnStack.Children.Add($warnText) | Out-Null
 
-            # ===== КНОПКА ВОССТАНОВЛЕНИЯ =====
             $restorePanel = New-Object System.Windows.Controls.StackPanel
             $restorePanel.Orientation = "Horizontal"
             $restorePanel.Margin = "0,12,0,0"
@@ -317,7 +310,6 @@ function Show-CleanupView {
 
             $warnStack.Children.Add($restorePanel) | Out-Null
 
-            # ===== ПОДСКАЗКА ПРО ADB =====
             $adbHint = New-Object System.Windows.Controls.TextBlock
             $adbHint.FontSize = 11
             $adbHint.Foreground = "#856404"
@@ -533,8 +525,6 @@ function Show-CleanupView {
     $script:CleanupResultsPanel.Margin = "0,10,0,0"
     $script:CleanupResultsPanel.Visibility = "Collapsed"
 
-    $tabControl = $tabControl
-
     $mainStack.Children.Add($tabControl) | Out-Null
     $mainStack.Children.Add($script:CleanupResultsPanel) | Out-Null
 
@@ -678,7 +668,6 @@ function Show-CleanupView {
             if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) { return }
         }
 
-        # --- ДИАЛОГ ВЫБОРА МЕТОДА УДАЛЕНИЯ ---
         $choiceDialog = New-Object System.Windows.Window
         $choiceDialog.Title = "Как удалить?"
         $choiceDialog.Width = 520
@@ -871,11 +860,9 @@ function Show-CleanupView {
 
         $folder = $dlg.SelectedPath
 
-        # Блокируем кнопку
         $sender.IsEnabled = $false
         $sender.Content = "Скачиваю..."
 
-        # Собираем список пакетов (только установленные)
         $pkgs = @()
         foreach ($pkg in $selected) {
             $name = $pkg.Package
@@ -895,10 +882,8 @@ function Show-CleanupView {
 
         Write-Log -Message "=== Скачивание $($pkgs.Count) APK в $folder ===" -Level "Info"
 
-        # === Отдельный Runspace ===
         $logBoxRef  = $script:LogBox
         $adbPathRef = $script:adbPath
-        $dispatcherRef = $window.Dispatcher
         $btnRef = $sender
 
         $runspace = [runspacefactory]::CreateRunspace()
@@ -910,7 +895,7 @@ function Show-CleanupView {
         $ps.Runspace = $runspace
 
         $ps.AddScript({
-            param($dispatcher, $logBox, $adbPath, $pkgs, $folder)
+            param($logBox, $adbPath, $pkgs, $folder)
 
             function Write-BgLog {
                 param($msg, $lvl = "Info")
@@ -954,7 +939,6 @@ function Show-CleanupView {
                 Write-BgLog "[$num/$($pkgs.Count)] Скачиваю: $pkg" "Info"
 
                 try {
-                    # Ищем путь к APK на ТВ
                     $out = & $adbPath shell pm path $pkg 2>&1
                     $apkPath = ""
                     foreach ($line in $out) {
@@ -993,7 +977,6 @@ function Show-CleanupView {
             return @{ Ok = $ok; Fail = $fail; Total = $pkgs.Count; Folder = $folder }
         }) | Out-Null
 
-        $ps.AddArgument($dispatcherRef)
         $ps.AddArgument($logBoxRef)
         $ps.AddArgument($adbPathRef)
         $ps.AddArgument($pkgs)
@@ -1001,7 +984,6 @@ function Show-CleanupView {
 
         $handle = $ps.BeginInvoke()
 
-        # === Таймер для отслеживания завершения ===
         $timer = New-Object System.Windows.Threading.DispatcherTimer
         $timer.Interval = [TimeSpan]::FromMilliseconds(500)
         $timer.Add_Tick({
@@ -1030,6 +1012,11 @@ function Show-CleanupView {
         $timer.Start()
     })
     $buttons += $btnDownloadApk
+
+    Set-BottomButtons -Buttons $buttons
+
+    Write-Log -Message "Экран управления пакетами (5 вкладок, сквозной поиск)" -Level "Info"
+}
 
 # ============================================================================
 #  ЭКРАН "ОТКЛЮЧЁННЫЕ ПРИЛОЖЕНИЯ"
@@ -1082,7 +1069,6 @@ function Show-DisabledAppsView {
     $rootGrid = New-ViewRoot -Stack $mainStack -OnBack { Switch-View -ViewName "Setup" }
     $contentGrid.Children.Add($rootGrid) | Out-Null
 
-    # ===== КНОПКИ =====
     $buttons = @()
 
     $btnSelectAll = New-Object System.Windows.Controls.Button
