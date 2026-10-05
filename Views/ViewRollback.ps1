@@ -215,55 +215,63 @@
 
         Write-Log -Message "=== Откат $($selected.Count) изменений ===" -Level "Info"
         $success = 0
+        $skipped = 0
         foreach ($change in $selected) {
             Write-Log -Message "Откат: $($change.Type) — $($change.Target)" -Level "Info"
+
+            # ===== ВАЛИДАЦИЯ КОМАНДЫ =====
+            $check = Test-RestoreCommand -Command $change.RestoreCommand
+            if (-not $check.Safe) {
+                Write-Log -Message "  ПРОПУЩЕНО (небезопасная команда): $($check.Reason)" -Level "Error"
+                Write-Log -Message "  Команда: $($change.RestoreCommand)" -Level "Warning"
+                $skipped++
+                continue
+            }
 
             # Убираем "adb " в начале
             $cmd = $change.RestoreCommand -replace '^adb\s+', ''
 
-            # Собираем полную команду и выполняем через cmd /c
-            $fullCmd = '"' + $script:adbPath + '" ' + $cmd
-            Write-Log -Message "  Выполняю: $fullCmd" -Level "Info"
-
-            $out = cmd /c $fullCmd 2>&1
-            $outText = ($out | Out-String).Trim()
-            $exitCode = $LASTEXITCODE
-
-            # Проверяем результат — по коду возврата + по выводу
-            $isOk = $false
-
-            # 1. Код возврата 0 — команда выполнена
-            if ($exitCode -eq 0) {
-                $isOk = $true
+            # Выполняем через Start-Process с массивом аргументов (безопаснее cmd /c)
+            $parts = Split-CommandLine -CommandLine $cmd
+            if ($parts.Count -eq 0) {
+                Write-Log -Message "  ПРОПУЩЕНО (пустая команда)" -Level "Warning"
+                $skipped++
+                continue
             }
 
-            # 2. Явные признаки успеха в выводе
-            if ($outText -match "Success|new state|installed|enabled") {
-                $isOk = $true
-            }
+            try {
+                $psi = New-Object System.Diagnostics.ProcessStartInfo
+                $psi.FileName               = $script:adbPath
+                $psi.Arguments              = ($parts | ForEach-Object { '"' + ($_ -replace '"','\"') + '"' }) -join ' '
+                $psi.UseShellExecute        = $false
+                $psi.RedirectStandardOutput = $true
+                $psi.RedirectStandardError  = $true
+                $psi.CreateNoWindow         = $true
 
-            # 3. Явные признаки ошибки в выводе
-            if ($outText -match "Failure|Error|Exception|Unknown|not found") {
-                $isOk = $false
-            }
+                $proc = [System.Diagnostics.Process]::Start($psi)
+                $stdout = $proc.StandardOutput.ReadToEnd()
+                $stderr = $proc.StandardError.ReadToEnd()
+                $proc.WaitForExit()
+                $exitCode = $proc.ExitCode
+                $proc.Dispose()
 
-            # 4. Если вывод пустой И код НЕ 0 — вероятно, ТВ не отвечает
-            if (-not $outText -and $exitCode -ne 0) {
-                $isOk = $false
-                Write-Log -Message "  Пустой вывод и код $exitCode — вероятно, ТВ не отвечает" -Level "Warning"
-            }
+                $outText = (($stdout + "`n" + $stderr).Trim())
 
-            if ($isOk) {
-                Write-Log -Message "  OK" -Level "Success"
-                $success++
+                $isOk = ($exitCode -eq 0) -or ($outText -match "Success|new state|installed|enabled")
+                if ($outText -match "Failure|Error|Exception|Unknown|not found") { $isOk = $false }
 
-                # Удаляем это изменение из истории
-                Remove-Change -Type $change.Type -Target $change.Target -Timestamp $change.Timestamp
-            } else {
-                Write-Log -Message "  FAIL (код $exitCode): $outText" -Level "Error"
+                if ($isOk) {
+                    Write-Log -Message "  OK" -Level "Success"
+                    $success++
+                    Remove-Change -Type $change.Type -Target $change.Target -Timestamp $change.Timestamp
+                } else {
+                    Write-Log -Message "  FAIL (код $exitCode): $outText" -Level "Error"
+                }
+            } catch {
+                Write-Log -Message "  Ошибка запуска: $_" -Level "Error"
             }
         }
-        Write-Log -Message "=== Откат завершён: $success из $($selected.Count) ===" -Level "Success"
+        Write-Log -Message "=== Откат завершён: $success из $($selected.Count), пропущено: $skipped ===" -Level "Success"
         Switch-View -ViewName "Rollback"
     })
     $buttons += $btnRollback

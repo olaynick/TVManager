@@ -1,6 +1,7 @@
 ﻿# ============================================================================
 #  ОБЩЕЕ СОСТОЯНИЕ ПРИЛОЖЕНИЯ
 # ============================================================================
+$global:AppClosing = $false
 
 $script:connected     = $false
 $script:deviceIp      = ""
@@ -148,3 +149,8 @@ $script:MonitoringBusy = $false
 $script:MonitoringTrafficTimer     = $null
 $script:MonitoringTrafficBusy      = $false
 $script:MonitoringSlowBusy         = $false
+
+# ===== ИМЯ УСТРОЙСТВА (для статус-бара) =====
+$script:DeviceModelName   = ""
+$script:DeviceModelName   = ""
+$script:DeviceModelNameIp = ""

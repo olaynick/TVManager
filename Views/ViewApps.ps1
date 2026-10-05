@@ -257,6 +257,25 @@ function Show-AppsView {
 
     $script:AppsItems = @()
 
+    # ===== ОГРАНИЧЕНИЕ ДЛЯ ПРОИЗВОДИТЕЛЬНОСТИ =====
+    #  Не строим UI для всех 300+ приложений сразу — только первые 200.
+    #  Полный список всегда доступен через поиск или через «Управление пакетами».
+    $maxAppsShow = 200
+    $totalApps = $allApps.Count
+
+    if ($totalApps -gt $maxAppsShow) {
+        $limitLabel = New-Object System.Windows.Controls.TextBlock
+        $limitLabel.Text = "Показаны первые $maxAppsShow из $totalApps. Используйте поиск для остальных."
+        $limitLabel.FontSize = 11
+        $limitLabel.Foreground = [System.Windows.Media.SolidColorBrush](
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#FFC83D")
+        )
+        $limitLabel.Margin = "0,0,0,8"
+        $script:AppsListContainer.Children.Add($limitLabel) | Out-Null
+
+        $allApps = $allApps | Select-Object -First $maxAppsShow
+    }
+
     foreach ($a in $allApps) {
         $row = New-Object System.Windows.Controls.Border
         $row.Background = "#2B2B2B"
@@ -302,7 +321,6 @@ function Show-AppsView {
         $btnRun.FontSize = 11
         $btnRun.Padding = New-Object System.Windows.Thickness(8, 0, 8, 0)
 
-        # Tag — надёжная передача пакета
         $btnRun.Tag = $a.Package
         $btnRun.Add_Click({
             param($sender, $e)

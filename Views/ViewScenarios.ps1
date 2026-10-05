@@ -258,7 +258,10 @@ function Show-ScenariosView {
 }
 
 # ============================================================================
-#  ЗАПУСК СЦЕНАРИЯ (без отдельного окна)
+#  ЗАПУСК СЦЕНАРИЯ (асинхронно, UI не блокируется)
+# ============================================================================
+# ============================================================================
+#  ЗАПУСК СЦЕНАРИЯ (асинхронно, UI не блокируется)
 # ============================================================================
 function Invoke-Scenario {
     param([PSCustomObject]$Scenario)
@@ -279,26 +282,80 @@ function Invoke-Scenario {
     Write-Log -Message "=== Сценарий: $($Scenario.Name) ===" -Level "Info"
     Write-Log -Message "Шагов: $total" -Level "Info"
 
-    $ok = 0
-    $fail = 0
+    # ===== СОСТОЯНИЕ ВЫПОЛНЕНИЯ =====
+    $script:ScenarioRun = @{
+        Steps     = $steps
+        Total     = $total
+        Index     = 0
+        Ok        = 0
+        Fail      = 0
+        Scenario  = $Scenario
+        Timer     = $null
+        WaitUntil = $null   # для шага wait — момент, когда продолжить
+        PendingWaitDone = $false   # флаг: wait завершён, нужно засчитать Ok
+    }
 
-    for ($i = 0; $i -lt $total; $i++) {
-        $step = $steps[$i]
-        Write-Log -Message "[$($i+1)/$total] $(Get-StepDisplayText -Step $step)" -Level "Info"
+    $timer = New-Object System.Windows.Threading.DispatcherTimer
+    $timer.Interval = [TimeSpan]::FromMilliseconds(100)
 
+    $timer.Add_Tick({
+        $r = $script:ScenarioRun
+        if (-not $r) { return }
+
+        # ===== ЕСЛИ ЖДЁМ — проверяем время =====
+        if ($r.WaitUntil) {
+            if ((Get-Date) -lt $r.WaitUntil) {
+                return   # ещё не время
+            }
+
+            # Время вышло — засчитываем wait как успешный шаг
+            $r.WaitUntil = $null
+            $r.Ok++
+            $r.Index++
+        }
+
+        # ===== ВСЕ ШАГИ ВЫПОЛНЕНЫ? =====
+        if ($r.Index -ge $r.Total) {
+            $r.Timer.Stop()
+            $r.Timer = $null
+            $script:ScenarioRun = $null
+
+            if ($r.Fail -eq 0) {
+                Write-Log -Message "=== Готово: успешно $($r.Ok) из $($r.Total) ===" -Level "Success"
+            } else {
+                Write-Log -Message "=== Готово: успешно $($r.Ok), ошибок $($r.Fail) из $($r.Total) ===" -Level "Warning"
+            }
+            return
+        }
+
+        # ===== БЕРЁМ СЛЕДУЮЩИЙ ШАГ =====
+        $step = $r.Steps[$r.Index]
+        $num  = $r.Index + 1
+        Write-Log -Message "[$num/$($r.Total)] $(Get-StepDisplayText -Step $step)" -Level "Info"
+
+        # ===== ШАГ WAIT — запускаем ожидание, НЕ блокируем UI =====
+        if ($step.Type -eq "wait") {
+            $secs = [int]$step.Seconds
+            if ($secs -lt 1)   { $secs = 1 }
+            if ($secs -gt 300) { $secs = 300 }
+
+            Write-Log -Message "  Жду $secs сек..." -Level "Info"
+            $r.WaitUntil = (Get-Date).AddSeconds($secs)
+            return
+        }
+
+        # ===== ОБЫЧНЫЙ ШАГ =====
         $stepOk = Invoke-ScenarioStep -Step $step -LogCallback {
             param($msg, $lvl)
             Write-Log -Message "  $msg" -Level $lvl
         }
 
-        if ($stepOk) { $ok++ } else { $fail++ }
-    }
+        if ($stepOk) { $r.Ok++ } else { $r.Fail++ }
+        $r.Index++
+    })
 
-    if ($fail -eq 0) {
-        Write-Log -Message "=== Готово: успешно $ok из $total ===" -Level "Success"
-    } else {
-        Write-Log -Message "=== Готово: успешно $ok, ошибок $fail из $total ===" -Level "Warning"
-    }
+    $script:ScenarioRun.Timer = $timer
+    $timer.Start()
 }
 
 # ===== ОБНОВИТЬ СПИСОК ШАГОВ =====

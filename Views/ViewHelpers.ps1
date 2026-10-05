@@ -96,9 +96,6 @@ function New-ViewLabel {
 
 # ============================================================================
 #  КНОПКА
-#
-#  ВАЖНО: скриптблок $OnClick НИКОГДА не выполняется при создании кнопки.
-#  Он только передаётся в Add_Click и вызывается WPF при клике.
 # ============================================================================
 function New-ViewButton {
     param(
@@ -113,10 +110,8 @@ function New-ViewButton {
 
     $btn = New-Object System.Windows.Controls.Button
 
-    # --- Цвет фона ---
     $bg = Resolve-ButtonColor -ColorType $ColorType -Color $Color
 
-    # --- Габариты ---
     if ($Compact) {
         $btn.Height = 30
         $btn.FontSize = 11
@@ -135,7 +130,6 @@ function New-ViewButton {
     $btn.BorderThickness = New-Object System.Windows.Thickness(0)
     $btn.Cursor = [System.Windows.Input.Cursors]::Hand
 
-    # --- Выравнивания ---
     if ($Stretch) {
         $btn.HorizontalAlignment = "Stretch"
     } else {
@@ -145,7 +139,6 @@ function New-ViewButton {
     $btn.HorizontalContentAlignment = "Center"
     $btn.VerticalContentAlignment = "Center"
 
-    # --- Шаблон без Style ---
     $templateStr = @"
 <ControlTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -162,7 +155,6 @@ function New-ViewButton {
     $reader = New-Object System.Xml.XmlNodeReader ([xml]$templateStr)
     $btn.Template = [System.Windows.Markup.XamlReader]::Load($reader)
 
-    # --- Текст ---
     $tb = New-Object System.Windows.Controls.TextBlock
     $tb.Text = $Text
     $tb.TextTrimming = "CharacterEllipsis"
@@ -176,17 +168,10 @@ function New-ViewButton {
     $tb.HorizontalAlignment = "Center"
     $btn.Content = $tb
 
-    # ВАЖНО: обнуляем Margin у кнопки — он передаётся через Padding
     $btn.Margin = New-Object System.Windows.Thickness(0)
 
-    # --- Обработчик клика ---
-    # ВАЖНО: $OnClick НЕ вызывается здесь. Только регистрируется через Add_Click.
-    # Вызов произойдёт при клике пользователя.
     if ($OnClick) {
-        Write-Host "New-ViewButton: регистрирую click для '$Text' (тип: $($OnClick.GetType().Name))" -ForegroundColor Cyan
         $btn.Add_Click($OnClick)
-    } else {
-        Write-Host "New-ViewButton: '$Text' — OnClick = null" -ForegroundColor Yellow
     }
 
     return $btn
@@ -263,6 +248,11 @@ function Show-Progress {
 
     if (-not $script:BottomBarProgress) { return }
 
+    # Разворачиваем BottomBar, если он свёрнут
+    if ($script:BottomBar -and $script:BottomBar.Visibility -ne "Visible") {
+        $script:BottomBar.Visibility = "Visible"
+    }
+
     $script:BottomBarProgress.Visibility = "Visible"
     $script:BottomBarProgress.Maximum = [math]::Max($Total, 1)
     $script:BottomBarProgress.Value = $Current
@@ -285,4 +275,103 @@ function Hide-Progress {
         $script:BottomBarProgressText.Visibility = "Collapsed"
         $script:BottomBarProgressText.Text = ""
     }
+
+    # Если в BottomBar нет кнопок — прячем его полностью
+    if ($script:BottomBar -and $script:BottomBarContent) {
+        if ($script:BottomBarContent.Children.Count -eq 0) {
+            $script:BottomBar.Visibility = "Collapsed"
+        }
+    }
+}
+
+function Hide-Progress {
+    if (-not $script:BottomBarProgress) { return }
+    $script:BottomBarProgress.Visibility = "Collapsed"
+    $script:BottomBarProgress.Value = 0
+    if ($script:BottomBarProgressText) {
+        $script:BottomBarProgressText.Visibility = "Collapsed"
+        $script:BottomBarProgressText.Text = ""
+    }
+}
+
+# ============================================================================
+#  ВИРТУАЛИЗИРОВАННЫЙ СПИСОК ЧЕКБОКСОВ
+#
+#  Принимает массив уже созданных CheckBox-ов и возвращает ListBox
+#  с виртуализацией. Это позволяет держать в UI только видимые элементы
+#  (обычно 10-15), а не все 200+ сразу — экраны открываются в разы быстрее.
+#
+#  Использование:
+#    $chkList = New-VirtualizedCheckboxList -Checkboxes $myCheckboxes -MaxHeight 500
+#    $container.Children.Add($chkList) | Out-Null
+# ============================================================================
+function New-VirtualizedCheckboxList {
+    param(
+        [Parameter(Mandatory)][array]$Checkboxes,
+        [double]$MaxHeight = 0
+    )
+
+    # --- ListBox с настройками виртуализации ---
+    $listBox = New-Object System.Windows.Controls.ListBox
+
+    $listBox.Background = [System.Windows.Media.Brushes]::Transparent
+    $listBox.BorderThickness = New-Object System.Windows.Thickness(0)
+    $listBox.Padding = New-Object System.Windows.Thickness(0)
+    $listBox.Margin = New-Object System.Windows.Thickness(0)
+    $listBox.Focusable = $false
+
+    # --- Виртуализация ---
+    [System.Windows.Controls.VirtualizingPanel]::SetIsVirtualizing($listBox, $true)
+    [System.Windows.Controls.VirtualizingPanel]::SetVirtualizationMode(
+        $listBox,
+        [System.Windows.Controls.VirtualizationMode]::Recycling
+    )
+    [System.Windows.Controls.ScrollViewer]::SetCanContentScroll($listBox, $true)
+    [System.Windows.Controls.ScrollViewer]::SetHorizontalScrollBarVisibility(
+        $listBox,
+        [System.Windows.Controls.ScrollBarVisibility]::Disabled
+    )
+    [System.Windows.Controls.ScrollViewer]::SetVerticalScrollBarVisibility(
+        $listBox,
+        [System.Windows.Controls.ScrollBarVisibility]::Auto
+    )
+
+    if ($MaxHeight -gt 0) {
+        $listBox.MaxHeight = $MaxHeight
+    }
+
+    # --- ItemContainerStyle: обнуляем визуал ListBoxItem ---
+    $itemStyleStr = @"
+<Style xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+       TargetType="ListBoxItem">
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="Margin" Value="0"/>
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="Focusable" Value="False"/>
+    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+    <Setter Property="Template">
+        <Setter.Value>
+            <ControlTemplate TargetType="ListBoxItem">
+                <ContentPresenter/>
+            </ControlTemplate>
+        </Setter.Value>
+    </Setter>
+</Style>
+"@
+
+    try {
+        $reader = New-Object System.Xml.XmlNodeReader ([xml]$itemStyleStr)
+        $listBox.ItemContainerStyle = [System.Windows.Markup.XamlReader]::Load($reader)
+    } catch {
+        Write-Log -Message "Не удалось применить стиль ListBoxItem: $_" -Level "Warning"
+    }
+
+    # --- Заполняем элементами ---
+    foreach ($chk in $Checkboxes) {
+        [void]$listBox.Items.Add($chk)
+    }
+
+    return $listBox
 }

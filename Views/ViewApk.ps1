@@ -297,8 +297,14 @@ function Load-ApkFiles {
             })
         }
 
-        $script:ApkListContainer.Children.Add($chk) | Out-Null
+        # ВАЖНО: не добавляем в контейнер, только в массив
         $script:ApkCheckboxes += $chk
+    }
+
+    # Создаём виртуализированный список
+    if ($script:ApkCheckboxes.Count -gt 0) {
+        $apkList = New-VirtualizedCheckboxList -Checkboxes $script:ApkCheckboxes -MaxHeight 400
+        $script:ApkListContainer.Children.Add($apkList) | Out-Null
     }
 }
 

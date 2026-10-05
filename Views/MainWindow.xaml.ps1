@@ -2,7 +2,6 @@
 function Switch-View {
     param([string]$ViewName)
 
-    # Сохраняем текущий экран
     $script:CurrentView = $ViewName
 
     $contentGrid.Children.Clear()
@@ -40,6 +39,7 @@ function Switch-View {
         "Traffic"      { Show-TrafficView }
         "HttpServer"   { Show-HttpServerView }
         "Monitoring"   { Show-MonitoringView }
+        "Scrcpy"       { Show-ScrcpyView }
         default        { Write-Log -Message "Неизвестный экран: $ViewName" -Level "Warning" }
     }
     Update-StatusBar
@@ -48,10 +48,12 @@ function Switch-View {
 function Update-StatusBar {
     param([switch]$Silent)
 
+    if ($global:AppClosing) { return }
+    if (-not $global:statusText) { return }
+
     $previousState = $script:connected
     $previousIp    = $script:deviceIp
 
-    # Проверяем реальное состояние ТВ
     $isConnected = $false
     try {
         $isConnected = Test-TvConnected
@@ -72,20 +74,36 @@ function Update-StatusBar {
 
         if ($script:deviceIp) {
             $script:connected = $true
-            $statusText.Text = "● Подключено к $($script:deviceIp)"
-            $statusText.Foreground = [System.Windows.Media.Brushes]::LightGreen
+
+            # Обновляем имя устройства при смене IP
+            if (-not $script:DeviceModelName -or $script:DeviceModelNameIp -ne $script:deviceIp) {
+                $script:DeviceModelName = ""
+                $deviceName = Get-DeviceDisplayName
+                $script:DeviceModelNameIp = $script:deviceIp
+            } else {
+                $deviceName = $script:DeviceModelName
+            }
+
+            if ($deviceName) {
+                $global:statusText.Text = "● Подключено к $($script:deviceIp) ($deviceName)"
+            } else {
+                $global:statusText.Text = "● Подключено к $($script:deviceIp)"
+            }
+            $global:statusText.Foreground = [System.Windows.Media.Brushes]::LightGreen
         } else {
             $script:connected = $true
-            $statusText.Text = "● Подключено"
-            $statusText.Foreground = [System.Windows.Media.Brushes]::LightGreen
+            $global:statusText.Text = "● Подключено"
+            $global:statusText.Foreground = [System.Windows.Media.Brushes]::LightGreen
         }
     } else {
         $script:connected = $false
-        $statusText.Text = "● Не подключено"
-        $statusText.Foreground = [System.Windows.Media.Brushes]::LightCoral
+        $global:statusText.Text = "● Не подключено"
+        $global:statusText.Foreground = [System.Windows.Media.Brushes]::LightCoral
+
+        $script:DeviceModelName = ""
+        $script:DeviceModelNameIp = ""
     }
 
-    # --- Логируем смену состояния ---
     $stateChanged = ($previousState -ne $script:connected) -or ($previousIp -ne $script:deviceIp)
 
     if ($stateChanged) {
@@ -96,10 +114,9 @@ function Update-StatusBar {
             Write-Log -Message "Связь с ТВ потеряна$ipInfo" -Level "Warning"
         }
 
-        # ===== ПЕРЕРИСОВКА ЭКРАНА ПРИ СМЕНЕ СОСТОЯНИЯ =====
-        # Не перерисовываем Main — он не зависит от подключения
-        # Не перерисовываем Logcat — он может быть запущен
-        if ($script:CurrentView -and $script:CurrentView -ne "Main" -and $script:CurrentView -ne "Logcat") {
+        if ($script:CurrentView -and
+            $script:CurrentView -ne "Main" -and
+            $script:CurrentView -ne "Logcat") {
             try {
                 Switch-View -ViewName $script:CurrentView
             } catch {
@@ -109,7 +126,6 @@ function Update-StatusBar {
     }
 }
 
-# ==== АВТО-ОБНОВЛЕНИЕ СТАТУСА ====
 function Start-StatusWatcher {
     if ($script:StatusTimer) {
         $script:StatusTimer.Stop()
@@ -120,10 +136,12 @@ function Start-StatusWatcher {
     $script:StatusTimer.Interval = [TimeSpan]::FromSeconds(5)
     $script:StatusTimer.Add_Tick({
         try {
+            if ($global:AppClosing) {
+                $script:StatusTimer.Stop()
+                return
+            }
             Update-StatusBar -Silent
-        } catch {
-            # тихо игнорируем ошибки таймера — он не должен ронять UI
-        }
+        } catch { }
     })
     $script:StatusTimer.Start()
     Write-Log -Message "Авто-обновление статуса запущено (каждые 5 сек)" -Level "Info"

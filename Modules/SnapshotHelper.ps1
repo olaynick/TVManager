@@ -32,7 +32,7 @@ function New-Snapshot {
 
     $snapshot = [ordered]@{
         FormatVersion = "1.0"
-        AppVersion    = "0.0.8"
+        AppVersion    = $script:AppVersion
         Name          = $Name
         Description   = $Description
         CreatedAt     = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
@@ -664,7 +664,7 @@ function Migrate-LegacyProfiles {
         try {
             $snapshot = [ordered]@{
                 FormatVersion = "1.0"
-                AppVersion    = "0.0.8"
+                AppVersion    = $script:AppVersion
                 Name          = "$($p.Name) (из старого профиля)"
                 Description   = "Автоматически перенесён из старого формата"
                 CreatedAt     = if ($p.SavedAt) { $p.SavedAt } else { (Get-Date).ToString("yyyy-MM-dd HH:mm:ss") }

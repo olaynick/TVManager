@@ -30,16 +30,17 @@ function Update-CleanupFilter {
 
         foreach ($catName in $script:CleanupTabCheckboxes.Keys) {
             $checkboxes = $script:CleanupTabCheckboxes[$catName]
-            $catHasResults = $false
 
             $catHeader = New-Object System.Windows.Controls.TextBlock
             $catHeader.Text = "📁 $catName"
             $catHeader.FontSize = 12
             $catHeader.FontWeight = "Bold"
-            $catHeader.Foreground = "#C8C8C8"
+            $catHeader.Foreground = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+            )
             $catHeader.Margin = "0,10,0,5"
 
-            $catContainer = New-Object System.Windows.Controls.StackPanel
+            $catMatches = @()
 
             foreach ($chk in $checkboxes) {
                 $searchText = ""
@@ -63,15 +64,15 @@ function Update-CleanupFilter {
                         $original.IsChecked = $this.IsChecked
                     }.GetNewClosure())
 
-                    $catContainer.Children.Add($copy) | Out-Null
-                    $catHasResults = $true
+                    $catMatches += $copy
                     $totalVisible++
                 }
             }
 
-            if ($catHasResults) {
+            if ($catMatches.Count -gt 0) {
                 $script:CleanupResultsPanel.Children.Add($catHeader) | Out-Null
-                $script:CleanupResultsPanel.Children.Add($catContainer) | Out-Null
+                $catList = New-VirtualizedCheckboxList -Checkboxes $catMatches -MaxHeight 400
+                $script:CleanupResultsPanel.Children.Add($catList) | Out-Null
             }
         }
 
@@ -79,7 +80,9 @@ function Update-CleanupFilter {
             $empty = New-Object System.Windows.Controls.TextBlock
             $empty.Text = "Ничего не найдено по запросу: $query"
             $empty.FontSize = 13
-            $empty.Foreground = "#A0A0A0"
+            $empty.Foreground = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#A0A0A0")
+            )
             $empty.Margin = "20"
             $script:CleanupResultsPanel.Children.Add($empty) | Out-Null
         }
@@ -104,7 +107,7 @@ function Show-CleanupView {
     $header = New-ViewHeader -Text "Управление пакетами"
     $mainStack.Children.Add($header) | Out-Null
 
-    $desc = New-ViewLabel -Text "«Отключить» — пакет остаётся в системе. «Удалить» — данные стираются. «Очистить данные» — сброс кэша и настроек. Цвет метки: зелёный — безопасно, оранжевый — осторожно, красный — может сломать ТВ." -Light
+    $desc = New-ViewLabel -Text "«Отключить» — пакет остаётся в системе. «Удалить» — данные стираются. «Очистить данные» — сброс кэша и настроек. Обозначения: 🛡 — защищён (нельзя изменить), ⚠️ — требует подтверждения, [OK] — безопасно, [!] — осторожно, [X] — может сломать ТВ." -Light
     $desc.TextWrapping = "Wrap"
     $desc.Margin = "0,0,0,10"
     $mainStack.Children.Add($desc) | Out-Null
@@ -322,9 +325,6 @@ function Show-CleanupView {
             $tabPanel.Children.Add($warnCard) | Out-Null
         }
 
-        $itemsStack = New-Object System.Windows.Controls.StackPanel
-        $tabPanel.Children.Add($itemsStack) | Out-Null
-
         $tabCheckboxes = @()
 
         foreach ($pkg in $cat.Packages) {
@@ -349,7 +349,27 @@ function Show-CleanupView {
                 default  { "#FFFFFF" }
             }
 
+            # ===== Проверка на критичность =====
+            $isCritical = $false
+            $critReason = ""
+            $critRisk = ""
+            if (Get-Command Test-CriticalPackage -ErrorAction SilentlyContinue) {
+                $critCheck = Test-CriticalPackage -Package $pkg.Package
+                if ($critCheck.IsCritical) {
+                    $isCritical = $true
+                    $critReason = $critCheck.Reason
+                    $critRisk = $critCheck.Risk     # "block" или "warn"
+                }
+            }
+
             $baseText = "$riskIcon $($pkg.Desc)  ($($pkg.Package))"
+            if ($isCritical) {
+                if ($critRisk -eq "block") {
+                    $baseText = "🛡 $baseText"     # полный запрет
+                } else {
+                    $baseText = "⚠️ $baseText"     # warn — можно с подтверждением
+                }
+            }
             $searchData = "$($pkg.Package) $($pkg.Desc)".ToLower()
 
             if ($isRemoved) {
@@ -367,22 +387,49 @@ function Show-CleanupView {
             } else {
                 $chk.Content = $baseText
                 $chk.Tag = $pkg
-                $chk.Foreground = New-Object System.Windows.Media.SolidColorBrush(
-                    [System.Windows.Media.ColorConverter]::ConvertFromString($riskColor)
-                )
+                if ($isCritical -and $critRisk -eq "block") {
+                    # Фиолетовый — полный запрет
+                    $chk.Foreground = [System.Windows.Media.SolidColorBrush](
+                        [System.Windows.Media.ColorConverter]::ConvertFromString("#9C27B0")
+                    )
+                } elseif ($isCritical -and $critRisk -eq "warn") {
+                    # Оранжевый — предупреждение, но можно
+                    $chk.Foreground = [System.Windows.Media.SolidColorBrush](
+                        [System.Windows.Media.ColorConverter]::ConvertFromString("#F57C00")
+                    )
+                } else {
+                    $chk.Foreground = New-Object System.Windows.Media.SolidColorBrush(
+                        [System.Windows.Media.ColorConverter]::ConvertFromString($riskColor)
+                    )
+                }
 
                 $riskText = switch ($risk) {
                     "low"    { "низкий — безопасно отключать" }
                     "medium" { "средний — отключайте с осторожностью" }
                     "high"   { "высокий — может нарушить работу ТВ" }
                 }
-                $chk.ToolTip = "Пакет: $($pkg.Package)`n`n$($pkg.Desc)`n`nУровень риска: $riskText"
+
+                $critText = ""
+                if ($isCritical) {
+                    if ($critRisk -eq "block") {
+                        $critText = "`n`n🛡 ЗАЩИЩЁН: $critReason`n(изменение запрещено полностью)"
+                    } else {
+                        $critText = "`n`n⚠️ ТРЕБУЕТ ПОДТВЕРЖДЕНИЯ: $critReason`n(можно изменить, но с подтверждением)"
+                    }
+                }
+
+                $chk.ToolTip = "Пакет: $($pkg.Package)`n`n$($pkg.Desc)`n`nУровень риска: $riskText$critText"
             }
 
             $chk | Add-Member -MemberType NoteProperty -Name "SearchText" -Value $searchData -Force
 
-            $itemsStack.Children.Add($chk) | Out-Null
             $tabCheckboxes += $chk
+        }
+
+        # Создаём виртуализированный список
+        if ($tabCheckboxes.Count -gt 0) {
+            $itemsList = New-VirtualizedCheckboxList -Checkboxes $tabCheckboxes -MaxHeight 500
+            $tabPanel.Children.Add($itemsList) | Out-Null
         }
 
         $tab.Content = $tabPanel
@@ -463,9 +510,14 @@ function Show-CleanupView {
 
         $chk | Add-Member -MemberType NoteProperty -Name "SearchText" -Value "$pkgName (сторонний)".ToLower() -Force
 
-        $tpPanel.Children.Add($chk) | Out-Null
         $tpCheckboxes += $chk
     }
+
+    if ($tpCheckboxes.Count -gt 0) {
+        $tpList = New-VirtualizedCheckboxList -Checkboxes $tpCheckboxes -MaxHeight 500
+        $tpPanel.Children.Add($tpList) | Out-Null
+    }
+
     $tpTab.Content = $tpPanel
     $extraSubTabs.Items.Add($tpTab) | Out-Null
     $script:CleanupTabCheckboxes["Сторонние"] = $tpCheckboxes
@@ -479,7 +531,7 @@ function Show-CleanupView {
     $sysPanel = New-Object System.Windows.Controls.StackPanel
     $sysPanel.Margin = "10"
 
-    $sysWarn = New-ViewLabel -Text "Внимание: изменение системных пакетов может нарушить работу ТВ." -Light
+    $sysWarn = New-ViewLabel -Text "Внимание: изменение системных пакетов может нарушить работу ТВ. Обозначения: 🛡 — защищён, ⚠️ — требует подтверждения." -Light
     $sysWarn.TextWrapping = "Wrap"
     $sysWarn.Margin = "0,0,0,10"
     $sysPanel.Children.Add($sysWarn) | Out-Null
@@ -488,29 +540,68 @@ function Show-CleanupView {
     foreach ($pkgName in $systemPkgs) {
         $chk = New-Object System.Windows.Controls.CheckBox
         $chk.Style = $window.Resources["MiuiCheckBox"]
-        $chk.Content = $pkgName
 
         $isRemoved = $script:RemovedPackages -contains $pkgName
         $isDisabled = $script:DisabledPackagesSet.ContainsKey($pkgName)
 
+        # Проверка на критичность
+        $isCritical = $false
+        $critReason = ""
+        $critRisk = ""
+        if (Get-Command Test-CriticalPackage -ErrorAction SilentlyContinue) {
+            $critCheck = Test-CriticalPackage -Package $pkgName
+            if ($critCheck.IsCritical) {
+                $isCritical = $true
+                $critReason = $critCheck.Reason
+                $critRisk = $critCheck.Risk
+            }
+        }
+
+        $prefix = ""
+        if ($isCritical) {
+            if ($critRisk -eq "block") {
+                $prefix = "🛡 "
+            } else {
+                $prefix = "⚠️ "
+            }
+        }
+
         if ($isRemoved) {
-            $chk.Content = "$pkgName  — Удалено"
+            $chk.Content = "$prefix$pkgName  — Удалено"
             $chk.Foreground = [System.Windows.Media.Brushes]::Gray
             $chk.IsEnabled = $false
         } elseif ($isDisabled) {
-            $chk.Content = "$pkgName  — Отключено"
+            $chk.Content = "$prefix$pkgName  — Отключено"
             $chk.Foreground = [System.Windows.Media.Brushes]::Gray
             $chk.IsEnabled = $false
         } else {
+            $chk.Content = "$prefix$pkgName"
             $chk.Tag = [PSCustomObject]@{ Package = $pkgName; Desc = "(системный)"; Risk = "high" }
-            $chk.Foreground = [System.Windows.Media.Brushes]::DarkRed
+            if ($isCritical -and $critRisk -eq "block") {
+                $chk.Foreground = [System.Windows.Media.SolidColorBrush](
+                    [System.Windows.Media.ColorConverter]::ConvertFromString("#9C27B0")
+                )
+                $chk.ToolTip = "🛡 ЗАЩИЩЁН: $critReason`n(изменение запрещено полностью)"
+            } elseif ($isCritical -and $critRisk -eq "warn") {
+                $chk.Foreground = [System.Windows.Media.SolidColorBrush](
+                    [System.Windows.Media.ColorConverter]::ConvertFromString("#F57C00")
+                )
+                $chk.ToolTip = "⚠️ ТРЕБУЕТ ПОДТВЕРЖДЕНИЯ: $critReason`n(можно изменить с подтверждением)"
+            } else {
+                $chk.Foreground = [System.Windows.Media.Brushes]::DarkRed
+            }
         }
 
         $chk | Add-Member -MemberType NoteProperty -Name "SearchText" -Value "$pkgName (системный)".ToLower() -Force
 
-        $sysPanel.Children.Add($chk) | Out-Null
         $sysCheckboxes += $chk
     }
+
+    if ($sysCheckboxes.Count -gt 0) {
+        $sysList = New-VirtualizedCheckboxList -Checkboxes $sysCheckboxes -MaxHeight 500
+        $sysPanel.Children.Add($sysList) | Out-Null
+    }
+
     $sysTab.Content = $sysPanel
     $extraSubTabs.Items.Add($sysTab) | Out-Null
     $script:CleanupTabCheckboxes["Системные (доп)"] = $sysCheckboxes
@@ -583,7 +674,9 @@ function Show-CleanupView {
     })
     $buttons += $btnDeselect
 
-    # "Отключить"
+    # ========================================================================
+    #  "ОТКЛЮЧИТЬ"
+    # ========================================================================
     $btnDisable = New-Object System.Windows.Controls.Button
     $btnDisable.Content = "Отключить"
     $btnDisable.Style = $window.Resources["RoundedButton"]
@@ -604,39 +697,72 @@ function Show-CleanupView {
             return
         }
 
-        $highRisk = @($selected | Where-Object { $_.Risk -eq "high" })
-        if ($highRisk.Count -gt 0) {
-            $names = ($highRisk | ForEach-Object { $_.Package }) -join "`n"
+        $blocked = @()
+        $warned  = @()
+        $allowed = @()
+
+        foreach ($pkg in $selected) {
+            $check = Test-PackageOperation -Package $pkg.Package -Operation "disable"
+            if (-not $check.Allowed) {
+                $blocked += @{ Pkg = $pkg.Package; Reason = $check.Reason }
+            } elseif ($check.NeedConfirm) {
+                $warned += $pkg
+            } else {
+                $allowed += $pkg
+            }
+        }
+
+        if ($blocked.Count -gt 0) {
+            $blockedText = ($blocked | ForEach-Object { "• $($_.Pkg)`n  $($_.Reason)" }) -join "`n`n"
+            [System.Windows.MessageBox]::Show(
+                "Следующие пакеты ЗАЩИЩЕНЫ (🛡) и не будут изменены:`n`n$blockedText",
+                "Заблокировано",
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Warning) | Out-Null
+        }
+
+        $finalList = @($allowed)
+        if ($warned.Count -gt 0) {
+            $warnedText = ($warned | ForEach-Object { "• $($_.Package) — $($_.Desc)" }) -join "`n"
             $confirm = [System.Windows.MessageBox]::Show(
-                "ВНИМАНИЕ: среди выбранных пакетов есть с высоким риском:`n`n$names`n`nОтключение этих пакетов может нарушить работу ТВ. Продолжить?",
-                "Высокий риск",
+                "ВНИМАНИЕ (⚠️)! Отключение следующих пакетов может нарушить работу ТВ:`n`n$warnedText`n`nПродолжить?",
+                "Требуется подтверждение",
                 [System.Windows.MessageBoxButton]::YesNo,
                 [System.Windows.MessageBoxImage]::Warning)
-            if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) { return }
+            if ($confirm -eq [System.Windows.MessageBoxResult]::Yes) {
+                $finalList = @($allowed) + @($warned)
+            }
+        }
+
+        if ($finalList.Count -eq 0) {
+            Write-Log -Message "Нечего отключать — все выбранные пакеты защищены" -Level "Warning"
+            return
         }
 
         $confirm = [System.Windows.MessageBox]::Show(
-            "Отключить $($selected.Count) пакетов?",
+            "Отключить $($finalList.Count) пакетов?",
             "Подтверждение",
             [System.Windows.MessageBoxButton]::YesNo,
             [System.Windows.MessageBoxImage]::Question)
         if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) { return }
 
-        Write-Log -Message "Отключаю $($selected.Count) пакетов..." -Level "Info"
+        Write-Log -Message "Отключаю $($finalList.Count) пакетов..." -Level "Info"
         $success = 0
-        foreach ($pkg in $selected) {
+        foreach ($pkg in $finalList) {
             if (Disable-Package -Package $pkg.Package) {
                 $success++
                 Save-Change -Type "package_disabled" -Target $pkg.Package -RestoreCommand "adb shell pm enable $($pkg.Package)"
             }
         }
         Save-AllChanges
-        Write-Log -Message "Отключено: $success из $($selected.Count)" -Level "Success"
+        Write-Log -Message "Отключено: $success из $($finalList.Count)" -Level "Success"
         Switch-View -ViewName "Cleanup"
     })
     $buttons += $btnDisable
 
-    # "Удалить"
+    # ========================================================================
+    #  "УДАЛИТЬ"
+    # ========================================================================
     $btnDelete = New-Object System.Windows.Controls.Button
     $btnDelete.Content = "Удалить"
     $btnDelete.Style = $window.Resources["RoundedButton"]
@@ -657,11 +783,53 @@ function Show-CleanupView {
             return
         }
 
-        $highRisk = @($selected | Where-Object { $_.Risk -eq "high" -or $_.Risk -eq "medium" })
+        $blocked = @()
+        $warned  = @()
+        $allowed = @()
+
+        foreach ($pkg in $selected) {
+            $check = Test-PackageOperation -Package $pkg.Package -Operation "remove"
+            if (-not $check.Allowed) {
+                $blocked += @{ Pkg = $pkg.Package; Reason = $check.Reason }
+            } elseif ($check.NeedConfirm) {
+                $warned += $pkg
+            } else {
+                $allowed += $pkg
+            }
+        }
+
+        if ($blocked.Count -gt 0) {
+            $blockedText = ($blocked | ForEach-Object { "• $($_.Pkg)`n  $($_.Reason)" }) -join "`n`n"
+            [System.Windows.MessageBox]::Show(
+                "Следующие пакеты ЗАЩИЩЕНЫ (🛡) и не будут удалены:`n`n$blockedText",
+                "Заблокировано",
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Warning) | Out-Null
+        }
+
+        $finalList = @($allowed)
+        if ($warned.Count -gt 0) {
+            $warnedText = ($warned | ForEach-Object { "• $($_.Package) — $($_.Desc)" }) -join "`n"
+            $confirm = [System.Windows.MessageBox]::Show(
+                "ВНИМАНИЕ (⚠️)! Удаление следующих пакетов может нарушить работу ТВ:`n`n$warnedText`n`nПродолжить?",
+                "Требуется подтверждение",
+                [System.Windows.MessageBoxButton]::YesNo,
+                [System.Windows.MessageBoxImage]::Warning)
+            if ($confirm -eq [System.Windows.MessageBoxResult]::Yes) {
+                $finalList = @($allowed) + @($warned)
+            }
+        }
+
+        if ($finalList.Count -eq 0) {
+            Write-Log -Message "Нечего удалять — все выбранные пакеты защищены" -Level "Warning"
+            return
+        }
+
+        $highRisk = @($finalList | Where-Object { $_.Risk -eq "high" -or $_.Risk -eq "medium" })
         if ($highRisk.Count -gt 0) {
             $names = ($highRisk | ForEach-Object { $_.Package }) -join "`n"
             $confirm = [System.Windows.MessageBox]::Show(
-                "ВНИМАНИЕ: среди выбранных пакетов есть рискованные:`n`n$names`n`nУдаление этих пакетов может нарушить работу ТВ. Продолжить?",
+                "Дополнительно: среди выбранных есть рискованные:`n`n$names`n`nПродолжить?",
                 "Высокий риск",
                 [System.Windows.MessageBoxButton]::YesNo,
                 [System.Windows.MessageBoxImage]::Warning)
@@ -680,7 +848,7 @@ function Show-CleanupView {
         $cStack.Margin = "25"
 
         $cHeader = New-Object System.Windows.Controls.TextBlock
-        $cHeader.Text = "Выбрано пакетов: $($selected.Count)"
+        $cHeader.Text = "Выбрано пакетов: $($finalList.Count)"
         $cHeader.FontSize = 16
         $cHeader.FontWeight = "Bold"
         $cHeader.Margin = "0,0,0,10"
@@ -741,14 +909,17 @@ function Show-CleanupView {
         )
         $btnOk.Padding = "15,8"
         $btnOk.Margin = "0,0,8,0"
+        $btnOk.Tag = @{ FinalList = $finalList }
         $btnOk.Add_Click({
+            param($sender, $e)
             $mode = $script:DeleteChoice
+            $list = $sender.Tag.FinalList
             $choiceDialog.Close()
 
-            Write-Log -Message "Обрабатываю $($selected.Count) пакетов (режим: $mode)..." -Level "Info"
+            Write-Log -Message "Обрабатываю $($list.Count) пакетов (режим: $mode)..." -Level "Info"
             $success = 0
             $failed = 0
-            foreach ($pkg in $selected) {
+            foreach ($pkg in $list) {
                 $result = Remove-Package -Package $pkg.Package -Mode $mode
                 if ($result.Success) {
                     $success++
@@ -768,7 +939,7 @@ function Show-CleanupView {
                 }
             }
             Save-AllChanges
-            Write-Log -Message "Готово: успешно $success, не удалось $failed из $($selected.Count)" -Level "Success"
+            Write-Log -Message "Готово: успешно $success, не удалось $failed из $($list.Count)" -Level "Success"
             Switch-View -ViewName "Cleanup"
         })
         $cBtnPanel.Children.Add($btnOk) | Out-Null
@@ -790,7 +961,9 @@ function Show-CleanupView {
     })
     $buttons += $btnDelete
 
-    # "Очистить данные"
+    # ========================================================================
+    #  "ОЧИСТИТЬ ДАННЫЕ"
+    # ========================================================================
     $btnClearData = New-Object System.Windows.Controls.Button
     $btnClearData.Content = "Очистить данные"
     $btnClearData.Style = $window.Resources["RoundedButton"]
@@ -811,19 +984,44 @@ function Show-CleanupView {
             return
         }
 
+        $blocked = @()
+        $finalList = @()
+        foreach ($pkg in $selected) {
+            $check = Test-PackageOperation -Package $pkg.Package -Operation "clear"
+            if (-not $check.Allowed) {
+                $blocked += @{ Pkg = $pkg.Package; Reason = $check.Reason }
+            } else {
+                $finalList += $pkg
+            }
+        }
+
+        if ($blocked.Count -gt 0) {
+            $blockedText = ($blocked | ForEach-Object { "• $($_.Pkg)`n  $($_.Reason)" }) -join "`n`n"
+            [System.Windows.MessageBox]::Show(
+                "Следующие пакеты ЗАЩИЩЕНЫ (🛡) и не будут очищены:`n`n$blockedText",
+                "Заблокировано",
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Warning) | Out-Null
+        }
+
+        if ($finalList.Count -eq 0) {
+            Write-Log -Message "Нечего очищать" -Level "Warning"
+            return
+        }
+
         $confirm = [System.Windows.MessageBox]::Show(
-            "Очистить данные (кэш, настройки, аккаунты) для $($selected.Count) приложений?`n`nВНИМАНИЕ: это может привести к:`n  • потере настроек приложений`n  • выходу из аккаунтов (YouTube, Кинопоиск и т.д.)`n  • необходимости повторной настройки`n`nПродолжить?",
+            "Очистить данные (кэш, настройки, аккаунты) для $($finalList.Count) приложений?`n`nВНИМАНИЕ: это может привести к:`n  • потере настроек приложений`n  • выходу из аккаунтов (YouTube, Кинопоиск и т.д.)`n  • необходимости повторной настройки`n`nПродолжить?",
             "Подтверждение",
             [System.Windows.MessageBoxButton]::YesNo,
             [System.Windows.MessageBoxImage]::Warning)
         if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) { return }
 
-        Write-Log -Message "Очищаю данные $($selected.Count) приложений..." -Level "Info"
+        Write-Log -Message "Очищаю данные $($finalList.Count) приложений..." -Level "Info"
         $success = 0
-        foreach ($pkg in $selected) {
+        foreach ($pkg in $finalList) {
             if (Clear-AppCache -Package $pkg.Package) { $success++ }
         }
-        Write-Log -Message "Очищено: $success из $($selected.Count)" -Level "Success"
+        Write-Log -Message "Очищено: $success из $($finalList.Count)" -Level "Success"
         Switch-View -ViewName "Cleanup"
     })
     $buttons += $btnClearData
@@ -1015,7 +1213,7 @@ function Show-CleanupView {
 
     Set-BottomButtons -Buttons $buttons
 
-    Write-Log -Message "Экран управления пакетами (5 вкладок, сквозной поиск)" -Level "Info"
+    Write-Log -Message "Экран управления пакетами" -Level "Info"
 }
 
 # ============================================================================
@@ -1062,9 +1260,11 @@ function Show-DisabledAppsView {
         $chk.Style = $window.Resources["MiuiCheckBox"]
         $chk.Content = "$pkgName  — Отключено"
         $chk.Tag = [PSCustomObject]@{ Package = $pkgName; Desc = "(отключён)"; Risk = "low" }
-        $mainStack.Children.Add($chk) | Out-Null
         $script:DisabledAppsCheckboxes += $chk
     }
+
+    $disabledListBox = New-VirtualizedCheckboxList -Checkboxes $script:DisabledAppsCheckboxes -MaxHeight 500
+    $mainStack.Children.Add($disabledListBox) | Out-Null
 
     $rootGrid = New-ViewRoot -Stack $mainStack -OnBack { Switch-View -ViewName "Setup" }
     $contentGrid.Children.Add($rootGrid) | Out-Null

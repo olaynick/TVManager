@@ -110,42 +110,76 @@ $script:otaPackages = @(
 )
 
 # ----------------------------------------------------------------------------
-#  ❌ ОПАСНЫЕ ПАКЕТЫ (справочно, в UI не показываем)
+#  🚫 КРИТИЧЕСКИЕ ПАКЕТЫ — УДАЛЕНИЕ/ОТКЛЮЧЕНИЕ ЗАПРЕЩЕНО ИЛИ ТРЕБУЕТ ПОДТВЕРЖДЕНИЯ
+#
+#  Категории:
+#    "block"  — полный отказ, даже с подтверждением
+#    "warn"   — предупреждение с подтверждением (можно продолжить)
 # ----------------------------------------------------------------------------
-$script:systemCriticalPackages = @(
-    # TCL ядро
-    "com.tcl.systemserver"
-    "com.tcl.providers.config"
-    "com.tcl.systemui.plugin"
-    "com.tcl.globalkeyoverlay"
-    "com.tcl.tvinput"
-    "com.tcl.tv"
-    "com.tcl.autopair"
-    "com.tcl.android.webview"
-    "com.tcl.initsetup"
-    # MediaTek
-    "com.mediatek.speakerservice"
-    "com.mediatek.network"
-    "com.mediatek.backgrounddetection"
-    "com.mediatek.android.tv.mdns.offload"
-    "com.mediatek.android.tv.mdns.offload.overlay"
-    "com.mediatek.support.webview"
-    # Dolby
-    "com.dolby.android.audio.service"
-    "com.dolby.android.audio.calibration"
-    # Google ядро
-    "com.google.android.gms"
-    "com.google.android.gsf"
-    "com.android.vending"
-    "com.google.android.apps.tv.launcherx"
-    # Android ядро
-    "com.android.systemui"
-    "com.android.settings"
-    "android"
-    "com.android.se"
-    "com.android.shell"
-    "com.android.providers.settings"
+$script:criticalPackages = @(
+    # ===== BOOTLOADER / ЯДРО =====
+    @{ Package = "android";                          Risk = "block"; Reason = "Ядро Android" }
+    @{ Package = "com.android.systemui";             Risk = "block"; Reason = "Системный UI (нет экрана — нет управления)" }
+    @{ Package = "com.android.settings";             Risk = "block"; Reason = "Настройки Android" }
+    @{ Package = "com.android.shell";                Risk = "block"; Reason = "ADB shell (потеряется управление)" }
+    @{ Package = "com.android.providers.settings";   Risk = "block"; Reason = "Провайдер настроек" }
+    @{ Package = "com.android.se";                   Risk = "block"; Reason = "Secure Element (NFC/Google Pay)" }
+
+    # ===== GOOGLE CORE =====
+    @{ Package = "com.google.android.gms";           Risk = "block"; Reason = "Google Play Services" }
+    @{ Package = "com.google.android.gsf";           Risk = "block"; Reason = "Google Services Framework" }
+    @{ Package = "com.android.vending";              Risk = "warn";  Reason = "Google Play Store" }
+
+    # ===== ЛАУНЧЕРЫ (можно отключать, если стоит сторонний) =====
+    @{ Package = "com.google.android.apps.tv.launcherx"; Risk = "warn"; Reason = "Google TV Launcher (главный экран). Отключайте ТОЛЬКО если у вас работает сторонний лаунчер" }
+    @{ Package = "com.tcl.tv";                           Risk = "warn"; Reason = "TCL Launcher (главный экран). Отключайте ТОЛЬКО если у вас работает сторонний лаунчер" }
+    @{ Package = "com.tcl.tv.tclhome_passive";           Risk = "warn"; Reason = "Вспомогательный компонент TCL Launcher" }
+
+    # ===== TCL CORE =====
+    @{ Package = "com.tcl.systemserver";             Risk = "block"; Reason = "Системный сервер TCL" }
+    @{ Package = "com.tcl.providers.config";         Risk = "block"; Reason = "Конфиг TCL" }
+    @{ Package = "com.tcl.systemui.plugin";          Risk = "block"; Reason = "Плагин SystemUI TCL" }
+    @{ Package = "com.tcl.globalkeyoverlay";         Risk = "block"; Reason = "Глобальный перехват клавиш" }
+    @{ Package = "com.tcl.tvinput";                  Risk = "block"; Reason = "ТВ-вход (HDMI, антенна)" }
+    @{ Package = "com.tcl.autopair";                 Risk = "warn";  Reason = "Автосопряжение пульта" }
+    @{ Package = "com.tcl.android.webview";          Risk = "warn";  Reason = "WebView TCL" }
+    @{ Package = "com.tcl.initsetup";                Risk = "warn";  Reason = "Начальная настройка" }
+
+    # ===== MEDIATEK =====
+    @{ Package = "com.mediatek.speakerservice";      Risk = "warn";  Reason = "Сервис динамиков MediaTek" }
+    @{ Package = "com.mediatek.network";             Risk = "block"; Reason = "Сеть MediaTek" }
+    @{ Package = "com.mediatek.backgrounddetection"; Risk = "warn";  Reason = "Определение фона" }
+    @{ Package = "com.mediatek.android.tv.mdns.offload";         Risk = "warn"; Reason = "mDNS offload" }
+    @{ Package = "com.mediatek.android.tv.mdns.offload.overlay"; Risk = "warn"; Reason = "mDNS offload overlay" }
+    @{ Package = "com.mediatek.support.webview";     Risk = "warn";  Reason = "WebView MediaTek" }
+
+    # ===== DOLBY =====
+    @{ Package = "com.dolby.android.audio.service";     Risk = "warn"; Reason = "Dolby Audio Service" }
+    @{ Package = "com.dolby.android.audio.calibration"; Risk = "warn"; Reason = "Калибровка Dolby" }
+
+    # ===== ОБНОВЛЕНИЯ СИСТЕМЫ =====
+    @{ Package = "com.tcl.UpdatePeripheral";         Risk = "warn";  Reason = "Обновление периферии TCL" }
+    @{ Package = "com.snm.upgrade";                  Risk = "warn";  Reason = "OTA-обновление" }
+    @{ Package = "com.tcl.versionUpdateApp";         Risk = "warn";  Reason = "Обновление версии TCL" }
 )
+
+# ---- Кэш для быстрого поиска ----
+$script:CriticalPackagesMap = @{}
+foreach ($item in $script:criticalPackages) {
+    $script:CriticalPackagesMap[$item.Package] = $item
+}
+
+# ---- Обратная совместимость: старый список как массив имён ----
+$script:systemCriticalPackages = @($script:criticalPackages | Where-Object { $_.Risk -eq "block" } | ForEach-Object { $_.Package })
+
+# ---- Кэш для быстрого поиска ----
+$script:CriticalPackagesMap = @{}
+foreach ($item in $script:criticalPackages) {
+    $script:CriticalPackagesMap[$item.Package] = $item
+}
+
+# ---- Обратная совместимость: старый список как массив имён ----
+$script:systemCriticalPackages = @($script:criticalPackages | Where-Object { $_.Risk -eq "block" } | ForEach-Object { $_.Package })
 
 # ----------------------------------------------------------------------------
 #  LAUNCHER LIST

@@ -36,9 +36,7 @@
     $tabControl.Style = $window.Resources["MiuiTabControlTemplate"]
     $tabControl.Margin = "0,8,0,0"
 
-    # =========================================================================
-    #  ВКЛАДКА 1: ПРИЛОЖЕНИЯ И ФАЙЛЫ
-    # =========================================================================
+        # --- Вкладка 1: Приложения и файлы ---
     $tabApps = New-Object System.Windows.Controls.TabItem
     $tabApps.Header = "Приложения и файлы"
     $tabApps.Style = $window.Resources["MiuiTabItem"]
@@ -48,29 +46,29 @@
 
     $appsPanel.Children.Add((New-ViewLabel -Text "Управление приложениями и файлами на телевизоре." -Light)) | Out-Null
 
-    $btn = New-ViewButton -Text "Управление пакетами" -ColorType "Primary" -Compact -Stretch -OnClick {
+    $btnAppsCleanup = New-ViewButton -Text "Управление пакетами" -ColorType "Primary" -Compact -Stretch -OnClick {
         Switch-View -ViewName "Cleanup"
     }
-    $btn.Margin = New-Object System.Windows.Thickness(0, 0, 0, 8)
-    $appsPanel.Children.Add($btn) | Out-Null
+    $btnAppsCleanup.Margin = New-Object System.Windows.Thickness(0, 0, 0, 8)
+    $appsPanel.Children.Add($btnAppsCleanup) | Out-Null
 
-    $btn = New-ViewButton -Text "Установить APK" -ColorType "Primary" -Compact -Stretch -OnClick {
+    $btnAppsApk = New-ViewButton -Text "Установить APK" -ColorType "Primary" -Compact -Stretch -OnClick {
         Switch-View -ViewName "Apk"
     }
-    $btn.Margin = New-Object System.Windows.Thickness(0, 0, 0, 8)
-    $appsPanel.Children.Add($btn) | Out-Null
+    $btnAppsApk.Margin = New-Object System.Windows.Thickness(0, 0, 0, 8)
+    $appsPanel.Children.Add($btnAppsApk) | Out-Null
 
-    $btn = New-ViewButton -Text "Файловый менеджер" -ColorType "Primary" -Compact -Stretch -OnClick {
+    $btnAppsFiles = New-ViewButton -Text "Файловый менеджер" -ColorType "Primary" -Compact -Stretch -OnClick {
         Switch-View -ViewName "Files"
     }
-    $btn.Margin = New-Object System.Windows.Thickness(0, 0, 0, 8)
-    $appsPanel.Children.Add($btn) | Out-Null
+    $btnAppsFiles.Margin = New-Object System.Windows.Thickness(0, 0, 0, 8)
+    $appsPanel.Children.Add($btnAppsFiles) | Out-Null
 
-    $btn = New-ViewButton -Text "Отключённые приложения" -ColorType "Warning" -Compact -Stretch -OnClick {
+    $btnAppsDisabled = New-ViewButton -Text "Отключённые приложения" -ColorType "Warning" -Compact -Stretch -OnClick {
         Switch-View -ViewName "DisabledApps"
     }
-    $btn.Margin = New-Object System.Windows.Thickness(0, 0, 0, 0)
-    $appsPanel.Children.Add($btn) | Out-Null
+    $btnAppsDisabled.Margin = New-Object System.Windows.Thickness(0, 0, 0, 0)
+    $appsPanel.Children.Add($btnAppsDisabled) | Out-Null
 
     $tabApps.Content = $appsPanel
     $tabControl.Items.Add($tabApps) | Out-Null
@@ -87,17 +85,26 @@
 
     $toolsPanel.Children.Add((New-ViewLabel -Text "Дополнительные инструменты." -Light)) | Out-Null
 
-    $btn = New-ViewButton -Text "Пульт" -ColorType "Primary" -Compact -Stretch -OnClick {
+    # --- Пульт ---
+    $btnToolsRemote = New-ViewButton -Text "Пульт" -ColorType "Primary" -Compact -Stretch -OnClick {
         Switch-View -ViewName "Remote"
     }
-    $btn.Margin = New-Object System.Windows.Thickness(0, 0, 0, 8)
-    $toolsPanel.Children.Add($btn) | Out-Null
+    $btnToolsRemote.Margin = New-Object System.Windows.Thickness(0, 0, 0, 8)
+    $toolsPanel.Children.Add($btnToolsRemote) | Out-Null
 
-    $btn = New-ViewButton -Text "Скриншот / запись видео" -ColorType "Primary" -Compact -Stretch -OnClick {
+    # --- Скриншот ---
+    $btnToolsScreenshot = New-ViewButton -Text "Скриншот / запись видео" -ColorType "Primary" -Compact -Stretch -OnClick {
         Switch-View -ViewName "Screenshot"
     }
-    $btn.Margin = New-Object System.Windows.Thickness(0, 0, 0, 0)
-    $toolsPanel.Children.Add($btn) | Out-Null
+    $btnToolsScreenshot.Margin = New-Object System.Windows.Thickness(0, 0, 0, 8)
+    $toolsPanel.Children.Add($btnToolsScreenshot) | Out-Null
+
+    # --- Трансляция экрана (scrcpy) ---
+    $btnToolsScrcpy = New-ViewButton -Text "Трансляция экрана (scrcpy)" -ColorType "Primary" -Compact -Stretch -OnClick {
+        Switch-View -ViewName "Scrcpy"
+    }
+    $btnToolsScrcpy.Margin = New-Object System.Windows.Thickness(0, 0, 0, 0)
+    $toolsPanel.Children.Add($btnToolsScrcpy) | Out-Null
 
     $tabTools.Content = $toolsPanel
     $tabControl.Items.Add($tabTools) | Out-Null
@@ -112,7 +119,7 @@
     $systemPanel = New-Object System.Windows.Controls.StackPanel
     $systemPanel.Margin = "12"
 
-    # ========================================================================
+        # ========================================================================
     #  Вспомогательная функция: строка из N кнопок в Grid
     # ========================================================================
     function New-ButtonRow {
@@ -140,9 +147,10 @@
 
         $gridCol = 0
         foreach ($b in $Buttons) {
-            $btn = New-ViewButton -Text $b.Text -ColorType $b.ColorType -Compact -Stretch -OnClick $b.OnClick
-            [System.Windows.Controls.Grid]::SetColumn($btn, $gridCol)
-            $grid.Children.Add($btn) | Out-Null
+            # ВАЖНО: уникальное имя переменной через счётчик
+            $btnRow = New-ViewButton -Text $b.Text -ColorType $b.ColorType -Compact -Stretch -OnClick $b.OnClick
+            [System.Windows.Controls.Grid]::SetColumn($btnRow, $gridCol)
+            $grid.Children.Add($btnRow) | Out-Null
 
             $gridCol += 2
         }
@@ -159,11 +167,11 @@
     $diagHeader.Margin = "0,0,0,6"
     $systemPanel.Children.Add($diagHeader) | Out-Null
 
-    $btn = New-ViewButton -Text "Мониторинг ТВ" -ColorType "Primary" -Compact -Stretch -OnClick {
+    $btnSystemMonitoring = New-ViewButton -Text "Мониторинг ТВ" -ColorType "Primary" -Compact -Stretch -OnClick {
         Switch-View -ViewName "Monitoring"
     }
-    $btn.Margin = New-Object System.Windows.Thickness(0, 0, 0, 8)
-    $systemPanel.Children.Add($btn) | Out-Null
+    $btnSystemMonitoring.Margin = New-Object System.Windows.Thickness(0, 0, 0, 8)
+    $systemPanel.Children.Add($btnSystemMonitoring) | Out-Null
 
     $systemPanel.Children.Add((New-ButtonRow -Buttons @(
         @{ Text = "Сведения об устройстве"; ColorType = "Primary"; OnClick = { Switch-View -ViewName "Info" } }
@@ -326,10 +334,10 @@
     $pwrHeader.Margin = "0,0,0,6"
     $systemPanel.Children.Add($pwrHeader) | Out-Null
 
-    $btn = New-ViewButton -Text "Питание и перезагрузка" -ColorType "Danger" -Compact -Stretch -OnClick {
+    $btnPower = New-ViewButton -Text "Питание и перезагрузка" -ColorType "Danger" -Compact -Stretch -OnClick {
         Switch-View -ViewName "Power"
     }
-    $systemPanel.Children.Add($btn) | Out-Null
+    $systemPanel.Children.Add($btnPower) | Out-Null
 
     $tabSystem.Content = $systemPanel
     $tabControl.Items.Add($tabSystem) | Out-Null

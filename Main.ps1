@@ -4,6 +4,17 @@
 # ============================================================================
 
 # ---------------------------------------------------------------------------
+#  ВЕРСИЯ ПРИЛОЖЕНИЯ
+# ---------------------------------------------------------------------------
+$script:AppVersion = "0.0.10"
+$global:AppVersion  = $script:AppVersion
+
+# ---------------------------------------------------------------------------
+#  0. Глобальный флаг завершения (используется всеми таймерами и UI)
+# ---------------------------------------------------------------------------
+$global:AppClosing = $false
+
+# ---------------------------------------------------------------------------
 #  1. Сборки WPF
 # ---------------------------------------------------------------------------
 Add-Type -AssemblyName PresentationFramework
@@ -30,7 +41,9 @@ if ($MyInvocation.MyCommand.Path -and (Test-Path $MyInvocation.MyCommand.Path)) 
 #  3. Модули (порядок важен!)
 # ---------------------------------------------------------------------------
 . "$script:AppRoot\Modules\Config.ps1"           # списки пакетов, пути
+. "$script:AppRoot\Modules\CommandValidator.ps1" # проверка критических пакетов и команд
 . "$script:AppRoot\Modules\AdbHelper.ps1"        # ADB-команды
+. "$script:AppRoot\Modules\ScrcpyHelper.ps1" 
 . "$script:AppRoot\Modules\AdbKeyboard.ps1"      # ADBKeyboard
 . "$script:AppRoot\Modules\NetworkScanner.ps1"   # сканер сети
 . "$script:AppRoot\Modules\ChangeLogger.ps1"     # откат изменений
@@ -124,7 +137,6 @@ try {
 
 # Setup
 . "$script:AppRoot\Views\ViewSetup.ps1"
-. "$script:AppRoot\Views\Setup\SetupConnect.ps1"
 . "$script:AppRoot\Views\Setup\SetupConnected.ps1"
 . "$script:AppRoot\Views\Setup\SetupDevices.ps1"
 . "$script:AppRoot\Views\Setup\SetupOta.ps1"
@@ -141,6 +153,7 @@ try {
 . "$script:AppRoot\Views\ViewInfo.ps1"
 . "$script:AppRoot\Views\ViewPower.ps1"
 . "$script:AppRoot\Views\ViewLogcat.ps1"
+. "$script:AppRoot\Views\ViewScrcpy.ps1"
 . "$script:AppRoot\Views\ViewService.ps1"
 . "$script:AppRoot\Views\ViewWifi.ps1"
 . "$script:AppRoot\Views\ViewBluetooth.ps1"
@@ -157,6 +170,7 @@ try {
 . "$script:AppRoot\Views\ViewHttpServer.ps1"
 . "$script:AppRoot\Views\ViewSnapshots.ps1"
 . "$script:AppRoot\Views\ViewMonitoring.ps1"
+
 # ---------------------------------------------------------------------------
 #  10. Проверка ADB в PATH
 # ---------------------------------------------------------------------------
@@ -195,6 +209,8 @@ if ($autoConnect -and $lastIp) {
 #  12. Функция обновления статуса HTTP в статус-баре
 # ---------------------------------------------------------------------------
 function Update-HttpStatusBar {
+    # ===== ЗАЩИТА =====
+    if ($global:AppClosing) { return }
     if (-not $script:HttpStatusText) { return }
 
     try {
@@ -232,8 +248,23 @@ $global:UpdateHttpStatusBar = ${function:Update-HttpStatusBar}
 # ---------------------------------------------------------------------------
 . "$script:AppRoot\Views\MainWindow.xaml.ps1"
 
-Write-Host "DIAG-2: до ShowDialog. window = $window" -ForegroundColor Cyan
-Write-Host "DIAG-2: window null? = $($null -eq $window)" -ForegroundColor Cyan
+# =====================================================================
+#  ДИАГНОСТИКА: AppDomain.UnhandledException (ловит всё, включая WPF)
+# =====================================================================
+[System.AppDomain]::CurrentDomain.add_UnhandledException({
+    param($sender, $e)
+    Write-Host "=== AppDomain.UnhandledException ===" -ForegroundColor Red
+    Write-Host "Message: $($e.ExceptionObject.Message)" -ForegroundColor Yellow
+    Write-Host "Type: $($e.ExceptionObject.GetType().FullName)" -ForegroundColor Yellow
+    Write-Host "StackTrace:" -ForegroundColor Yellow
+    Write-Host $e.ExceptionObject.StackTrace
+    if ($e.ExceptionObject.InnerException) {
+        Write-Host "--- InnerException ---" -ForegroundColor Magenta
+        Write-Host "Message: $($e.ExceptionObject.InnerException.Message)" -ForegroundColor Yellow
+        Write-Host "StackTrace:" -ForegroundColor Yellow
+        Write-Host $e.ExceptionObject.InnerException.StackTrace
+    }
+})
 
 # ---------------------------------------------------------------------------
 #  14. Запуск окна
@@ -243,30 +274,51 @@ $window.WindowState = "Maximized"
 try {
     $window.ShowDialog() | Out-Null
 } finally {
-    # -----------------------------------------------------------------
-    #  Корректное завершение фоновых Runspace'ов и таймеров
-    # -----------------------------------------------------------------
+    # =====================================================================
+    #  1. ФЛАГ ЗАВЕРШЕНИЯ — все таймеры и обновляторы проверяют его
+    # =====================================================================
+    $global:AppClosing = $true
+    Write-Host "Начато завершение работы..." -ForegroundColor Cyan
 
-    # --- HTTP-сервер (первым, чтобы не висел accept-loop) ---
+    # =====================================================================
+    #  2. ТАЙМЕРЫ (первыми, чтобы не дёргали UI)
+    # =====================================================================
+    try { if ($script:StatusTimer)              { $script:StatusTimer.Stop() } } catch { }
+    try { if ($script:ScanTimer)                { $script:ScanTimer.Stop() } } catch { }
+    try { if ($script:ApkTimer)                 { $script:ApkTimer.Stop() } } catch { }
+    try { if ($script:ThermalRefreshTimer)      { $script:ThermalRefreshTimer.Stop() } } catch { }
+    try { if ($script:TrafficRefreshTimer)      { $script:TrafficRefreshTimer.Stop() } } catch { }
+    try { if ($script:RecordProgressTimer)      { $script:RecordProgressTimer.Stop() } } catch { }
+    try { if ($script:MonitoringRefreshTimer)   { $script:MonitoringRefreshTimer.Stop() } } catch { }
+    try { if ($script:MonitoringTrafficTimer)   { $script:MonitoringTrafficTimer.Stop() } } catch { }
+    try { if ($script:MonTrafTimer)             { $script:MonTrafTimer.Stop() } } catch { }
+    try { if ($script:MonSlowTimer)             { $script:MonSlowTimer.Stop() } } catch { }
+    try { if ($script:ScenarioRun -and $script:ScenarioRun.Timer) { $script:ScenarioRun.Timer.Stop() } } catch { }
+
+    # =====================================================================
+    #  3. HTTP-сервер (первым среди Runspace'ов, чтобы не висел accept-loop)
+    # =====================================================================
     try { if ($script:HttpServerRunning) { Stop-HttpServer } } catch { }
 
-    # --- Logcat ---
+    # =====================================================================
+    #  4. Logcat
+    # =====================================================================
     try { if ($script:LogcatProcess) { Stop-Logcat -Proc $script:LogcatProcess } } catch { }
 
-    # --- Runspace'ы сканирования и установки APK ---
+    # =====================================================================
+    #  5. Runspace'ы сканирования и установки APK
+    # =====================================================================
     try { if ($script:ScanPS)        { $script:ScanPS.Stop();  $script:ScanPS.Dispose() } } catch { }
     try { if ($script:ApkPS)         { $script:ApkPS.Stop();   $script:ApkPS.Dispose() } } catch { }
     try { if ($script:ApkRunspace)   { $script:ApkRunspace.Close() } } catch { }
 
-    # --- Таймеры ---
-    try { if ($script:ScanTimer) { $script:ScanTimer.Stop() } } catch { }
-    try { if ($script:ApkTimer)  { $script:ApkTimer.Stop()  } } catch { }
-    try { if ($script:StatusTimer) { $script:StatusTimer.Stop() } } catch { }
-    try { if ($script:ThermalRefreshTimer) { $script:ThermalRefreshTimer.Stop() } } catch { }
-    try { if ($script:TrafficRefreshTimer) { $script:TrafficRefreshTimer.Stop() } } catch { }
-    try { if ($script:RecordProgressTimer) { $script:RecordProgressTimer.Stop() } } catch { }
-    try { if ($script:MonitoringRefreshTimer) { $script:MonitoringRefreshTimer.Stop() } } catch { }
-    try { if ($script:MonitoringTrafficTimer) { $script:MonitoringTrafficTimer.Stop() } } catch { }
+    # =====================================================================
+    #  6. СБРАСЫВАЕМ ССЫЛКИ НА UI (в самом конце, чтобы поздние вызовы
+    #     не падали с "Не удается найти свойство 'Text'")
+    # =====================================================================
+    $global:statusText     = $null
+    $global:contentGrid    = $null
+    $global:HttpStatusText = $null
 
     Write-Host "Приложение закрыто." -ForegroundColor Cyan
 }

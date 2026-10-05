@@ -56,7 +56,6 @@ function Connect-AdbDevice {
         }
 
         if ($ourLine -match "`tdevice$") {
-            # Устройство в списке. Проверим реальный отклик.
             $stateOut = & $script:adbPath -s "$Ip`:5555" get-state 2>&1
             $stateText = ($stateOut | Out-String).Trim()
 
@@ -93,7 +92,6 @@ function Connect-AdbDevice {
         $lastState = $ourLine
     }
 
-    # --- Таймаут: разбираемся, почему ---
     $script:connected = $false
 
     switch ($lastState) {
@@ -132,6 +130,15 @@ function Remove-Package {
         [ValidateSet("auto","user0","all","disable")]
         [string]$Mode = "auto"
     )
+
+    # ===== ПРОВЕРКА КРИТИЧНОСТИ =====
+    if (Get-Command Test-PackageOperation -ErrorAction SilentlyContinue) {
+        $opCheck = Test-PackageOperation -Package $Package -Operation "remove"
+        if (-not $opCheck.Allowed) {
+            Write-Log -Message "ЗАПРЕЩЕНО: $($opCheck.Reason)" -Level "Error"
+            return @{ Success = $false; Method = "blocked"; Message = $opCheck.Reason }
+        }
+    }
 
     Write-Log -Message "Удаляю: $Package (режим: $Mode)" -Level "Info"
 
@@ -199,6 +206,16 @@ function Remove-Package {
 # ===== ОТКЛЮЧЕНИЕ ПАКЕТА =====
 function Disable-Package {
     param([string]$Package)
+
+    # ===== ПРОВЕРКА КРИТИЧНОСТИ =====
+    if (Get-Command Test-PackageOperation -ErrorAction SilentlyContinue) {
+        $opCheck = Test-PackageOperation -Package $Package -Operation "disable"
+        if (-not $opCheck.Allowed) {
+            Write-Log -Message "ЗАПРЕЩЕНО: $($opCheck.Reason)" -Level "Error"
+            return $false
+        }
+    }
+
     Write-Log -Message "Отключаю: $Package" -Level "Info"
     $out = & $script:adbPath shell pm disable-user --user 0 $Package 2>&1
     if ($out -match "new state: disabled") {
@@ -1242,46 +1259,65 @@ function Test-AdbInPath {
     return $false
 }
 
-function Add-AdbToUserPath {
-    param([string]$AdbFolder)
+# ============================================================================
+#  ДОБАВЛЕНИЕ ПАПКИ В ПОЛЬЗОВАТЕЛЬСКИЙ PATH
+#
+#  Универсальная функция. Используется для ADB и scrcpy.
+#  Добавляет папку в конец пользовательского PATH (User, не Machine),
+#  обновляет PATH текущей сессии и рассылает WM_SETTINGCHANGE.
+# ============================================================================
+function Add-FolderToUserPath {
+    param(
+        [Parameter(Mandatory)][string]$Folder,
+        [string]$RequireFile = ""    # опционально: имя файла, которое должно быть в папке
+    )
 
-    if (-not (Test-Path $AdbFolder)) {
-        Write-Log -Message "Папка не найдена: $AdbFolder" -Level "Error"
+    if (-not (Test-Path $Folder)) {
+        Write-Log -Message "Папка не найдена: $Folder" -Level "Error"
         return $false
     }
 
-    $adbExe = Join-Path $AdbFolder "adb.exe"
-    if (-not (Test-Path $adbExe)) {
-        Write-Log -Message "В папке нет adb.exe: $AdbFolder" -Level "Error"
-        return $false
+    # Если указан обязательный файл — проверяем его наличие
+    if ($RequireFile) {
+        $requiredPath = Join-Path $Folder $RequireFile
+        if (-not (Test-Path $requiredPath)) {
+            Write-Log -Message "В папке нет $RequireFile`: $Folder" -Level "Error"
+            return $false
+        }
     }
 
-    # 1. Читаем текущий пользовательский PATH
+    # --- 1. Читаем текущий пользовательский PATH ---
     $currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
     if (-not $currentPath) { $currentPath = "" }
 
-    # 2. Проверяем, нет ли уже этой папки в PATH
+    # --- 2. Проверяем, нет ли уже этой папки ---
     $pathEntries = $currentPath -split ';' | Where-Object { $_ -ne "" }
-    $alreadyThere = $pathEntries | Where-Object { $_.TrimEnd('\') -eq $AdbFolder.TrimEnd('\') }
+    $alreadyThere = $pathEntries | Where-Object { $_.TrimEnd('\') -eq $Folder.TrimEnd('\') }
 
     if ($alreadyThere) {
-        Write-Log -Message "Папка уже в PATH: $AdbFolder" -Level "Info"
-        # Всё равно обновляем текущую сессию
-        $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + $currentPath
+        Write-Log -Message "Папка уже в PATH: $Folder" -Level "Info"
+        # Обновляем PATH текущей сессии на всякий случай
+        $machinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
+        $env:Path = "$machinePath;$currentPath"
         return $true
     }
 
-    # 3. Добавляем папку в конец пользовательского PATH
-    $newPath = if ($currentPath.TrimEnd(';')) { "$currentPath;$AdbFolder" } else { $AdbFolder }
+    # --- 3. Добавляем папку в конец пользовательского PATH ---
+    $newPath = if ($currentPath.TrimEnd(';')) { "$currentPath;$Folder" } else { $Folder }
 
-    [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
-    Write-Log -Message "Папка добавлена в PATH: $AdbFolder" -Level "Success"
+    try {
+        [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
+        Write-Log -Message "Папка добавлена в PATH: $Folder" -Level "Success"
+    } catch {
+        Write-Log -Message "Не удалось записать PATH: $_" -Level "Error"
+        return $false
+    }
 
-    # 4. Обновляем PATH в текущей сессии (чтобы adb заработал сразу)
+    # --- 4. Обновляем PATH текущей сессии (чтобы новый exe заработал сразу) ---
     $machinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
     $env:Path = "$machinePath;$newPath"
 
-    # 5. Отправляем WM_SETTINGCHANGE, чтобы другие приложения подхватили
+    # --- 5. Отправляем WM_SETTINGCHANGE, чтобы другие приложения подхватили ---
     try {
         [void][NativeMethods]::SendMessageTimeout(
             [IntPtr]0xffff, 0x1A, [UIntPtr]::Zero, "Environment", 0x2, 5000, [ref]([UIntPtr]::Zero)
@@ -1289,6 +1325,12 @@ function Add-AdbToUserPath {
     } catch { }
 
     return $true
+}
+
+# ---- Обёртка для совместимости со старым кодом ----
+function Add-AdbToUserPath {
+    param([string]$AdbFolder)
+    return Add-FolderToUserPath -Folder $AdbFolder -RequireFile "adb.exe"
 }
 
 # Вспомогательный класс для SendMessageTimeout
@@ -1355,6 +1397,16 @@ function Initialize-AdbPath {
 # ===== ОЧИСТКА КЭША ПРИЛОЖЕНИЯ =====
 function Clear-AppCache {
     param([string]$Package)
+
+    # ===== ПРОВЕРКА КРИТИЧНОСТИ =====
+    if (Get-Command Test-PackageOperation -ErrorAction SilentlyContinue) {
+        $opCheck = Test-PackageOperation -Package $Package -Operation "clear"
+        if (-not $opCheck.Allowed) {
+            Write-Log -Message "ЗАПРЕЩЕНО: $($opCheck.Reason)" -Level "Error"
+            return $false
+        }
+    }
+
     Write-Log -Message "Очистка данных: $Package" -Level "Info"
     $out = & $script:adbPath shell pm clear $Package 2>&1
     if ($out -match "Success") {
@@ -1981,4 +2033,54 @@ function Test-IsApkBundle {
     param([string]$Path)
     $ext = [System.IO.Path]::GetExtension($Path).ToLower()
     return ($ext -in @(".apks", ".xapk", ".apkm"))
+}
+
+# ============================================================================
+#  ПОЛУЧЕНИЕ ИМЕНИ УСТРОЙСТВА (для статус-бара)
+#  Пробуем несколько источников по порядку:
+#    1. ro.product.marketname  — маркетинговое имя (наиболее "человечное")
+#    2. ro.product.model       — модель (например, "43C655")
+#    3. ro.product.manufacturer + model
+#    4. net.hostname           — сетевое имя
+# ============================================================================
+function Get-DeviceDisplayName {
+    if (-not $script:connected -or -not $script:deviceIp) {
+        return ""
+    }
+
+    if ($script:DeviceModelName) {
+        return $script:DeviceModelName
+    }
+
+    try {
+        $marketName = (& $script:adbPath shell getprop ro.product.marketname 2>&1 | Out-String).Trim()
+        if ($marketName -and $marketName -ne "" -and $marketName -notmatch '^null$') {
+            $script:DeviceModelName = $marketName
+            return $marketName
+        }
+
+        $model = (& $script:adbPath shell getprop ro.product.model 2>&1 | Out-String).Trim()
+        if ($model -and $model -ne "" -and $model -notmatch '^null$') {
+            $script:DeviceModelName = $model
+            return $model
+        }
+
+        $manufacturer = (& $script:adbPath shell getprop ro.product.manufacturer 2>&1 | Out-String).Trim()
+        if ($manufacturer -and $manufacturer -ne "" -and $manufacturer -notmatch '^null$') {
+            if ($model) {
+                $script:DeviceModelName = "$manufacturer $model"
+                return $script:DeviceModelName
+            }
+            $script:DeviceModelName = $manufacturer
+            return $manufacturer
+        }
+
+        $hostname = (& $script:adbPath shell getprop net.hostname 2>&1 | Out-String).Trim()
+        if ($hostname -and $hostname -ne "" -and $hostname -notmatch '^null$') {
+            $script:DeviceModelName = $hostname
+            return $hostname
+        }
+    } catch { }
+
+    return ""
 }

@@ -142,10 +142,11 @@ function Start-HttpServer {
         Write-Log -Message "Runspace: собрано $($functionNames.Count) функций, длина $($functionDefs.Length) символов" -Level "Info"
 
         $stateBlock = @"
-`$global:AdbPath   = '$($script:adbPath -replace "'", "''")'
-`$global:DeviceIp  = '$($script:deviceIp -replace "'", "''")'
-`$global:Connected = `$$($script:connected.ToString().ToLower())
-`$global:AppRoot   = '$($script:AppRoot -replace "'", "''")'
+`$global:AdbPath    = '$($script:adbPath -replace "'", "''")'
+`$global:DeviceIp   = '$($script:deviceIp -replace "'", "''")'
+`$global:Connected  = `$$($script:connected.ToString().ToLower())
+`$global:AppRoot    = '$($script:AppRoot -replace "'", "''")'
+`$global:AppVersion = '$($script:AppVersion -replace "'", "''")'
 "@
 
         $htmlContent = Get-HttpIndexHtml
@@ -644,7 +645,7 @@ function Invoke-HttpApiStatus {
         $result = [ordered]@{
             connected  = $isConnected
             deviceIp   = $deviceIp
-            appVersion = "0.0.7"
+            appVersion = $global:AppVersion
             serverTime = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
         }
         return ($result | ConvertTo-Json -Depth 5)
@@ -1022,6 +1023,9 @@ function Invoke-HttpApiPackages {
     }
 }
 
+# ============================================================================
+#  API: ДЕЙСТВИЯ С ПАКЕТАМИ
+# ============================================================================
 function Invoke-HttpApiPackageAction {
     param([string]$RequestBody)
     try {
@@ -1040,30 +1044,105 @@ function Invoke-HttpApiPackageAction {
             return '{"error":"invalid_action"}'
         }
 
+        # =====================================================================
+        #  ЗАЩИТА КРИТИЧЕСКИХ ПАКЕТОВ
+        #  Список продублирован здесь, чтобы HTTP-Runspace был самодостаточным
+        #  (не требует передачи Test-PackageOperation через functionDefs).
+        # =====================================================================
+        $blockedPackages = @(
+            'android',
+            'com.android.systemui',
+            'com.android.settings',
+            'com.android.shell',
+            'com.android.providers.settings',
+            'com.android.se',
+            'com.google.android.gms',
+            'com.google.android.gsf',
+            'com.tcl.systemserver',
+            'com.tcl.providers.config',
+            'com.tcl.systemui.plugin',
+            'com.tcl.globalkeyoverlay',
+            'com.tcl.tvinput',
+            'com.mediatek.network'
+        )
+
+        # warn-пакеты: разрешаем, но с явным флагом в ответе
+        $warnPackages = @(
+            'com.android.vending',
+            'com.google.android.apps.tv.launcherx',
+            'com.tcl.tv',
+            'com.tcl.autopair',
+            'com.tcl.android.webview',
+            'com.tcl.initsetup',
+            'com.mediatek.speakerservice',
+            'com.mediatek.backgrounddetection',
+            'com.mediatek.android.tv.mdns.offload',
+            'com.mediatek.android.tv.mdns.offload.overlay',
+            'com.mediatek.support.webview',
+            'com.dolby.android.audio.service',
+            'com.dolby.android.audio.calibration',
+            'com.tcl.UpdatePeripheral',
+            'com.snm.upgrade',
+            'com.tcl.versionUpdateApp'
+        )
+
+        # Только для опасных операций (disable/remove/clear)
+        if ($action -in @('disable','remove','clear')) {
+            if ($pkg -in $blockedPackages) {
+                return '{"success":false,"error":"protected","message":"Пакет защищён от изменения (критический для системы)"}'
+            }
+        }
+
+        $isWarn = ($pkg -in $warnPackages)
+
         switch ($action) {
             'disable' {
                 $out = & $global:AdbPath shell pm disable-user --user 0 $pkg 2>&1
                 $outText = ($out | Out-String).Trim()
                 $ok = ($outText -match 'new state: disabled' -or $outText -match 'disabled-user')
-                return (@{ success = $ok; action = "disable"; package = $pkg; raw = $outText } | ConvertTo-Json -Compress)
+                $warning = if ($isWarn) { "Пакет отмечен как потенциально критичный" } else { "" }
+                return (@{
+                    success = $ok
+                    action  = "disable"
+                    package = $pkg
+                    raw     = $outText
+                    warning = $warning
+                } | ConvertTo-Json -Compress)
             }
             'enable' {
                 $out = & $global:AdbPath shell pm enable $pkg 2>&1
                 $outText = ($out | Out-String).Trim()
                 $ok = ($outText -match 'new state: enabled' -or $outText -match 'enabled')
-                return (@{ success = $ok; action = "enable"; package = $pkg; raw = $outText } | ConvertTo-Json -Compress)
+                return (@{
+                    success = $ok
+                    action  = "enable"
+                    package = $pkg
+                    raw     = $outText
+                } | ConvertTo-Json -Compress)
             }
             'remove' {
                 $out = & $global:AdbPath shell pm uninstall --user 0 $pkg 2>&1
                 $outText = ($out | Out-String).Trim()
                 $ok = ($outText -match 'Success')
-                return (@{ success = $ok; action = "remove"; package = $pkg; raw = $outText } | ConvertTo-Json -Compress)
+                $warning = if ($isWarn) { "Пакет отмечен как потенциально критичный" } else { "" }
+                return (@{
+                    success = $ok
+                    action  = "remove"
+                    package = $pkg
+                    raw     = $outText
+                    warning = $warning
+                } | ConvertTo-Json -Compress)
             }
             'clear' {
                 $out = & $global:AdbPath shell pm clear $pkg 2>&1
                 $outText = ($out | Out-String).Trim()
                 $ok = ($outText -match 'Success')
-                return (@{ success = $ok; action = "clear"; package = $pkg; raw = $outText } | ConvertTo-Json -Compress)
+                return (@{
+                    success = $ok
+                    action  = "clear"
+                    package = $pkg
+                    raw     = $outText
+                } | ConvertTo-Json -Compress)
             }
         }
     } catch {

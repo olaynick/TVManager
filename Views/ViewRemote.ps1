@@ -287,6 +287,14 @@
 
     $mainStack.Children.Add($mediaGrid) | Out-Null
 
+        # ===== ТРАНСЛЯЦИЯ ЭКРАНА =====
+    $mainStack.Children.Add((New-RemoteSectionTitle -Text "Трансляция")) | Out-Null
+
+    $btnScrcpy = New-ViewButton -Text "📺  Транслировать экран на ПК (scrcpy)" -ColorType "Purple" -Stretch -OnClick {
+        Show-ScrcpyDialog
+    }
+    $mainStack.Children.Add($btnScrcpy) | Out-Null
+
     # ===== ВВОД ТЕКСТА =====
     $mainStack.Children.Add((New-RemoteSectionTitle -Text "Ввод текста")) | Out-Null
 
