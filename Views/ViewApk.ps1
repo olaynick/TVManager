@@ -427,6 +427,45 @@ function Start-BackgroundApkInstall {
             return $clean
         }
 
+                # ===== Проверка свободного места =====
+        function Get-FreeSpaceBytes {
+            try {
+                $out = & $adbPath shell df /data 2>&1
+                $outText = ($out | Out-String)
+                foreach ($line in ($outText -split "`r?`n")) {
+                    if ($line -match '(\d+)\s+(\d+)\s+(\d+)\s+(\d+)%') {
+                        return [int64]$matches[3] * 1024
+                    }
+                }
+            } catch { }
+            return -1
+        }
+
+        $freeBytes = Get-FreeSpaceBytes
+        if ($freeBytes -gt 0) {
+            $freeMb = [math]::Round($freeBytes / 1MB, 0)
+            Write-BgLog "Свободно на /data: $freeMb МБ" "Info"
+        }
+
+        # Считаем суммарный размер всех файлов для установки
+        $totalSize = 0
+        foreach ($f in $files) {
+            try { $totalSize += $f.Length } catch { }
+        }
+        $totalSizeMb = [math]::Round($totalSize / 1MB, 0)
+
+        # APK-файлы при установке занимают примерно в 1.5–2 раза больше места,
+        # чем сам файл (распаковка dex, кэш, оптимизация)
+        $requiredMb = [math]::Round($totalSizeMb * 2, 0)
+
+        Write-BgLog "Размер APK: $totalSizeMb МБ, ожидается ~$requiredMb МБ свободного места" "Info"
+
+        if ($freeBytes -gt 0 -and $freeBytes -lt ($requiredMb * 1MB)) {
+            Write-BgLog "ВНИМАНИЕ: свободного места может не хватить!" "Warning"
+            Write-BgLog "  Свободно: $freeMb МБ, требуется: ~$requiredMb МБ" "Warning"
+            Write-BgLog "  Рекомендуется очистить место на ТВ" "Warning"
+        }
+
         $success        = 0
         $failed         = 0
         $installedPaths = @()

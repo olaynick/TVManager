@@ -644,7 +644,7 @@ function Invoke-HttpApiStatus {
         $result = [ordered]@{
             connected  = $isConnected
             deviceIp   = $deviceIp
-            appVersion = "0.0.6"
+            appVersion = "0.0.7"
             serverTime = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
         }
         return ($result | ConvertTo-Json -Depth 5)

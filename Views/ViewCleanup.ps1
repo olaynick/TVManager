@@ -254,8 +254,8 @@ function Show-CleanupView {
             $btnRestoreGoogle.Content = "Восстановить Google Launcher"
             $btnRestoreGoogle.Style = $window.Resources["RoundedButton"]
             $btnRestoreGoogle.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
-        )
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
+            )
             $btnRestoreGoogle.Padding = "12,6"
             $btnRestoreGoogle.FontSize = 11
             $btnRestoreGoogle.Margin = "0,0,8,0"
@@ -287,8 +287,8 @@ function Show-CleanupView {
             $btnRestoreTcl.Content = "Восстановить TCL Launcher"
             $btnRestoreTcl.Style = $window.Resources["RoundedButton"]
             $btnRestoreTcl.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#6c547e")
-        )
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#6c547e")
+            )
             $btnRestoreTcl.Padding = "12,6"
             $btnRestoreTcl.FontSize = 11
             $btnRestoreTcl.Add_Click({
@@ -533,7 +533,7 @@ function Show-CleanupView {
     $script:CleanupResultsPanel.Margin = "0,10,0,0"
     $script:CleanupResultsPanel.Visibility = "Collapsed"
 
-    $tabControl = $tabControl   # сохраняем ссылку
+    $tabControl = $tabControl
 
     $mainStack.Children.Add($tabControl) | Out-Null
     $mainStack.Children.Add($script:CleanupResultsPanel) | Out-Null
@@ -566,8 +566,8 @@ function Show-CleanupView {
     $btnSelectAll.Content = "Выбрать всё"
     $btnSelectAll.Style = $window.Resources["RoundedButton"]
     $btnSelectAll.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#4e7891")
-        )
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#4e7891")
+    )
     $btnSelectAll.Padding = "12,6"
     $btnSelectAll.Margin = "0,0,8,0"
     $btnSelectAll.Add_Click({
@@ -584,8 +584,8 @@ function Show-CleanupView {
     $btnDeselect.Content = "Снять всё"
     $btnDeselect.Style = $window.Resources["RoundedButton"]
     $btnDeselect.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#9c8e6a")
-        )
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#9c8e6a")
+    )
     $btnDeselect.Padding = "12,6"
     $btnDeselect.Margin = "0,0,8,0"
     $btnDeselect.Add_Click({
@@ -598,8 +598,8 @@ function Show-CleanupView {
     $btnDisable.Content = "Отключить"
     $btnDisable.Style = $window.Resources["RoundedButton"]
     $btnDisable.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#9c8e6a")
-        )
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#9c8e6a")
+    )
     $btnDisable.Padding = "12,6"
     $btnDisable.Margin = "0,0,8,0"
     $btnDisable.Add_Click({
@@ -651,8 +651,8 @@ function Show-CleanupView {
     $btnDelete.Content = "Удалить"
     $btnDelete.Style = $window.Resources["RoundedButton"]
     $btnDelete.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#724c4c")
-        )
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#724c4c")
+    )
     $btnDelete.Padding = "12,6"
     $btnDelete.Margin = "0,0,8,0"
     $btnDelete.Add_Click({
@@ -806,9 +806,10 @@ function Show-CleanupView {
     $btnClearData.Content = "Очистить данные"
     $btnClearData.Style = $window.Resources["RoundedButton"]
     $btnClearData.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#6c547e")
-        )
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#6c547e")
+    )
     $btnClearData.Padding = "12,6"
+    $btnClearData.Margin = "0,0,8,0"
     $btnClearData.Add_Click({
         $selected = @()
         foreach ($chk in $script:CleanupAllCheckboxes) {
@@ -838,10 +839,197 @@ function Show-CleanupView {
     })
     $buttons += $btnClearData
 
-    Set-BottomButtons -Buttons $buttons
+    # ========================================================================
+    #  "СКАЧАТЬ APK" (в фоне)
+    # ========================================================================
+    $btnDownloadApk = New-Object System.Windows.Controls.Button
+    $btnDownloadApk.Content = "Скачать APK"
+    $btnDownloadApk.Style = $window.Resources["RoundedButton"]
+    $btnDownloadApk.Background = New-Object System.Windows.Media.SolidColorBrush(
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#4e7891")
+    )
+    $btnDownloadApk.Padding = "12,6"
+    $btnDownloadApk.Margin = "0,0,8,0"
+    $btnDownloadApk.Add_Click({
+        param($sender, $e)
 
-    Write-Log -Message "Экран управления пакетами (5 вкладок, сквозной поиск)" -Level "Info"
-}
+        $selected = @()
+        foreach ($chk in $script:CleanupAllCheckboxes) {
+            if ($chk.IsChecked -eq $true -and $chk.IsEnabled -eq $true) {
+                $selected += $chk.Tag
+            }
+        }
+        if ($selected.Count -eq 0) {
+            Write-Log -Message "Ничего не выбрано" -Level "Warning"
+            return
+        }
+
+        Add-Type -AssemblyName System.Windows.Forms
+        $dlg = New-Object System.Windows.Forms.FolderBrowserDialog
+        $dlg.Description = "Выберите папку для сохранения APK"
+        if ($dlg.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) { return }
+
+        $folder = $dlg.SelectedPath
+
+        # Блокируем кнопку
+        $sender.IsEnabled = $false
+        $sender.Content = "Скачиваю..."
+
+        # Собираем список пакетов (только установленные)
+        $pkgs = @()
+        foreach ($pkg in $selected) {
+            $name = $pkg.Package
+            if ($script:InstalledPackagesSet.ContainsKey($name)) {
+                $pkgs += $name
+            } else {
+                Write-Log -Message "Пропущен (не установлен): $name" -Level "Warning"
+            }
+        }
+
+        if ($pkgs.Count -eq 0) {
+            $sender.IsEnabled = $true
+            $sender.Content = "Скачать APK"
+            Write-Log -Message "Нечего скачивать" -Level "Warning"
+            return
+        }
+
+        Write-Log -Message "=== Скачивание $($pkgs.Count) APK в $folder ===" -Level "Info"
+
+        # === Отдельный Runspace ===
+        $logBoxRef  = $script:LogBox
+        $adbPathRef = $script:adbPath
+        $dispatcherRef = $window.Dispatcher
+        $btnRef = $sender
+
+        $runspace = [runspacefactory]::CreateRunspace()
+        $runspace.ApartmentState = "STA"
+        $runspace.ThreadOptions = "ReuseThread"
+        $runspace.Open()
+
+        $ps = [powershell]::Create()
+        $ps.Runspace = $runspace
+
+        $ps.AddScript({
+            param($dispatcher, $logBox, $adbPath, $pkgs, $folder)
+
+            function Write-BgLog {
+                param($msg, $lvl = "Info")
+                if (-not $logBox) { return }
+                try {
+                    $logBox.Dispatcher.Invoke([action]{
+                        $time = Get-Date -Format "HH:mm:ss"
+                        $prefix = switch ($lvl) {
+                            "Error"   { "[ОШИБКА]" }
+                            "Warning" { "[!]" }
+                            "Success" { "[OK]" }
+                            default   { "[i]" }
+                        }
+                        $line = "$time $prefix $msg"
+
+                        $para = New-Object System.Windows.Documents.Paragraph
+                        $para.Margin = New-Object System.Windows.Thickness(0)
+                        $run = New-Object System.Windows.Documents.Run
+                        $run.Text = "$line`r`n"
+                        $color = switch ($lvl) {
+                            "Error"   { [System.Windows.Media.Brushes]::LightCoral }
+                            "Warning" { [System.Windows.Media.Brushes]::Khaki }
+                            "Success" { [System.Windows.Media.Brushes]::LightGreen }
+                            default   { [System.Windows.Media.Brushes]::LightGray }
+                        }
+                        $run.Foreground = $color
+                        $para.Inlines.Add($run)
+                        $logBox.Document.Blocks.Add($para)
+                        $logBox.ScrollToEnd()
+                    })
+                } catch { }
+                Start-Sleep -Milliseconds 60
+            }
+
+            $ok = 0
+            $fail = 0
+
+            for ($i = 0; $i -lt $pkgs.Count; $i++) {
+                $pkg = $pkgs[$i]
+                $num = $i + 1
+                Write-BgLog "[$num/$($pkgs.Count)] Скачиваю: $pkg" "Info"
+
+                try {
+                    # Ищем путь к APK на ТВ
+                    $out = & $adbPath shell pm path $pkg 2>&1
+                    $apkPath = ""
+                    foreach ($line in $out) {
+                        if ($line -match '^package:(.+)$') {
+                            $apkPath = $matches[1].Trim()
+                            break
+                        }
+                    }
+
+                    if (-not $apkPath) {
+                        Write-BgLog "  APK не найден для $pkg" "Warning"
+                        $fail++
+                        continue
+                    }
+
+                    $fileName = "$pkg.apk"
+                    $localPath = Join-Path $folder $fileName
+
+                    $pullOut = & $adbPath pull $apkPath $localPath 2>&1
+                    if (Test-Path $localPath) {
+                        $sizeMb = [math]::Round((Get-Item $localPath).Length / 1MB, 2)
+                        Write-BgLog "  OK: $fileName ($sizeMb МБ)" "Success"
+                        $ok++
+                    } else {
+                        Write-BgLog "  FAIL: $($pullOut | Out-String)" "Error"
+                        $fail++
+                    }
+                } catch {
+                    Write-BgLog "  Ошибка: $_" "Error"
+                    $fail++
+                }
+            }
+
+            Write-BgLog "=== Готово: скачано $ok, ошибок $fail из $($pkgs.Count) ===" "Success"
+
+            return @{ Ok = $ok; Fail = $fail; Total = $pkgs.Count; Folder = $folder }
+        }) | Out-Null
+
+        $ps.AddArgument($dispatcherRef)
+        $ps.AddArgument($logBoxRef)
+        $ps.AddArgument($adbPathRef)
+        $ps.AddArgument($pkgs)
+        $ps.AddArgument($folder)
+
+        $handle = $ps.BeginInvoke()
+
+        # === Таймер для отслеживания завершения ===
+        $timer = New-Object System.Windows.Threading.DispatcherTimer
+        $timer.Interval = [TimeSpan]::FromMilliseconds(500)
+        $timer.Add_Tick({
+            if ($handle.IsCompleted) {
+                $timer.Stop()
+
+                try {
+                    $result = $ps.EndInvoke($handle)
+                    if ($result -and $result.Count -gt 0) {
+                        $r = $result[0]
+                        [System.Windows.MessageBox]::Show(
+                            "Скачивание завершено.`n`nУспешно: $($r.Ok)`nОшибок: $($r.Fail)`nВсего: $($r.Total)`n`nПапка: $($r.Folder)",
+                            "Готово",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Information) | Out-Null
+                    }
+                } catch {
+                    Write-Log -Message "Ошибка завершения скачивания: $_" -Level "Error"
+                }
+
+                $ps.Dispose()
+                $btnRef.IsEnabled = $true
+                $btnRef.Content = "Скачать APK"
+            }
+        })
+        $timer.Start()
+    })
+    $buttons += $btnDownloadApk
 
 # ============================================================================
 #  ЭКРАН "ОТКЛЮЧЁННЫЕ ПРИЛОЖЕНИЯ"
@@ -901,8 +1089,8 @@ function Show-DisabledAppsView {
     $btnSelectAll.Content = "Выбрать всё"
     $btnSelectAll.Style = $window.Resources["RoundedButton"]
     $btnSelectAll.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#4e7891")
-        )
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#4e7891")
+    )
     $btnSelectAll.Padding = "12,6"
     $btnSelectAll.Margin = "0,0,8,0"
     $btnSelectAll.Add_Click({
@@ -914,8 +1102,8 @@ function Show-DisabledAppsView {
     $btnDeselect.Content = "Снять всё"
     $btnDeselect.Style = $window.Resources["RoundedButton"]
     $btnDeselect.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#9c8e6a")
-        )
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#9c8e6a")
+    )
     $btnDeselect.Padding = "12,6"
     $btnDeselect.Margin = "0,0,8,0"
     $btnDeselect.Add_Click({
@@ -927,8 +1115,8 @@ function Show-DisabledAppsView {
     $btnEnable.Content = "Включить"
     $btnEnable.Style = $window.Resources["RoundedButton"]
     $btnEnable.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#588653")
-        )
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#588653")
+    )
     $btnEnable.Padding = "12,6"
     $btnEnable.Add_Click({
         $selected = @()

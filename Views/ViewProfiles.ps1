@@ -72,6 +72,9 @@
     $lblName = New-Object System.Windows.Controls.TextBlock
     $lblName.Text = "Имя:"
     $lblName.FontSize = 13
+    $lblName.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+    )
     $lblName.VerticalAlignment = "Center"
     [System.Windows.Controls.Grid]::SetColumn($lblName, 0)
     $nameGrid.Children.Add($lblName) | Out-Null
@@ -79,6 +82,9 @@
     $script:ProfileNameBox = New-Object System.Windows.Controls.TextBox
     $script:ProfileNameBox.Style = $window.Resources["RoundedTextBox"]
     $script:ProfileNameBox.FontSize = 13
+    $script:ProfileNameBox.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#E0E0E0")
+    )
     [System.Windows.Controls.Grid]::SetColumn($script:ProfileNameBox, 1)
     $nameGrid.Children.Add($script:ProfileNameBox) | Out-Null
 
@@ -97,6 +103,9 @@
     $lblIp = New-Object System.Windows.Controls.TextBlock
     $lblIp.Text = "IP:"
     $lblIp.FontSize = 13
+    $lblIp.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#C8C8C8")
+    )
     $lblIp.VerticalAlignment = "Center"
     [System.Windows.Controls.Grid]::SetColumn($lblIp, 0)
     $ipGrid.Children.Add($lblIp) | Out-Null
@@ -104,6 +113,9 @@
     $script:ProfileIpBox = New-Object System.Windows.Controls.TextBox
     $script:ProfileIpBox.Style = $window.Resources["RoundedTextBox"]
     $script:ProfileIpBox.FontSize = 13
+    $script:ProfileIpBox.Foreground = [System.Windows.Media.SolidColorBrush](
+        [System.Windows.Media.ColorConverter]::ConvertFromString("#E0E0E0")
+    )
     if ($script:connected -and $script:deviceIp) {
         $script:ProfileIpBox.Text = $script:deviceIp
     }
@@ -111,11 +123,6 @@
     $ipGrid.Children.Add($script:ProfileIpBox) | Out-Null
 
     $mainStack.Children.Add($ipGrid) | Out-Null
-
-    $saveInfo = New-ViewLabel -Text "При сохранении будет прочитано текущее состояние ТВ: все отключённые и удалённые пакеты, сторонние приложения, анимация, OTA." -Light
-    $saveInfo.TextWrapping = "Wrap"
-    $saveInfo.Margin = "0,0,0,10"
-    $mainStack.Children.Add($saveInfo) | Out-Null
 
     # Кнопка "Сохранить"
     $mainStack.Children.Add((New-ViewButton -Text "Сохранить текущее состояние" -ColorType "Success" -Margin "0,8,0,0" -OnClick {

@@ -9,7 +9,7 @@ function Show-AutostartView {
     $header = New-ViewHeader -Text "Автозапуск и фон"
     $mainStack.Children.Add($header) | Out-Null
 
-    $desc = New-ViewLabel -Text "Управление тем, какие приложения могут запускаться автоматически и работать в фоне. Отключение фоновой активности экономит память, но может нарушить работу уведомлений и синхронизации." -Light
+    $desc = New-ViewLabel -Text "Управление фоновой активностью приложений через AppOps. На некоторых прошивках TCL операция BOOT_COMPLETED (автозапуск) не поддерживается — тогда кнопки «Авто» будут недоступны." -Light
     $desc.TextWrapping = "Wrap"
     $desc.Margin = "0,0,0,10"
     $mainStack.Children.Add($desc) | Out-Null
@@ -31,6 +31,32 @@ function Show-AutostartView {
         return
     }
 
+    # Проверяем, поддерживается ли BOOT_COMPLETED
+    $bootSupported = ($apps | Where-Object { $_.BootSupported } | Select-Object -First 1) -ne $null
+    if (-not $bootSupported) {
+        $warnCard = New-Object System.Windows.Controls.Border
+        $warnCard.Background = [System.Windows.Media.SolidColorBrush](
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#3D3520")
+        )
+        $warnCard.BorderBrush = [System.Windows.Media.SolidColorBrush](
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#5A4A2A")
+        )
+        $warnCard.BorderThickness = "1"
+        $warnCard.CornerRadius = "8"
+        $warnCard.Padding = New-Object System.Windows.Thickness(12)
+        $warnCard.Margin = New-Object System.Windows.Thickness(0, 0, 0, 12)
+
+        $warnText = New-Object System.Windows.Controls.TextBlock
+        $warnText.Text = "На этой прошивке операция BOOT_COMPLETED (автозапуск) не поддерживается. Кнопки «Авто» отключены. Управление фоном (RUN_IN_BACKGROUND) работает."
+        $warnText.TextWrapping = "Wrap"
+        $warnText.FontSize = 11
+        $warnText.Foreground = [System.Windows.Media.SolidColorBrush](
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#FFC83D")
+        )
+        $warnCard.Child = $warnText
+        $mainStack.Children.Add($warnCard) | Out-Null
+    }
+
     # ===== ПОИСК =====
     $searchPanel = New-Object System.Windows.Controls.Grid
     $searchPanel.Margin = "0,0,0,12"
@@ -43,7 +69,7 @@ function Show-AutostartView {
     $searchBox = New-Object System.Windows.Controls.TextBox
     $searchBox.Style = $window.Resources["RoundedTextBox"]
     $searchBox.FontSize = 13
-    $searchBox.Margin = "0,0,8,0"
+    $searchBox.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
 
     $placeholderText = "Поиск по имени пакета..."
 
@@ -51,7 +77,7 @@ function Show-AutostartView {
         if ($this.Text -eq $placeholderText) {
             $this.Text = ""
             $this.Foreground = [System.Windows.Media.SolidColorBrush](
-                [System.Windows.Media.ColorConverter]::ConvertFromString("#000000")
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#E0E0E0")
             )
         }
     }.GetNewClosure())
@@ -78,31 +104,37 @@ function Show-AutostartView {
     $btnRefresh.Background = New-Object System.Windows.Media.SolidColorBrush(
         [System.Windows.Media.ColorConverter]::ConvertFromString("#3e5f6e")
     )
-    $btnRefresh.Padding = "12,6"
+    $btnRefresh.Padding = New-Object System.Windows.Thickness(12, 6, 12, 6)
     $btnRefresh.FontSize = 11
-    $btnRefresh.Add_Click({
-        Switch-View -ViewName "Autostart"
-    })
+    $btnRefresh.Add_Click({ Switch-View -ViewName "Autostart" })
     [System.Windows.Controls.Grid]::SetColumn($btnRefresh, 1)
     $searchPanel.Children.Add($btnRefresh) | Out-Null
 
     $mainStack.Children.Add($searchPanel) | Out-Null
 
-    # ===== СПИСОК ПРИЛОЖЕНИЙ =====
+    # ===== СПИСОК =====
     $script:AutostartItems = @()
 
     $listContainer = New-Object System.Windows.Controls.StackPanel
-    $listContainer.Margin = "0,5,0,15"
+    $listContainer.Margin = New-Object System.Windows.Thickness(0, 5, 0, 15)
     $mainStack.Children.Add($listContainer) | Out-Null
 
     foreach ($app in $apps) {
         $row = New-Object System.Windows.Controls.Border
-        $row.Background = "#2B2B2B"
-        $row.BorderBrush = "#3A3A3A"
+        $row.Background = [System.Windows.Media.SolidColorBrush](
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#2B2B2B")
+        )
+        $row.BorderBrush = [System.Windows.Media.SolidColorBrush](
+            [System.Windows.Media.ColorConverter]::ConvertFromString("#3A3A3A")
+        )
         $row.BorderThickness = "1"
         $row.CornerRadius = "6"
-        $row.Padding = "10"
-        $row.Margin = "0,0,0,5"
+        $row.Padding = New-Object System.Windows.Thickness(10)
+        $row.Margin = New-Object System.Windows.Thickness(0, 0, 0, 5)
+
+        if ($app.IsDisabled) {
+            $row.Opacity = 0.55
+        }
 
         $grid = New-Object System.Windows.Controls.Grid
         $gc1 = New-Object System.Windows.Controls.ColumnDefinition; $gc1.Width = "*"
@@ -118,20 +150,33 @@ function Show-AutostartView {
         $nameTb.FontSize = 13
         $nameTb.FontWeight = "Bold"
 
-        $typeLabel = if ($app.IsSystem) { "[SYSTEM]" } else { "[USER]" }
-        $nameTb.Text = "$typeLabel  $($app.Package)"
+        $badges = ""
+        if ($app.IsSystem)   { $badges += " [SYS]" }
+        else                 { $badges += " [USR]" }
+        if ($app.IsDisabled) { $badges += " [ОТКЛЮЧЕНО]" }
 
-        if ($app.IsSystem) {
-            $nameTb.Foreground = [System.Windows.Media.Brushes]::DarkBlue
+        $nameTb.Text = "$($app.Package)$badges"
+
+        if ($app.IsDisabled) {
+            $nameTb.Foreground = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#808080")
+            )
+        } elseif ($app.IsSystem) {
+            $nameTb.Foreground = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#60CDFF")
+            )
         } else {
-            $nameTb.Foreground = [System.Windows.Media.Brushes]::DarkGreen
+            $nameTb.Foreground = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#6CCB5F")
+            )
         }
 
         $leftStack.Children.Add($nameTb) | Out-Null
 
+        # --- Статусная строка ---
         $statusText = New-Object System.Windows.Controls.TextBlock
         $statusText.FontSize = 11
-        $statusText.Margin = "30,3,0,0"
+        $statusText.Margin = New-Object System.Windows.Thickness(0, 3, 0, 0)
 
         $bgText = switch ($app.Background) {
             "allow"   { "Фон: разрешён" }
@@ -140,28 +185,41 @@ function Show-AutostartView {
             default   { "Фон: по умолчанию" }
         }
 
-        $bootText = switch ($app.Autostart) {
-            "allow"   { "Автозапуск: разрешён" }
-            "deny"    { "Автозапуск: запрещён" }
-            "ignore"  { "Автозапуск: игнорируется" }
-            default   { "Автозапуск: по умолчанию" }
+        if (-not $app.BootSupported) {
+            $bootText = "Автозапуск: не поддерживается"
+        } else {
+            $bootText = switch ($app.Autostart) {
+                "allow"   { "Автозапуск: разрешён" }
+                "deny"    { "Автозапуск: запрещён" }
+                "ignore"  { "Автозапуск: игнорируется" }
+                default   { "Автозапуск: по умолчанию" }
+            }
         }
 
         $statusText.Text = "$bgText   |   $bootText"
 
-        if ($app.Background -eq "deny" -and $app.Autostart -eq "deny") {
-            $statusText.Foreground = [System.Windows.Media.Brushes]::DarkGreen
+        if ($app.IsDisabled) {
+            $statusText.Foreground = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#808080")
+            )
+        } elseif ($app.Background -eq "deny" -and ($app.Autostart -eq "deny" -or -not $app.BootSupported)) {
+            $statusText.Foreground = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#6CCB5F")
+            )
         } elseif ($app.Background -eq "deny" -or $app.Autostart -eq "deny") {
-            $statusText.Foreground = [System.Windows.Media.Brushes]::DarkOrange
+            $statusText.Foreground = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#FFC83D")
+            )
         } else {
-            $statusText.Foreground = [System.Windows.Media.Brushes]::Gray
+            $statusText.Foreground = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#909090")
+            )
         }
 
         $leftStack.Children.Add($statusText) | Out-Null
-
         $grid.Children.Add($leftStack) | Out-Null
 
-        # --- Правая колонка: 4 кнопки (2 строки) ---
+        # --- Правая колонка: кнопки ---
         $btnPanel = New-Object System.Windows.Controls.StackPanel
         $btnPanel.Orientation = "Vertical"
         $btnPanel.VerticalAlignment = "Center"
@@ -170,102 +228,135 @@ function Show-AutostartView {
         # Строка 1: фон
         $bgRow = New-Object System.Windows.Controls.StackPanel
         $bgRow.Orientation = "Horizontal"
-        $bgRow.Margin = "0,0,0,3"
+        $bgRow.Margin = New-Object System.Windows.Thickness(0, 0, 0, 3)
 
         $btnAllowBg = New-Object System.Windows.Controls.Button
         $btnAllowBg.Content = "✓ Фон"
         $btnAllowBg.Style = $window.Resources["RoundedButton"]
-        $btnAllowBg.Background = New-Object System.Windows.Media.SolidColorBrush(
+        $btnAllowBg.Background = [System.Windows.Media.SolidColorBrush](
             [System.Windows.Media.ColorConverter]::ConvertFromString("#588653")
         )
-        $btnAllowBg.Padding = "8,4"
+        $btnAllowBg.Padding = New-Object System.Windows.Thickness(8, 4, 8, 4)
         $btnAllowBg.FontSize = 10
-        $btnAllowBg.Margin = "0,0,4,0"
+        $btnAllowBg.Margin = New-Object System.Windows.Thickness(0, 0, 4, 0)
         $btnAllowBg.ToolTip = "Разрешить фоновую активность"
-        $pkgAllowBg = $app.Package
+        $btnAllowBg.Tag = $app.Package
         $btnAllowBg.Add_Click({
-            if (Set-AppOpsPermission -Package $pkgAllowBg -Op "RUN_IN_BACKGROUND" -Mode "allow") {
-                Write-Log -Message "Фон разрешён: $pkgAllowBg" -Level "Success"
+            param($sender, $e)
+            $pkg = $sender.Tag
+            $r = Set-AppOpsPermission -Package $pkg -Op "RUN_IN_BACKGROUND" -Mode "allow"
+            if ($r.Success) {
+                Write-Log -Message "Фон разрешён: $pkg" -Level "Success"
                 Switch-View -ViewName "Autostart"
+            } else {
+                Write-Log -Message "Ошибка: $($r.Message)" -Level "Error"
             }
-        }.GetNewClosure())
+        })
+        if ($app.IsDisabled) { $btnAllowBg.IsEnabled = $false }
         $bgRow.Children.Add($btnAllowBg) | Out-Null
 
         $btnBlockBg = New-Object System.Windows.Controls.Button
         $btnBlockBg.Content = "✗ Фон"
         $btnBlockBg.Style = $window.Resources["RoundedButton"]
-        $btnBlockBg.Background = New-Object System.Windows.Media.SolidColorBrush(
+        $btnBlockBg.Background = [System.Windows.Media.SolidColorBrush](
             [System.Windows.Media.ColorConverter]::ConvertFromString("#9c8e6a")
         )
-        $btnBlockBg.Padding = "8,4"
+        $btnBlockBg.Padding = New-Object System.Windows.Thickness(8, 4, 8, 4)
         $btnBlockBg.FontSize = 10
         $btnBlockBg.ToolTip = "Запретить фоновую активность"
-        $pkgBlockBg = $app.Package
+        $btnBlockBg.Tag = $app.Package
         $btnBlockBg.Add_Click({
-            if (Set-AppOpsPermission -Package $pkgBlockBg -Op "RUN_IN_BACKGROUND" -Mode "deny") {
-                & $script:adbPath shell am force-stop $pkgBlockBg 2>&1 | Out-Null
-                Write-Log -Message "Фон запрещён: $pkgBlockBg" -Level "Success"
+            param($sender, $e)
+            $pkg = $sender.Tag
+            $r = Set-AppOpsPermission -Package $pkg -Op "RUN_IN_BACKGROUND" -Mode "deny"
+            if ($r.Success) {
+                & $script:adbPath shell am force-stop $pkg 2>&1 | Out-Null
+                Write-Log -Message "Фон запрещён: $pkg" -Level "Success"
                 Switch-View -ViewName "Autostart"
+            } else {
+                Write-Log -Message "Ошибка: $($r.Message)" -Level "Error"
             }
-        }.GetNewClosure())
+        })
+        if ($app.IsDisabled) { $btnBlockBg.IsEnabled = $false }
         $bgRow.Children.Add($btnBlockBg) | Out-Null
 
         $btnPanel.Children.Add($bgRow) | Out-Null
 
-        # Строка 2: автозапуск
-        $bootRow = New-Object System.Windows.Controls.StackPanel
-        $bootRow.Orientation = "Horizontal"
+        # Строка 2: автозапуск (только если поддерживается)
+        if ($app.BootSupported) {
+            $bootRow = New-Object System.Windows.Controls.StackPanel
+            $bootRow.Orientation = "Horizontal"
 
-        $btnAllowBoot = New-Object System.Windows.Controls.Button
-        $btnAllowBoot.Content = "✓ Авто"
-        $btnAllowBoot.Style = $window.Resources["RoundedButton"]
-        $btnAllowBoot.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#588653")
-        )
-        $btnAllowBoot.Padding = "8,4"
-        $btnAllowBoot.FontSize = 10
-        $btnAllowBoot.Margin = "0,0,4,0"
-        $btnAllowBoot.ToolTip = "Разрешить автозапуск"
-        $pkgAllowBoot = $app.Package
-        $btnAllowBoot.Add_Click({
-            if (Set-AppOpsPermission -Package $pkgAllowBoot -Op "BOOT_COMPLETED" -Mode "allow") {
-                Write-Log -Message "Автозапуск разрешён: $pkgAllowBoot" -Level "Success"
-                Switch-View -ViewName "Autostart"
-            }
-        }.GetNewClosure())
-        $bootRow.Children.Add($btnAllowBoot) | Out-Null
+            $btnAllowBoot = New-Object System.Windows.Controls.Button
+            $btnAllowBoot.Content = "✓ Авто"
+            $btnAllowBoot.Style = $window.Resources["RoundedButton"]
+            $btnAllowBoot.Background = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#588653")
+            )
+            $btnAllowBoot.Padding = New-Object System.Windows.Thickness(8, 4, 8, 4)
+            $btnAllowBoot.FontSize = 10
+            $btnAllowBoot.Margin = New-Object System.Windows.Thickness(0, 0, 4, 0)
+            $btnAllowBoot.ToolTip = "Разрешить автозапуск"
+            $btnAllowBoot.Tag = $app.Package
+            $btnAllowBoot.Add_Click({
+                param($sender, $e)
+                $pkg = $sender.Tag
+                $r = Set-AppOpsPermission -Package $pkg -Op "BOOT_COMPLETED" -Mode "allow"
+                if ($r.Success) {
+                    Write-Log -Message "Автозапуск разрешён: $pkg" -Level "Success"
+                    Switch-View -ViewName "Autostart"
+                } else {
+                    Write-Log -Message "Ошибка: $($r.Message)" -Level "Error"
+                }
+            })
+            if ($app.IsDisabled) { $btnAllowBoot.IsEnabled = $false }
+            $bootRow.Children.Add($btnAllowBoot) | Out-Null
 
-        $btnBlockBoot = New-Object System.Windows.Controls.Button
-        $btnBlockBoot.Content = "✗ Авто"
-        $btnBlockBoot.Style = $window.Resources["RoundedButton"]
-        $btnBlockBoot.Background = New-Object System.Windows.Media.SolidColorBrush(
-            [System.Windows.Media.ColorConverter]::ConvertFromString("#724c4c")
-        )
-        $btnBlockBoot.Padding = "8,4"
-        $btnBlockBoot.FontSize = 10
-        $btnBlockBoot.ToolTip = "Запретить автозапуск"
-        $pkgBlockBoot = $app.Package
-        $btnBlockBoot.Add_Click({
-            if (Set-AppOpsPermission -Package $pkgBlockBoot -Op "BOOT_COMPLETED" -Mode "deny") {
-                Write-Log -Message "Автозапуск запрещён: $pkgBlockBoot" -Level "Success"
-                Switch-View -ViewName "Autostart"
-            }
-        }.GetNewClosure())
-        $bootRow.Children.Add($btnBlockBoot) | Out-Null
+            $btnBlockBoot = New-Object System.Windows.Controls.Button
+            $btnBlockBoot.Content = "✗ Авто"
+            $btnBlockBoot.Style = $window.Resources["RoundedButton"]
+            $btnBlockBoot.Background = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#724c4c")
+            )
+            $btnBlockBoot.Padding = New-Object System.Windows.Thickness(8, 4, 8, 4)
+            $btnBlockBoot.FontSize = 10
+            $btnBlockBoot.ToolTip = "Запретить автозапуск"
+            $btnBlockBoot.Tag = $app.Package
+            $btnBlockBoot.Add_Click({
+                param($sender, $e)
+                $pkg = $sender.Tag
+                $r = Set-AppOpsPermission -Package $pkg -Op "BOOT_COMPLETED" -Mode "deny"
+                if ($r.Success) {
+                    Write-Log -Message "Автозапуск запрещён: $pkg" -Level "Success"
+                    Switch-View -ViewName "Autostart"
+                } else {
+                    Write-Log -Message "Ошибка: $($r.Message)" -Level "Error"
+                }
+            })
+            if ($app.IsDisabled) { $btnBlockBoot.IsEnabled = $false }
+            $bootRow.Children.Add($btnBlockBoot) | Out-Null
 
-        $btnPanel.Children.Add($bootRow) | Out-Null
+            $btnPanel.Children.Add($bootRow) | Out-Null
+        } else {
+            $noBootTb = New-Object System.Windows.Controls.TextBlock
+            $noBootTb.Text = "Автозапуск: не поддерживается"
+            $noBootTb.FontSize = 9
+            $noBootTb.Foreground = [System.Windows.Media.SolidColorBrush](
+                [System.Windows.Media.ColorConverter]::ConvertFromString("#808080")
+            )
+            $noBootTb.TextAlignment = "Center"
+            $btnPanel.Children.Add($noBootTb) | Out-Null
+        }
 
         $grid.Children.Add($btnPanel) | Out-Null
 
         $row.Child = $grid
         $listContainer.Children.Add($row) | Out-Null
 
-        # Сохраняем для фильтрации
         $script:AutostartItems += @{
-            Row         = $row
-            SearchText  = $app.Package.ToLower()
-            IsSystem    = $app.IsSystem
-            Package     = $app.Package
+            Row        = $row
+            SearchText = $app.Package.ToLower()
+            Package    = $app.Package
         }
     }
 
@@ -292,17 +383,21 @@ function Show-AutostartView {
     # ===== КНОПКИ BOTTOM BAR =====
     $buttons = @()
 
-    # --- Пресет: ограничить всех ---
+    # --- Пресет: ограничить всех (только фон) ---
     $btnSystemPreset = New-Object System.Windows.Controls.Button
-    $btnSystemPreset.Content = "Ограничить все пользовательские"
+    $btnSystemPreset.Content = "Запретить фон всем пользовательским"
     $btnSystemPreset.Style = $window.Resources["RoundedButton"]
-    $btnSystemPreset.Background = New-Object System.Windows.Media.SolidColorBrush(
+    $btnSystemPreset.Background = [System.Windows.Media.SolidColorBrush](
         [System.Windows.Media.ColorConverter]::ConvertFromString("#9c8e6a")
     )
-    $btnSystemPreset.Padding = "12,6"
-    $btnSystemPreset.Margin = "0,0,8,0"
+    $btnSystemPreset.Padding = New-Object System.Windows.Thickness(12, 6, 12, 6)
+    $btnSystemPreset.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
     $btnSystemPreset.Add_Click({
-        $userPkgs = @($script:AutostartItems | Where-Object { -not $_.IsSystem } | ForEach-Object { $_.Package })
+        $userPkgs = @($script:AutostartItems | Where-Object {
+            $item = $_
+            $app = $apps | Where-Object { $_.Package -eq $item.Package } | Select-Object -First 1
+            $app -and -not $app.IsSystem -and -not $app.IsDisabled
+        } | ForEach-Object { $_.Package })
 
         if ($userPkgs.Count -eq 0) {
             Write-Log -Message "Нет пользовательских приложений" -Level "Warning"
@@ -310,43 +405,44 @@ function Show-AutostartView {
         }
 
         $confirm = [System.Windows.MessageBox]::Show(
-            "Запретить фон и автозапуск для $($userPkgs.Count) пользовательских приложений?",
+            "Запретить фон для $($userPkgs.Count) пользовательских приложений?",
             "Подтверждение",
             [System.Windows.MessageBoxButton]::YesNo,
             [System.Windows.MessageBoxImage]::Question)
         if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) { return }
 
         Write-Log -Message "Применяю ограничения для $($userPkgs.Count) приложений..." -Level "Info"
-        $ok1 = Set-AppOpsBatch -Packages $userPkgs -Op "RUN_IN_BACKGROUND" -Mode "deny"
-        $ok2 = Set-AppOpsBatch -Packages $userPkgs -Op "BOOT_COMPLETED" -Mode "deny"
-        Write-Log -Message "Готово: фон $ok1, автозапуск $ok2" -Level "Success"
+        $r = Set-AppOpsBatch -Packages $userPkgs -Op "RUN_IN_BACKGROUND" -Mode "deny"
+        Write-Log -Message "Готово: фон $($r.Ok)" -Level "Success"
         Switch-View -ViewName "Autostart"
     })
     $buttons += $btnSystemPreset
 
-    # --- Сброс всех ---
+    # --- Сброс ---
     $btnRestoreAll = New-Object System.Windows.Controls.Button
     $btnRestoreAll.Content = "Разрешить всё (сброс)"
     $btnRestoreAll.Style = $window.Resources["RoundedButton"]
-    $btnRestoreAll.Background = New-Object System.Windows.Media.SolidColorBrush(
+    $btnRestoreAll.Background = [System.Windows.Media.SolidColorBrush](
         [System.Windows.Media.ColorConverter]::ConvertFromString("#588653")
     )
-    $btnRestoreAll.Padding = "12,6"
-    $btnRestoreAll.Margin = "0,0,8,0"
+    $btnRestoreAll.Padding = New-Object System.Windows.Thickness(12, 6, 12, 6)
+    $btnRestoreAll.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
     $btnRestoreAll.Add_Click({
         $allPkgs = @($script:AutostartItems | ForEach-Object { $_.Package })
 
         $confirm = [System.Windows.MessageBox]::Show(
-            "Сбросить настройки фона и автозапуска для $($allPkgs.Count) приложений?",
+            "Сбросить фон и автозапуск для $($allPkgs.Count) приложений?",
             "Подтверждение",
             [System.Windows.MessageBoxButton]::YesNo,
             [System.Windows.MessageBoxImage]::Question)
         if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) { return }
 
         Write-Log -Message "Сбрасываю $($allPkgs.Count) приложений..." -Level "Info"
-        $ok1 = Set-AppOpsBatch -Packages $allPkgs -Op "RUN_IN_BACKGROUND" -Mode "default"
-        $ok2 = Set-AppOpsBatch -Packages $allPkgs -Op "BOOT_COMPLETED" -Mode "default"
-        Write-Log -Message "Готово: фон $ok1, автозапуск $ok2" -Level "Success"
+        $r1 = Set-AppOpsBatch -Packages $allPkgs -Op "RUN_IN_BACKGROUND" -Mode "default"
+        if ($bootSupported) {
+            $r2 = Set-AppOpsBatch -Packages $allPkgs -Op "BOOT_COMPLETED" -Mode "default"
+        }
+        Write-Log -Message "Готово: фон $($r1.Ok)" -Level "Success"
         Switch-View -ViewName "Autostart"
     })
     $buttons += $btnRestoreAll

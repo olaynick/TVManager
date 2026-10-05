@@ -12,14 +12,51 @@ function Invoke-AppOpsAdb {
     }
 }
 
-# ===== СПИСОК ПРИЛОЖЕНИЙ С АВТОЗАПУСКОМ =====
+# ============================================================================
+#  ПРОВЕРКА: ПОДДЕРЖИВАЕТСЯ ЛИ ОПЕРАЦИЯ BOOT_COMPLETED
+#  На стандартном AOSP (в т.ч. TCL) этой операции нет.
+#  Проверяем один раз на первом же пакете.
+# ============================================================================
+function Test-BootCompletedSupported {
+    param([string]$TestPackage = "com.android.systemui")
+
+    $out = Invoke-AppOpsAdb @("shell", "cmd", "appops", "get", $TestPackage, "BOOT_COMPLETED")
+    if ($out -match 'Unknown operation string' -or $out -match 'No operations') {
+        return $false
+    }
+    if ($out -match 'BOOT_COMPLETED:') {
+        return $true
+    }
+    return $false
+}
+
+# ============================================================================
+#  СПИСОК ПРИЛОЖЕНИЙ С АВТОЗАПУСКОМ И СТАТУСАМИ
+# ============================================================================
 function Get-AppsWithAutostart {
     Write-Log -Message "Читаю список приложений..." -Level "Info"
 
     $result = @()
 
     try {
-        # Получаем сторонние приложения (у системных обычно нет смысла ограничивать)
+        # ---- Проверяем, поддерживается ли BOOT_COMPLETED на этой прошивке ----
+        $bootSupported = Test-BootCompletedSupported
+        if ($bootSupported) {
+            Write-Log -Message "  Автозапуск (BOOT_COMPLETED): поддерживается" -Level "Info"
+        } else {
+            Write-Log -Message "  Автозапуск (BOOT_COMPLETED): не поддерживается прошивкой" -Level "Warning"
+        }
+
+        # ---- Отключённые пакеты ----
+        $disabledRaw = Invoke-AppOpsAdb @("shell", "pm", "list", "packages", "-d")
+        $disabledSet = @{}
+        foreach ($line in ($disabledRaw -split "`r?`n")) {
+            if ($line -match '^package:(.+)$') {
+                $disabledSet[$matches[1].Trim()] = $true
+            }
+        }
+
+        # ---- Сторонние приложения ----
         $thirdPartyRaw = Invoke-AppOpsAdb @("shell", "pm", "list", "packages", "-3")
         $thirdParty = @()
         foreach ($line in ($thirdPartyRaw -split "`r?`n")) {
@@ -28,13 +65,12 @@ function Get-AppsWithAutostart {
             }
         }
 
-        # Получаем системные приложения (без GMS-ядра) — тоже интересны
+        # ---- Системные приложения (кроме критичных) ----
         $systemRaw = Invoke-AppOpsAdb @("shell", "pm", "list", "packages", "-s")
         $system = @()
         foreach ($line in ($systemRaw -split "`r?`n")) {
             if ($line -match '^package:(.+)$') {
                 $pkg = $matches[1].Trim()
-                # Исключаем критичные системные
                 if ($pkg -match '^com\.(android|google)\.' -or
                     $pkg -match '^com\.tcl\.(systemserver|providers\.config|autopair)' -or
                     $pkg -match '^com\.mediatek\.' -or
@@ -45,32 +81,39 @@ function Get-AppsWithAutostart {
             }
         }
 
-        # Читаем appops для каждой группы
         $allPkgs = @($thirdParty) + @($system)
 
+        # ---- Читаем appops для каждого ----
         foreach ($pkg in $allPkgs) {
             $bgOp = "default"
-            $bootOp = "default"
+            $bootOp = "unsupported"
+            $isDisabled = $disabledSet.ContainsKey($pkg)
 
             try {
-                # RUN_IN_BACKGROUND — фоновая активность
+                # RUN_IN_BACKGROUND — универсальная операция
                 $out = Invoke-AppOpsAdb @("shell", "cmd", "appops", "get", $pkg, "RUN_IN_BACKGROUND")
                 if ($out -match 'RUN_IN_BACKGROUND:\s*(\w+)') {
                     $bgOp = $matches[1]
                 }
 
-                # BOOT_COMPLETED — автозапуск
-                $out = Invoke-AppOpsAdb @("shell", "cmd", "appops", "get", $pkg, "BOOT_COMPLETED")
-                if ($out -match 'BOOT_COMPLETED:\s*(\w+)') {
-                    $bootOp = $matches[1]
+                # BOOT_COMPLETED — только если поддерживается
+                if ($bootSupported) {
+                    $out = Invoke-AppOpsAdb @("shell", "cmd", "appops", "get", $pkg, "BOOT_COMPLETED")
+                    if ($out -match 'BOOT_COMPLETED:\s*(\w+)') {
+                        $bootOp = $matches[1]
+                    } else {
+                        $bootOp = "default"
+                    }
                 }
             } catch { }
 
             $result += [PSCustomObject]@{
-                Package     = $pkg
-                IsSystem    = ($pkg -in $system)
-                Background  = $bgOp
-                Autostart   = $bootOp
+                Package         = $pkg
+                IsSystem        = ($pkg -in $system)
+                IsDisabled      = $isDisabled
+                Background      = $bgOp
+                Autostart       = $bootOp
+                BootSupported   = $bootSupported
             }
         }
 
@@ -82,28 +125,36 @@ function Get-AppsWithAutostart {
     return ,$result
 }
 
-# ===== УСТАНОВКА РАЗРЕШЕНИЙ =====
+# ============================================================================
+#  УСТАНОВКА РАЗРЕШЕНИЙ
+#  Возвращает объект: @{ Success; Unsupported; Message }
+# ============================================================================
 function Set-AppOpsPermission {
     param(
         [string]$Package,
-        [string]$Op,        # RUN_IN_BACKGROUND / BOOT_COMPLETED / RUN_ANY_IN_BACKGROUND
-        [string]$Mode       # allow / deny / default / ignore
+        [string]$Op,
+        [string]$Mode
     )
 
     try {
         $out = Invoke-AppOpsAdb @("shell", "cmd", "appops", "set", $Package, $Op, $Mode)
-        if ($out -match 'error|Error|Exception|Security') {
-            Write-Log -Message "Ошибка $Op для $Package`: $out" -Level "Warning"
-            return $false
+        $outText = ($out | Out-String).Trim()
+
+        if ($outText -match 'Unknown operation string') {
+            return @{ Success = $false; Unsupported = $true; Message = "Операция $Op не поддерживается прошивкой" }
         }
-        return $true
+        if ($outText -match 'error|Error|Exception|Security') {
+            return @{ Success = $false; Unsupported = $false; Message = $outText }
+        }
+        return @{ Success = $true; Unsupported = $false; Message = "OK" }
     } catch {
-        Write-Log -Message "Ошибка: $_" -Level "Error"
-        return $false
+        return @{ Success = $false; Unsupported = $false; Message = "$_" }
     }
 }
 
-# ===== ПАКЕТНАЯ УСТАНОВКА =====
+# ============================================================================
+#  ПАКЕТНАЯ УСТАНОВКА
+# ============================================================================
 function Set-AppOpsBatch {
     param(
         [array]$Packages,
@@ -112,10 +163,11 @@ function Set-AppOpsBatch {
     )
 
     $ok = 0
+    $unsupported = $false
     foreach ($pkg in $Packages) {
-        if (Set-AppOpsPermission -Package $pkg -Op $Op -Mode $Mode) {
-            $ok++
-        }
+        $r = Set-AppOpsPermission -Package $pkg -Op $Op -Mode $Mode
+        if ($r.Success) { $ok++ }
+        if ($r.Unsupported) { $unsupported = $true }
     }
-    return $ok
+    return @{ Ok = $ok; Unsupported = $unsupported }
 }

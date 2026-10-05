@@ -247,6 +247,7 @@ function Show-HttpServerView {
             $url = "http://$($localIp):$Port/?token=$token"
         }
 
+
         # ===== URL ДЛЯ ТЕЛЕФОНА =====
         $urlLabel = New-ViewLabel -Text "Откройте на телефоне:" -Light
         $urlLabel.Margin = "0,0,0,5"
